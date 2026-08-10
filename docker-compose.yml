@@ -6,15 +6,15 @@ services:
     container_name: regz-postgres
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-regz_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-regz_password}
-      POSTGRES_DB: ${POSTGRES_DB:-regz_db}
+      POSTGRES_USER: regz_user
+      POSTGRES_PASSWORD: regz_password
+      POSTGRES_DB: regz_db
     ports:
-      - "${POSTGRES_PORT:-5433}:5432"
+      - "${POSTGRES_PORT:-5434}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - regz_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-regz_user} -d ${POSTGRES_DB:-regz_db}"]
+      test: ["CMD-SHELL", "pg_isready -U regz_user -d regz_db"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -28,12 +28,12 @@ services:
     environment:
       PORT: 4000
       NODE_ENV: production
-      DATABASE_URL: postgres://${POSTGRES_USER:-regz_user}:${POSTGRES_PASSWORD:-regz_password}@postgres:5432/${POSTGRES_DB:-regz_db}
+      DATABASE_URL: postgres://regz_user:regz_password@postgres:5432/regz_db
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_USER: ${POSTGRES_USER:-regz_user}
-      DB_PASSWORD: ${POSTGRES_PASSWORD:-regz_password}
-      DB_NAME: ${POSTGRES_DB:-regz_db}
+      DB_USER: regz_user
+      DB_PASSWORD: regz_password
+      DB_NAME: regz_db
     ports:
       - "${BACKEND_PORT:-4001}:4000"
     depends_on:
@@ -52,5 +52,5 @@ services:
       - backend
 
 volumes:
-  postgres_data:
+  regz_postgres_data:
     driver: local
