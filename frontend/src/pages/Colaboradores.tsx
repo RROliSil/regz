@@ -1,13 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Colaborador } from '../types/colaborador';
-import { UserPlus, Search, Edit2, Trash2, MapPin, Upload, Camera, Info, X, Check, Loader2 } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, MapPin, Upload, Camera, Info, X, Check, Loader2, RotateCcw, Columns, ChevronDown } from 'lucide-react';
+
+interface ColumnConfig {
+  foto: boolean;
+  nome: boolean;
+  cpf: boolean;
+  endereco: boolean;
+  cidade: boolean;
+  criado_em: boolean;
+}
 
 export const Colaboradores: React.FC = () => {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeSubTab, setActiveSubTab] = useState<'ativos' | 'inativos'>('ativos');
+
+  // Modal Principal de Cadastro / Edição
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  // Modal Quick Photo (Alteração Rápida de Foto)
+  const [quickPhotoModalOpen, setQuickPhotoModalOpen] = useState(false);
+  const [targetPhotoColaborador, setTargetPhotoColaborador] = useState<Colaborador | null>(null);
+
+  // Seletor de Colunas Visíveis com LocalStorage
+  const [columnsDropdownOpen, setColumnsDropdownOpen] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<ColumnConfig>(() => {
+    const saved = localStorage.getItem('regz_visible_columns');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) { /* fallback */ }
+    }
+    return { foto: true, nome: true, cpf: true, endereco: true, cidade: true, criado_em: false };
+  });
 
   // Formulário State
   const [nome, setNome] = useState('');
@@ -26,9 +52,16 @@ export const Colaboradores: React.FC = () => {
   const [cepError, setCepError] = useState('');
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const quickFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Buscar lista de colaboradores
+  // Salvar preferências de colunas no LocalStorage
+  useEffect(() => {
+    localStorage.setItem('regz_visible_columns', JSON.stringify(visibleColumns));
+  }, [visibleColumns]);
+
+  // Buscar lista completa de colaboradores
   const fetchColaboradores = async () => {
     setLoading(true);
     try {
@@ -60,7 +93,7 @@ export const Colaboradores: React.FC = () => {
     setCpf(value);
   };
 
-  // Máscara e Busca Automática de CEP via API ViaCEP
+  // Máscara e Busca Automática de CEP via ViaCEP API
   const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, '');
     if (value.length > 8) value = value.slice(0, 8);
@@ -91,44 +124,88 @@ export const Colaboradores: React.FC = () => {
     }
   };
 
-  // Handler de Anexo/Upload de Foto com Redimensionamento e Compressão
+  // Compressão Ultra-Leve de Imagem via Canvas (300x300px, JPEG 0.70 ~25KB)
+  const processImageFile = (file: File, callback: (base64: string) => void) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const targetSize = 300;
+        
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        const ctx = canvas.getContext('2d');
+        
+        if (ctx) {
+          // Crop quadrado centralizado
+          const minDim = Math.min(img.width, img.height);
+          const sx = (img.width - minDim) / 2;
+          const sy = (img.height - minDim) / 2;
+          
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, targetSize, targetSize);
+          // Compressão de qualidade 0.70 (~25KB)
+          const ultraLightBase64 = canvas.toDataURL('image/jpeg', 0.70);
+          callback(ultraLightBase64);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const maxDim = 600;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > maxDim) {
-              height = Math.round(height * (maxDim / width));
-              width = maxDim;
-            }
-          } else {
-            if (height > maxDim) {
-              width = Math.round(width * (maxDim / height));
-              height = maxDim;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.85);
-            setFotoUrl(compressedBase64);
-          }
-        };
-        img.src = event.target?.result as string;
-      };
-      reader.readAsDataURL(file);
+      processImageFile(file, (base64) => setFotoUrl(base64));
     }
+  };
+
+  // Upload rápido de foto via modal quick photo
+  const handleQuickPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && targetPhotoColaborador) {
+      processImageFile(file, async (base64) => {
+        try {
+          const res = await fetch(`/api/colaboradores/${targetPhotoColaborador.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...targetPhotoColaborador, foto_url: base64 })
+          });
+          if (res.ok) {
+            setQuickPhotoModalOpen(false);
+            fetchColaboradores();
+          }
+        } catch (err) {
+          alert('Erro ao atualizar foto');
+        }
+      });
+    }
+  };
+
+  // Remover foto via modal quick photo
+  const handleQuickRemovePhoto = async () => {
+    if (targetPhotoColaborador) {
+      try {
+        const res = await fetch(`/api/colaboradores/${targetPhotoColaborador.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...targetPhotoColaborador, foto_url: null })
+        });
+        if (res.ok) {
+          setQuickPhotoModalOpen(false);
+          fetchColaboradores();
+        }
+      } catch (err) {
+        alert('Erro ao remover foto');
+      }
+    }
+  };
+
+  // Abrir Modal de Edição Rápida de Foto
+  const openQuickPhotoModal = (c: Colaborador) => {
+    setTargetPhotoColaborador(c);
+    setQuickPhotoModalOpen(true);
   };
 
   // Limpar formulário
@@ -224,15 +301,15 @@ export const Colaboradores: React.FC = () => {
     }
   };
 
-  // Excluir Colaborador
-  const handleDelete = async (id: number, nome: string) => {
-    if (confirm(`Deseja realmente remover o colaborador "${nome}"?`)) {
+  // Inativar Colaborador (Soft Delete)
+  const handleInativar = async (id: number, nome: string) => {
+    if (confirm(`Deseja inativar o colaborador "${nome}"? Ele será movido para a aba Inativados.`)) {
       try {
-        const res = await fetch(`/api/colaboradores/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/colaboradores/${id}/inativar`, { method: 'PUT' });
         if (res.ok) {
           fetchColaboradores();
         } else {
-          alert('Erro ao excluir colaborador');
+          alert('Erro ao inativar colaborador');
         }
       } catch (err) {
         alert('Erro ao comunicar com o servidor');
@@ -240,12 +317,38 @@ export const Colaboradores: React.FC = () => {
     }
   };
 
-  // Filtrar Colaboradores por nome ou CPF
-  const filteredColaboradores = colaboradores.filter(c => 
+  // Reativar Colaborador
+  const handleReativar = async (id: number, nome: string) => {
+    if (confirm(`Deseja reativar o cadastro de "${nome}"?`)) {
+      try {
+        const res = await fetch(`/api/colaboradores/${id}/reativar`, { method: 'PUT' });
+        if (res.ok) {
+          fetchColaboradores();
+        } else {
+          alert('Erro ao reativar colaborador');
+        }
+      } catch (err) {
+        alert('Erro ao comunicar com o servidor');
+      }
+    }
+  };
+
+  // Separar ativos e inativos
+  const colaboradoresAtivos = colaboradores.filter(c => c.ativo !== false);
+  const colaboradoresInativos = colaboradores.filter(c => c.ativo === false);
+
+  const listTarget = activeSubTab === 'ativos' ? colaboradoresAtivos : colaboradoresInativos;
+
+  // Filtrar Colaboradores por busca
+  const filteredColaboradores = listTarget.filter(c => 
     c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.cpf.includes(searchTerm) ||
     (c.cidade && c.cidade.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const toggleColumn = (key: keyof ColumnConfig) => {
+    setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }));
+  };
 
   return (
     <div className="page-content">
@@ -256,7 +359,7 @@ export const Colaboradores: React.FC = () => {
             Gestão de <span className="text-gradient">Colaboradores</span>
           </h1>
           <p className="page-description">
-            Cadastre e gerencie a equipe de colaboradores com dados pessoais, endereço e foto.
+            Cadastre e gerencie a equipe de colaboradores com foto ultra-leve e inativação segura.
           </p>
         </div>
         <button onClick={openNewModal} className="btn-primary">
@@ -265,8 +368,27 @@ export const Colaboradores: React.FC = () => {
         </button>
       </header>
 
-      {/* Control Bar (Busca e Contadores) */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+      {/* Sub-Abas de Navegação (Ativos vs Inativados) */}
+      <div className="sub-tabs-container" style={{ marginBottom: '24px' }}>
+        <button
+          className={`sub-tab ${activeSubTab === 'ativos' ? 'active' : ''}`}
+          onClick={() => setActiveSubTab('ativos')}
+        >
+          Colaboradores Ativos
+          <span className="sub-tab-badge">{colaboradoresAtivos.length}</span>
+        </button>
+
+        <button
+          className={`sub-tab ${activeSubTab === 'inativos' ? 'active' : ''}`}
+          onClick={() => setActiveSubTab('inativos')}
+        >
+          Inativados
+          <span className="sub-tab-badge danger">{colaboradoresInativos.length}</span>
+        </button>
+      </div>
+
+      {/* Control Bar (Busca, Seletor de Colunas e Contadores) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
         <div className="search-box">
           <Search size={18} color="var(--text-muted)" />
           <input
@@ -276,8 +398,52 @@ export const Colaboradores: React.FC = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-          Total: <strong style={{ color: '#38bdf8' }}>{colaboradores.length}</strong> colaborador(es)
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Seletor Dropdown de Colunas Visíveis */}
+          <div className="dropdown-container" style={{ position: 'relative' }}>
+            <button
+              onClick={() => setColumnsDropdownOpen(!columnsDropdownOpen)}
+              className="btn-secondary"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '0.88rem' }}
+            >
+              <Columns size={16} /> Colunas <ChevronDown size={14} />
+            </button>
+
+            {columnsDropdownOpen && (
+              <div className="dropdown-menu glass-panel" style={{ position: 'absolute', right: 0, top: '46px', width: '220px', padding: '12px', zIndex: 50 }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px', textTransform: 'uppercase' }}>Exibir Colunas</div>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={visibleColumns.foto} onChange={() => toggleColumn('foto')} />
+                  <span>Foto de Perfil</span>
+                </label>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={visibleColumns.nome} onChange={() => toggleColumn('nome')} />
+                  <span>Nome</span>
+                </label>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={visibleColumns.cpf} onChange={() => toggleColumn('cpf')} />
+                  <span>CPF</span>
+                </label>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={visibleColumns.endereco} onChange={() => toggleColumn('endereco')} />
+                  <span>Endereço</span>
+                </label>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={visibleColumns.cidade} onChange={() => toggleColumn('cidade')} />
+                  <span>Cidade / UF</span>
+                </label>
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={visibleColumns.criado_em} onChange={() => toggleColumn('criado_em')} />
+                  <span>Data de Cadastro</span>
+                </label>
+              </div>
+            )}
+          </div>
+
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+            Exibindo: <strong style={{ color: '#38bdf8' }}>{filteredColaboradores.length}</strong> de {listTarget.length}
+          </div>
         </div>
       </div>
 
@@ -287,85 +453,135 @@ export const Colaboradores: React.FC = () => {
           <table className="custom-table">
             <thead>
               <tr>
-                <th style={{ width: '60px' }}>Foto</th>
-                <th>Nome</th>
-                <th>CPF</th>
-                <th>Endereço</th>
-                <th>Cidade / UF</th>
+                {visibleColumns.foto && <th style={{ width: '70px' }}>Foto</th>}
+                {visibleColumns.nome && <th>Nome</th>}
+                {visibleColumns.cpf && <th>CPF</th>}
+                {visibleColumns.endereco && <th>Endereço</th>}
+                {visibleColumns.cidade && <th>Cidade / UF</th>}
+                {visibleColumns.criado_em && <th>Data de Cadastro</th>}
                 <th style={{ textAlign: 'right' }}>Ações</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)' }}>
-                      <Loader2 className="spin" size={20} /> Carregando colaboradores...
+                      <Loader2 className="spin" size={20} /> Carregando lista...
                     </div>
                   </td>
                 </tr>
               ) : filteredColaboradores.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
-                    {searchTerm ? 'Nenhum colaborador encontrado para a busca.' : 'Nenhum colaborador cadastrado. Clique no botão acima para adicionar.'}
+                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
+                    {searchTerm 
+                      ? 'Nenhum resultado encontrado para a busca.' 
+                      : activeSubTab === 'ativos'
+                        ? 'Nenhum colaborador ativo no momento.'
+                        : 'Nenhum colaborador inativado.'}
                   </td>
                 </tr>
               ) : (
                 filteredColaboradores.map((c) => (
-                  <tr key={c.id}>
-                    <td>
-                      <div className="avatar-preview">
-                        {c.foto_url ? (
-                          <img src={c.foto_url} alt={c.nome} />
-                        ) : (
-                          <div className="avatar-placeholder">{c.nome.charAt(0).toUpperCase()}</div>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: '#f8fafc' }}>{c.nome}</div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>ID: #{c.id}</div>
-                    </td>
-                    <td>
-                      <code style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }}>
-                        {c.cpf}
-                      </code>
-                    </td>
-                    <td>
-                      {c.logradouro ? (
-                        <div style={{ fontSize: '0.88rem' }}>
-                          {c.logradouro}{c.numero ? `, nº ${c.numero}` : ''}
-                          {c.bairro ? ` - ${c.bairro}` : ''}
+                  <tr key={c.id} className={c.ativo === false ? 'row-inactive' : ''}>
+                    {visibleColumns.foto && (
+                      <td>
+                        {/* Avatar com Hover Interativo para Troca de Foto */}
+                        <div 
+                          className="avatar-hover-container" 
+                          onClick={() => openQuickPhotoModal(c)}
+                          title="Clique para alterar ou remover a foto"
+                        >
+                          <div className="avatar-preview">
+                            {c.foto_url ? (
+                              <img src={c.foto_url} alt={c.nome} />
+                            ) : (
+                              <div className="avatar-placeholder">{c.nome.charAt(0).toUpperCase()}</div>
+                            )}
+                          </div>
+                          <div className="avatar-hover-overlay">
+                            <Camera size={14} color="#ffffff" />
+                          </div>
                         </div>
-                      ) : (
-                        <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Não informado</span>
-                      )}
-                    </td>
-                    <td>
-                      {c.cidade ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}>
-                          <MapPin size={14} color="#38bdf8" /> {c.cidade}{c.estado ? `/${c.estado}` : ''}
-                        </span>
-                      ) : (
-                        <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>-</span>
-                      )}
-                    </td>
+                      </td>
+                    )}
+
+                    {visibleColumns.nome && (
+                      <td>
+                        <div style={{ fontWeight: 600, color: '#f8fafc' }}>{c.nome}</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
+                          ID: #{c.id} {c.ativo === false && <span className="badge-inactive">Inativo</span>}
+                        </div>
+                      </td>
+                    )}
+
+                    {visibleColumns.cpf && (
+                      <td>
+                        <code style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                          {c.cpf}
+                        </code>
+                      </td>
+                    )}
+
+                    {visibleColumns.endereco && (
+                      <td>
+                        {c.logradouro ? (
+                          <div style={{ fontSize: '0.88rem' }}>
+                            {c.logradouro}{c.numero ? `, nº ${c.numero}` : ''}
+                            {c.bairro ? ` - ${c.bairro}` : ''}
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Não informado</span>
+                        )}
+                      </td>
+                    )}
+
+                    {visibleColumns.cidade && (
+                      <td>
+                        {c.cidade ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}>
+                            <MapPin size={14} color="#38bdf8" /> {c.cidade}{c.estado ? `/${c.estado}` : ''}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>-</span>
+                        )}
+                      </td>
+                    )}
+
+                    {visibleColumns.criado_em && (
+                      <td style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>
+                        {c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : '-'}
+                      </td>
+                    )}
+
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '8px' }}>
-                        <button
-                          onClick={() => openEditModal(c)}
-                          className="btn-action edit"
-                          title="Editar Colaborador"
-                        >
-                          <Edit2 size={15} />
-                        </button>
-                        <button
-                          onClick={() => c.id && handleDelete(c.id, c.nome)}
-                          className="btn-action delete"
-                          title="Excluir Colaborador"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        {c.ativo !== false ? (
+                          <>
+                            <button
+                              onClick={() => openEditModal(c)}
+                              className="btn-action edit"
+                              title="Editar Colaborador"
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                            <button
+                              onClick={() => c.id && handleInativar(c.id, c.nome)}
+                              className="btn-action delete"
+                              title="Inativar Colaborador (Soft Delete)"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => c.id && handleReativar(c.id, c.nome)}
+                            className="btn-action reactivate"
+                            title="Reativar Colaborador"
+                          >
+                            <RotateCcw size={15} /> Reativar
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -376,7 +592,50 @@ export const Colaboradores: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal de Cadastro / Edição */}
+      {/* Modal Quick Photo (Alterar / Remover Foto ao Clicar no Hover) */}
+      {quickPhotoModalOpen && targetPhotoColaborador && (
+        <div className="modal-backdrop">
+          <div className="modal-content glass-panel" style={{ width: '420px', textAlign: 'center' }}>
+            <div className="modal-header">
+              <h3>Foto de {targetPhotoColaborador.nome}</h3>
+              <button onClick={() => setQuickPhotoModalOpen(false)} className="btn-close">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', padding: '10px 0' }}>
+              <div className="avatar-preview-large">
+                {targetPhotoColaborador.foto_url ? (
+                  <img src={targetPhotoColaborador.foto_url} alt={targetPhotoColaborador.nome} />
+                ) : (
+                  <div className="avatar-placeholder-large">{targetPhotoColaborador.nome.charAt(0).toUpperCase()}</div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
+                <label className="btn-primary" style={{ justifyContent: 'center', cursor: 'pointer' }}>
+                  <Upload size={16} /> Subir Nova Foto (Ultraleve ~25KB)
+                  <input
+                    type="file"
+                    ref={quickFileInputRef}
+                    accept="image/*"
+                    onChange={handleQuickPhotoUpload}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+
+                {targetPhotoColaborador.foto_url && (
+                  <button onClick={handleQuickRemovePhoto} className="btn-secondary" style={{ color: '#fb7185', borderColor: 'rgba(251, 113, 133, 0.3)' }}>
+                    <Trash2 size={16} /> Remover Foto Atual
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Principal de Cadastro / Edição */}
       {modalOpen && (
         <div className="modal-backdrop">
           <div className="modal-content glass-panel">
@@ -396,7 +655,11 @@ export const Colaboradores: React.FC = () => {
 
               {/* Upload de Foto de Perfil */}
               <div className="photo-upload-section">
-                <div className="photo-avatar-container">
+                <div 
+                  className="photo-avatar-container avatar-hover-container"
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Clique para escolher uma foto"
+                >
                   {fotoUrl ? (
                     <img src={fotoUrl} alt="Preview da Foto" />
                   ) : (
@@ -404,7 +667,11 @@ export const Colaboradores: React.FC = () => {
                       <Camera size={32} />
                     </div>
                   )}
+                  <div className="avatar-hover-overlay">
+                    <Camera size={18} color="#ffffff" />
+                  </div>
                 </div>
+
                 <div className="photo-upload-controls">
                   <label className="btn-upload">
                     <Upload size={16} /> Anexar Foto de Perfil
@@ -425,7 +692,7 @@ export const Colaboradores: React.FC = () => {
                       Remover foto
                     </button>
                   )}
-                  <span className="upload-hint">Formatos JPG ou PNG (Máx 5MB)</span>
+                  <span className="upload-hint">Foto otimizada automaticamente (~25KB)</span>
                 </div>
               </div>
 

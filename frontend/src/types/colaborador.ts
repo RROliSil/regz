@@ -10,5 +10,6 @@ export interface Colaborador {
   cidade?: string;
   estado?: string;
   foto_url?: string;
+  ativo?: boolean;
   criado_em?: string;
 }
