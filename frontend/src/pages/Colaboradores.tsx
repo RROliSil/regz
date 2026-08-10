@@ -84,38 +84,29 @@ export const Colaboradores: React.FC = () => {
     fetchColaboradores();
   }, []);
 
-  // Abrir o endereço do colaborador no Google Maps em nova aba (usando Lat/Long se disponível)
+  // Abrir o endereço do colaborador no Google Maps com ALTA PRECISÃO
   const openGoogleMaps = (c: Colaborador) => {
-    let url = '';
-    if (c.latitude && c.longitude) {
-      url = `https://www.google.com/maps/search/?api=1&query=${c.latitude},${c.longitude}`;
-    } else {
-      const addressQuery = [c.logradouro, c.numero ? `nº ${c.numero}` : '', c.bairro, c.cidade, c.estado, c.cep]
-        .filter(Boolean)
-        .join(', ');
-      
-      if (!addressQuery) return;
-      url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressQuery)}`;
-    }
+    const fullAddress = [c.logradouro, c.numero ? `nº ${c.numero}` : '', c.bairro, c.cidade, c.estado, c.cep]
+      .filter(Boolean)
+      .join(', ');
+    
+    if (!fullAddress) return;
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  // Abrir o endereço atual do formulário no Google Maps
+  // Abrir o endereço atual do formulário no Google Maps com ALTA PRECISÃO
   const openCurrentFormGoogleMaps = () => {
-    let url = '';
-    if (latitude && longitude) {
-      url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
-    } else {
-      const addressQuery = [logradouro, numero ? `nº ${numero}` : '', bairro, cidade, estado, cep]
-        .filter(Boolean)
-        .join(', ');
-      if (!addressQuery) return;
-      url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressQuery)}`;
-    }
+    const fullAddress = [logradouro, numero ? `nº ${numero}` : '', bairro, cidade, estado, cep]
+      .filter(Boolean)
+      .join(', ');
+    
+    if (!fullAddress) return;
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  // Autogeocodificação Métrica no Frontend ao alterar CEP ou número
+  // Autogeocodificação de Alta Precisão no Frontend ao alterar CEP ou número
   const triggerGeocoding = async (streetVal?: string, numVal?: string, cityVal?: string, stateVal?: string, cepVal?: string) => {
     const st = streetVal !== undefined ? streetVal : logradouro;
     const num = numVal !== undefined ? numVal : numero;
@@ -142,7 +133,7 @@ export const Colaboradores: React.FC = () => {
         }
       }
     } catch (err) {
-      console.error('Erro na geocodificação métrica:', err);
+      console.error('Erro na geocodificação de precisão:', err);
     }
   };
 
@@ -233,7 +224,7 @@ export const Colaboradores: React.FC = () => {
           setCidade(data.localidade || '');
           setEstado(data.uf || '');
 
-          // Disparar geocodificação métrica (Passo 1: CEP -> Coordenadas Base)
+          // Disparar geocodificação de alta precisão
           triggerGeocoding(data.logradouro, numero, data.localidade, data.uf, formattedCep);
         }
       } catch (err) {
@@ -696,7 +687,7 @@ export const Colaboradores: React.FC = () => {
                       </td>
                     )}
 
-                    {/* Coluna Ações com Botão Quadrado de Mapa (Google Maps + Geoposição Métrica) */}
+                    {/* Coluna Ações com Botão Quadrado de Mapa (Google Maps) */}
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '8px' }}>
                         {/* Botão de Mapa Quadrado nas Ações */}
@@ -891,7 +882,7 @@ export const Colaboradores: React.FC = () => {
                 </div>
               </div>
 
-              {/* Endereço Opcional com Geolocalização Métrica */}
+              {/* Endereço Opcional com Geolocalização de Alta Precisão */}
               <div className="form-section-title" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Endereço <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)' }}>(Opcional)</span></span>
                 
@@ -948,7 +939,6 @@ export const Colaboradores: React.FC = () => {
                     value={numero}
                     onChange={(e) => {
                       setNumero(e.target.value);
-                      // Ao preencher o número da casa, aplica a geocodificação métrica (Passo 2)
                       triggerGeocoding(logradouro, e.target.value, cidade, estado, cep);
                     }}
                   />

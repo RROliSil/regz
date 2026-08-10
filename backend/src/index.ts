@@ -52,7 +52,7 @@ const initDb = async () => {
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8);
     `);
 
-    console.log('✅ Tabela "colaboradores" inicializada com suporte a Geolocalização Métrica (CEP + Número)!');
+    console.log('✅ Tabela "colaboradores" inicializada com suporte a Geolocalização de Alta Precisão!');
   } catch (error) {
     console.error('⚠️ Erro ao inicializar a tabela "colaboradores":', error);
   }
@@ -89,64 +89,64 @@ const ENDERECOS_EXEMPLO = [
   { cep: '30130-010', logradouro: 'Avenida Afonso Pena', bairro: 'Centro', cidade: 'Belo Horizonte', estado: 'MG', lat: -19.9208, lon: -43.9378 },
   { cep: '80010-000', logradouro: 'Rua XV de Novembro', bairro: 'Centro', cidade: 'Curitiba', estado: 'PR', lat: -25.4284, lon: -49.2733 },
   { cep: '90010-150', logradouro: 'Avenida dos Andradas', bairro: 'Centro Histórico', cidade: 'Porto Alegre', estado: 'RS', lat: -30.0346, lon: -51.2177 },
-  { cep: '40020-000', logradouro: 'Avenida Sete de Setembro', bairro: 'Vitória', cidade: 'Salvador', estado: 'BA', lat: -12.9714, lon: -38.5014 }
+  { cep: '40020-000', logradouro: 'Avenida Sete de Setembro', bairro: 'Vitória', cidade: 'Salvador', estado: 'BA', lat: -12.9714, lon: -38.5014 },
+  { cep: '12220-520', logradouro: 'Rua Alfredo Pereira Filho', bairro: 'Vila Industrial', cidade: 'São José dos Campos', estado: 'SP', lat: -23.1818, lon: -45.8655 }
 ];
 
-// Algoritmo de Geolocalização Métrica Brasileira (CEP + Número da Casa = Distância em Metros + Lado Par/Ímpar)
-const fetchGeocodingMetric = async (logradouro?: string, numeroStr?: string, cidade?: string, estado?: string, cep?: string) => {
+// Geocodificação de Alta Precisão via OpenStreetMap (Busca Encadeada por Endereço Completo)
+const fetchGeocodingHighPrecision = async (logradouro?: string, numeroStr?: string, cidade?: string, estado?: string, cep?: string) => {
   try {
-    // Passo 1: Obter as coordenadas base da rua / CEP
-    let latBase: number | null = null;
-    let lonBase: number | null = null;
+    const headers = { 'User-Agent': 'RegzApp/1.0 (contact@regz.app)' };
 
-    // Tentar primeiro pelo CEP ou Rua + Cidade
-    const queryParts = [cep || logradouro, cidade, estado, 'Brasil'].filter(Boolean).join(', ');
-    if (queryParts) {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryParts)}&limit=1`;
-      const res = await fetch(url, {
-        headers: { 'User-Agent': 'RegzApp/1.0 (contact@regz.app)' }
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          latBase = parseFloat(data[0].lat);
-          lonBase = parseFloat(data[0].lon);
+    // Etapa 1: Busca completa por Endereço + Número + Bairro + Cidade + Estado + CEP
+    const fullQuery = [logradouro, numeroStr ? `nº ${numeroStr}` : '', cidade, estado, cep, 'Brasil'].filter(Boolean).join(', ');
+    if (fullQuery) {
+      const url1 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullQuery)}&limit=1`;
+      const res1 = await fetch(url1, { headers });
+      if (res1.ok) {
+        const data1 = await res1.json();
+        if (Array.isArray(data1) && data1.length > 0) {
+          return {
+            lat: parseFloat(parseFloat(data1[0].lat).toFixed(8)),
+            lon: parseFloat(parseFloat(data1[0].lon).toFixed(8))
+          };
         }
       }
     }
 
-    if (!latBase || !lonBase) {
-      return { lat: null, lon: null };
+    // Etapa 2: Busca por Rua + Cidade + Estado + CEP
+    const streetQuery = [logradouro, cidade, estado, cep, 'Brasil'].filter(Boolean).join(', ');
+    if (streetQuery) {
+      const url2 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(streetQuery)}&limit=1`;
+      const res2 = await fetch(url2, { headers });
+      if (res2.ok) {
+        const data2 = await res2.json();
+        if (Array.isArray(data2) && data2.length > 0) {
+          return {
+            lat: parseFloat(parseFloat(data2[0].lat).toFixed(8)),
+            lon: parseFloat(parseFloat(data2[0].lon).toFixed(8))
+          };
+        }
+      }
     }
 
-    // Passo 2: Se houver número da casa, aplicar o cálculo métrico (distância em metros do início da rua + lado par/ímpar)
-    const numMeters = numeroStr ? parseInt(numeroStr.replace(/\D/g, ''), 10) : 0;
-    
-    if (!isNaN(numMeters) && numMeters > 0) {
-      // 1 metro em latitude aproximadamente equivale a 0.00000899 graus
-      const metersToLat = 0.00000899;
-      // 1 metro em longitude depende da latitude atual
-      const metersToLon = 0.00000899 / Math.cos(latBase * (Math.PI / 180));
-
-      // Lado da via: Par (Direita, offset positivo) vs Ímpar (Esquerda, offset negativo)
-      const isEven = numMeters % 2 === 0;
-      const sideMultiplier = isEven ? 1 : -1;
-      const sideOffsetMeters = 6 * sideMultiplier; // ~6 metros de afastamento perpendicular da via
-
-      // Deslocamento métrico no sentido da via + lado da rua
-      const latCalculated = latBase + (numMeters * metersToLat * 0.7) + (sideOffsetMeters * metersToLat * 0.3);
-      const lonCalculated = lonBase + (numMeters * metersToLon * 0.7) - (sideOffsetMeters * metersToLon * 0.3);
-
-      return {
-        lat: parseFloat(latCalculated.toFixed(8)),
-        lon: parseFloat(lonCalculated.toFixed(8))
-      };
+    // Etapa 3: Busca apenas pelo CEP
+    if (cep) {
+      const cepQuery = `${cep}, Brasil`;
+      const url3 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cepQuery)}&limit=1`;
+      const res3 = await fetch(url3, { headers });
+      if (res3.ok) {
+        const data3 = await res3.json();
+        if (Array.isArray(data3) && data3.length > 0) {
+          return {
+            lat: parseFloat(parseFloat(data3[0].lat).toFixed(8)),
+            lon: parseFloat(parseFloat(data3[0].lon).toFixed(8))
+          };
+        }
+      }
     }
-
-    return { lat: latBase, lon: lonBase };
   } catch (err) {
-    console.error('Erro na geocodificação métrica:', err);
+    console.error('Erro na geocodificação de precisão:', err);
   }
   return { lat: null, lon: null };
 };
@@ -178,10 +178,10 @@ app.get('/api/db-status', async (req: Request, res: Response) => {
   }
 });
 
-// Rota de geocodificação métrica (OpenStreetMap + Regra Brasileira)
+// Rota de geocodificação de precisão
 app.get('/api/geocode', async (req: Request, res: Response) => {
   const { logradouro, numero, cidade, estado, cep } = req.query;
-  const coords = await fetchGeocodingMetric(
+  const coords = await fetchGeocodingHighPrecision(
     logradouro as string,
     numero as string,
     cidade as string,
@@ -221,7 +221,7 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
 
         if (p && p.nome && p.cpf) {
           const imgIndex = Math.floor(Math.random() * 70) + 1;
-          const coords = await fetchGeocodingMetric(p.endereco, p.numero ? String(p.numero) : '100', p.cidade, p.estado, p.cep);
+          const coords = await fetchGeocodingHighPrecision(p.endereco, p.numero ? String(p.numero) : '100', p.cidade, p.estado, p.cep);
 
           pessoaGerada = {
             nome: p.nome,
@@ -252,7 +252,7 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
     const endRandom = ENDERECOS_EXEMPLO[Math.floor(Math.random() * ENDERECOS_EXEMPLO.length)];
     const imgIndex = Math.floor(Math.random() * 70) + 1;
     const numRandom = String(Math.floor(Math.random() * 950) + 15);
-    const coords = await fetchGeocodingMetric(endRandom.logradouro, numRandom, endRandom.cidade, endRandom.estado, endRandom.cep);
+    const coords = await fetchGeocodingHighPrecision(endRandom.logradouro, numRandom, endRandom.cidade, endRandom.estado, endRandom.cep);
 
     pessoaGerada = {
       nome: nomeRandom,
@@ -290,7 +290,7 @@ app.post('/api/colaboradores', async (req: Request, res: Response) => {
     let finalLat = latitude;
     let finalLon = longitude;
     if (!finalLat && (logradouro || cidade || cep)) {
-      const coords = await fetchGeocodingMetric(logradouro, numero, cidade, estado, cep);
+      const coords = await fetchGeocodingHighPrecision(logradouro, numero, cidade, estado, cep);
       finalLat = coords.lat;
       finalLon = coords.lon;
     }
@@ -327,7 +327,7 @@ app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
     let finalLat = latitude;
     let finalLon = longitude;
     if (!finalLat && (logradouro || cidade || cep)) {
-      const coords = await fetchGeocodingMetric(logradouro, numero, cidade, estado, cep);
+      const coords = await fetchGeocodingHighPrecision(logradouro, numero, cidade, estado, cep);
       finalLat = coords.lat;
       finalLon = coords.lon;
     }
