@@ -51,7 +51,6 @@ export const Colaboradores: React.FC = () => {
 
   // Auxiliares
   const [buscandoCep, setBuscandoCep] = useState(false);
-  const [buscandoGeo, setBuscandoGeo] = useState(false);
   const [gerandoPessoa, setGerandoPessoa] = useState(false);
   const [cepError, setCepError] = useState('');
   const [formError, setFormError] = useState('');
@@ -116,7 +115,7 @@ export const Colaboradores: React.FC = () => {
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  // Autogeocodificação no Frontend ao alterar cidade/endereço
+  // Autogeocodificação Métrica no Frontend ao alterar CEP ou número
   const triggerGeocoding = async (streetVal?: string, numVal?: string, cityVal?: string, stateVal?: string, cepVal?: string) => {
     const st = streetVal !== undefined ? streetVal : logradouro;
     const num = numVal !== undefined ? numVal : numero;
@@ -124,9 +123,8 @@ export const Colaboradores: React.FC = () => {
     const uf = stateVal !== undefined ? stateVal : estado;
     const cp = cepVal !== undefined ? cepVal : cep;
 
-    if (!ct && !st) return;
+    if (!ct && !st && !cp) return;
 
-    setBuscandoGeo(true);
     try {
       const queryParams = new URLSearchParams({
         logradouro: st || '',
@@ -144,9 +142,7 @@ export const Colaboradores: React.FC = () => {
         }
       }
     } catch (err) {
-      console.error('Erro de geocodificação:', err);
-    } finally {
-      setBuscandoGeo(false);
+      console.error('Erro na geocodificação métrica:', err);
     }
   };
 
@@ -237,7 +233,7 @@ export const Colaboradores: React.FC = () => {
           setCidade(data.localidade || '');
           setEstado(data.uf || '');
 
-          // Disparar geocodificação de coordenadas
+          // Disparar geocodificação métrica (Passo 1: CEP -> Coordenadas Base)
           triggerGeocoding(data.logradouro, numero, data.localidade, data.uf, formattedCep);
         }
       } catch (err) {
@@ -700,15 +696,15 @@ export const Colaboradores: React.FC = () => {
                       </td>
                     )}
 
-                    {/* Coluna Ações com Botão Quadrado de Mapa (Google Maps + Geoposição) */}
+                    {/* Coluna Ações com Botão Quadrado de Mapa (Google Maps + Geoposição Métrica) */}
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '8px' }}>
                         {/* Botão de Mapa Quadrado nas Ações */}
-                        {(c.cidade || c.logradouro) && (
+                        {(c.cidade || c.logradouro || c.cep) && (
                           <button
                             onClick={() => openGoogleMaps(c)}
                             className="btn-action map"
-                            title={`Abrir localização no Google Maps${c.latitude ? ` (Lat: ${c.latitude}, Long: ${c.longitude})` : ''}`}
+                            title="Abrir localização no Google Maps"
                           >
                             <Map size={15} />
                           </button>
@@ -895,29 +891,21 @@ export const Colaboradores: React.FC = () => {
                 </div>
               </div>
 
-              {/* Endereço Opcional com Geolocalização */}
+              {/* Endereço Opcional com Geolocalização Métrica */}
               <div className="form-section-title" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Endereço <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)' }}>(Opcional)</span></span>
                 
                 {/* Botão de Mapa dentro do Modal de Cadastro / Edição */}
-                {(logradouro || cidade) && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {buscandoGeo && <span style={{ fontSize: '0.75rem', color: '#38bdf8' }}><Loader2 size={12} className="spin" /> Detectando GPS...</span>}
-                    {latitude && longitude && (
-                      <span className="geo-badge" title="Coordenadas detectadas via OpenStreetMap">
-                        GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={openCurrentFormGoogleMaps}
-                      className="btn-action map"
-                      style={{ padding: '4px 10px', fontSize: '0.78rem' }}
-                      title="Abrir este endereço no Google Maps"
-                    >
-                      <Map size={14} /> Ver no Mapa <ExternalLink size={12} />
-                    </button>
-                  </div>
+                {(logradouro || cidade || cep) && (
+                  <button
+                    type="button"
+                    onClick={openCurrentFormGoogleMaps}
+                    className="btn-action map"
+                    style={{ padding: '4px 10px', fontSize: '0.78rem' }}
+                    title="Abrir este endereço no Google Maps"
+                  >
+                    <Map size={14} /> Ver no Mapa <ExternalLink size={12} />
+                  </button>
                 )}
               </div>
 
@@ -960,6 +948,7 @@ export const Colaboradores: React.FC = () => {
                     value={numero}
                     onChange={(e) => {
                       setNumero(e.target.value);
+                      // Ao preencher o número da casa, aplica a geocodificação métrica (Passo 2)
                       triggerGeocoding(logradouro, e.target.value, cidade, estado, cep);
                     }}
                   />

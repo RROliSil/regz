@@ -52,7 +52,7 @@ const initDb = async () => {
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8);
     `);
 
-    console.log('✅ Tabela "colaboradores" verificada e atualizada no PostgreSQL com suporte a Geocodificação (Lat/Long)!');
+    console.log('✅ Tabela "colaboradores" inicializada com suporte a Geolocalização Métrica (CEP + Número)!');
   } catch (error) {
     console.error('⚠️ Erro ao inicializar a tabela "colaboradores":', error);
   }
@@ -92,30 +92,61 @@ const ENDERECOS_EXEMPLO = [
   { cep: '40020-000', logradouro: 'Avenida Sete de Setembro', bairro: 'Vitória', cidade: 'Salvador', estado: 'BA', lat: -12.9714, lon: -38.5014 }
 ];
 
-// Helper para geocodificação via OpenStreetMap Nominatim API
-const fetchGeocoding = async (logradouro?: string, numero?: string, cidade?: string, estado?: string, cep?: string) => {
+// Algoritmo de Geolocalização Métrica Brasileira (CEP + Número da Casa = Distância em Metros + Lado Par/Ímpar)
+const fetchGeocodingMetric = async (logradouro?: string, numeroStr?: string, cidade?: string, estado?: string, cep?: string) => {
   try {
-    const queryParts = [logradouro, numero, cidade, estado, 'Brasil'].filter(Boolean).join(', ');
-    if (!queryParts) return { lat: null, lon: null };
+    // Passo 1: Obter as coordenadas base da rua / CEP
+    let latBase: number | null = null;
+    let lonBase: number | null = null;
 
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryParts)}&limit=1`;
-    const res = await fetch(url, {
-      headers: {
-        'User-Agent': 'RegzApp/1.0 (contact@regz.app)'
-      }
-    });
+    // Tentar primeiro pelo CEP ou Rua + Cidade
+    const queryParts = [cep || logradouro, cidade, estado, 'Brasil'].filter(Boolean).join(', ');
+    if (queryParts) {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryParts)}&limit=1`;
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'RegzApp/1.0 (contact@regz.app)' }
+      });
 
-    if (res.ok) {
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        return {
-          lat: parseFloat(data[0].lat),
-          lon: parseFloat(data[0].lon)
-        };
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          latBase = parseFloat(data[0].lat);
+          lonBase = parseFloat(data[0].lon);
+        }
       }
     }
+
+    if (!latBase || !lonBase) {
+      return { lat: null, lon: null };
+    }
+
+    // Passo 2: Se houver número da casa, aplicar o cálculo métrico (distância em metros do início da rua + lado par/ímpar)
+    const numMeters = numeroStr ? parseInt(numeroStr.replace(/\D/g, ''), 10) : 0;
+    
+    if (!isNaN(numMeters) && numMeters > 0) {
+      // 1 metro em latitude aproximadamente equivale a 0.00000899 graus
+      const metersToLat = 0.00000899;
+      // 1 metro em longitude depende da latitude atual
+      const metersToLon = 0.00000899 / Math.cos(latBase * (Math.PI / 180));
+
+      // Lado da via: Par (Direita, offset positivo) vs Ímpar (Esquerda, offset negativo)
+      const isEven = numMeters % 2 === 0;
+      const sideMultiplier = isEven ? 1 : -1;
+      const sideOffsetMeters = 6 * sideMultiplier; // ~6 metros de afastamento perpendicular da via
+
+      // Deslocamento métrico no sentido da via + lado da rua
+      const latCalculated = latBase + (numMeters * metersToLat * 0.7) + (sideOffsetMeters * metersToLat * 0.3);
+      const lonCalculated = lonBase + (numMeters * metersToLon * 0.7) - (sideOffsetMeters * metersToLon * 0.3);
+
+      return {
+        lat: parseFloat(latCalculated.toFixed(8)),
+        lon: parseFloat(lonCalculated.toFixed(8))
+      };
+    }
+
+    return { lat: latBase, lon: lonBase };
   } catch (err) {
-    console.error('Erro na geocodificação Nominatim:', err);
+    console.error('Erro na geocodificação métrica:', err);
   }
   return { lat: null, lon: null };
 };
@@ -147,12 +178,10 @@ app.get('/api/db-status', async (req: Request, res: Response) => {
   }
 });
 
-// ==========================================
-// ROTA DE GEOCODIFICAÇÃO (OPENSTREETMAP)
-// ==========================================
+// Rota de geocodificação métrica (OpenStreetMap + Regra Brasileira)
 app.get('/api/geocode', async (req: Request, res: Response) => {
   const { logradouro, numero, cidade, estado, cep } = req.query;
-  const coords = await fetchGeocoding(
+  const coords = await fetchGeocodingMetric(
     logradouro as string,
     numero as string,
     cidade as string,
@@ -162,9 +191,7 @@ app.get('/api/geocode', async (req: Request, res: Response) => {
   res.json(coords);
 });
 
-// ==========================================
-// ROTA GERADOR DE PESSOA (4DEVS / FALLBACK)
-// ==========================================
+// Rota gerador de pessoas (4Devs / Fallback)
 app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
   let pessoaGerada: any = null;
 
@@ -194,7 +221,7 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
 
         if (p && p.nome && p.cpf) {
           const imgIndex = Math.floor(Math.random() * 70) + 1;
-          const coords = await fetchGeocoding(p.endereco, p.numero, p.cidade, p.estado, p.cep);
+          const coords = await fetchGeocodingMetric(p.endereco, p.numero ? String(p.numero) : '100', p.cidade, p.estado, p.cep);
 
           pessoaGerada = {
             nome: p.nome,
@@ -225,6 +252,7 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
     const endRandom = ENDERECOS_EXEMPLO[Math.floor(Math.random() * ENDERECOS_EXEMPLO.length)];
     const imgIndex = Math.floor(Math.random() * 70) + 1;
     const numRandom = String(Math.floor(Math.random() * 950) + 15);
+    const coords = await fetchGeocodingMetric(endRandom.logradouro, numRandom, endRandom.cidade, endRandom.estado, endRandom.cep);
 
     pessoaGerada = {
       nome: nomeRandom,
@@ -236,52 +264,13 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
       bairro: endRandom.bairro,
       cidade: endRandom.cidade,
       estado: endRandom.estado,
-      latitude: endRandom.lat,
-      longitude: endRandom.lon,
+      latitude: coords.lat || endRandom.lat,
+      longitude: coords.lon || endRandom.lon,
       foto_url: `https://i.pravatar.cc/300?img=${imgIndex}`
     };
   }
 
   return res.json(pessoaGerada);
-});
-
-// ==========================================
-// ROTAS CRUD DE COLABORADORES
-// ==========================================
-
-// Listar todos os colaboradores
-app.get('/api/colaboradores', async (req: Request, res: Response) => {
-  const { status } = req.query;
-  try {
-    let query = 'SELECT * FROM colaboradores';
-    const values: any[] = [];
-
-    if (status === 'ativos') {
-      query += ' WHERE ativo = true';
-    } else if (status === 'inativos') {
-      query += ' WHERE ativo = false';
-    }
-
-    query += ' ORDER BY id DESC';
-    const result = await pool.query(query, values);
-    res.json(result.rows);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao buscar colaboradores' });
-  }
-});
-
-// Buscar um colaborador por ID
-app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
-  const { id } = req.params;
-  try {
-    const result = await pool.query('SELECT * FROM colaboradores WHERE id = $1', [id]);
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Colaborador não encontrado' });
-    }
-    res.json(result.rows[0]);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao buscar colaborador' });
-  }
 });
 
 // Cadastrar novo colaborador
@@ -298,11 +287,10 @@ app.post('/api/colaboradores', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Este CPF já está cadastrado' });
     }
 
-    // Tentar buscar coordenadas se não informadas
     let finalLat = latitude;
     let finalLon = longitude;
-    if (!finalLat && (logradouro || cidade)) {
-      const coords = await fetchGeocoding(logradouro, numero, cidade, estado, cep);
+    if (!finalLat && (logradouro || cidade || cep)) {
+      const coords = await fetchGeocodingMetric(logradouro, numero, cidade, estado, cep);
       finalLat = coords.lat;
       finalLon = coords.lon;
     }
@@ -321,7 +309,7 @@ app.post('/api/colaboradores', async (req: Request, res: Response) => {
   }
 });
 
-// Atualizar dados de um colaborador
+// Atualizar colaborador
 app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { nome, cpf, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url } = req.body;
@@ -338,8 +326,8 @@ app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
 
     let finalLat = latitude;
     let finalLon = longitude;
-    if (!finalLat && (logradouro || cidade)) {
-      const coords = await fetchGeocoding(logradouro, numero, cidade, estado, cep);
+    if (!finalLat && (logradouro || cidade || cep)) {
+      const coords = await fetchGeocodingMetric(logradouro, numero, cidade, estado, cep);
       finalLat = coords.lat;
       finalLon = coords.lon;
     }
@@ -359,6 +347,27 @@ app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
     res.json(result.rows[0]);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao atualizar colaborador' });
+  }
+});
+
+// Listar colaboradores
+app.get('/api/colaboradores', async (req: Request, res: Response) => {
+  const { status } = req.query;
+  try {
+    let query = 'SELECT * FROM colaboradores';
+    const values: any[] = [];
+
+    if (status === 'ativos') {
+      query += ' WHERE ativo = true';
+    } else if (status === 'inativos') {
+      query += ' WHERE ativo = false';
+    }
+
+    query += ' ORDER BY id DESC';
+    const result = await pool.query(query, values);
+    res.json(result.rows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar colaboradores' });
   }
 });
 
