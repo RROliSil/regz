@@ -299,6 +299,27 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
 }
 
+/* Botão Apenas Ícone Novo Colaborador (Bonequinho com +) */
+.btn-icon-primary {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: #ffffff;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.39);
+}
+
+.btn-icon-primary:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+
 .btn-secondary {
   background: rgba(30, 41, 59, 0.8);
   color: var(--text-muted);
@@ -336,6 +357,28 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(129, 140, 248, 0.3));
   box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
   color: #ffffff;
+}
+
+/* Botão interativo para Google Maps na tabela */
+.btn-maps {
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-maps:hover {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 /* Status Cards & Grid */

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Colaborador } from '../types/colaborador';
-import { UserPlus, Search, Edit2, Trash2, MapPin, Upload, Camera, Info, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, ExternalLink } from 'lucide-react';
 
 interface ColumnConfig {
   foto: boolean;
@@ -82,6 +82,17 @@ export const Colaboradores: React.FC = () => {
     fetchColaboradores();
   }, []);
 
+  // Abrir o endereço do colaborador no Google Maps em nova aba
+  const openGoogleMaps = (c: Colaborador) => {
+    const addressQuery = [c.logradouro, c.numero ? `nº ${c.numero}` : '', c.bairro, c.cidade, c.estado, c.cep]
+      .filter(Boolean)
+      .join(', ');
+    
+    if (!addressQuery) return;
+    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressQuery)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
   // Função para Gerar Pessoa de Teste via API 4Devs
   const handleGerarPessoa = async (autoSave: boolean = false) => {
     setGerandoPessoa(true);
@@ -91,7 +102,6 @@ export const Colaboradores: React.FC = () => {
         const p = await res.json();
         
         if (autoSave) {
-          // Auto-cadastro direto (Shift + Clique)
           const postRes = await fetch('/api/colaboradores', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -104,7 +114,6 @@ export const Colaboradores: React.FC = () => {
             alert(errData.error || 'Erro ao auto-cadastrar');
           }
         } else {
-          // Preencher formulário e abrir modal
           resetForm();
           setNome(p.nome || '');
           setCpf(p.cpf || '');
@@ -127,7 +136,6 @@ export const Colaboradores: React.FC = () => {
   };
 
   const handleRobotButtonClick = (e: React.MouseEvent) => {
-    // Se o usuário segurar Shift + Clique no robô, gera e salva direto no banco!
     if (e.shiftKey) {
       handleGerarPessoa(true);
     } else {
@@ -405,7 +413,7 @@ export const Colaboradores: React.FC = () => {
   return (
     <div className="page-content">
       {/* Header da Página */}
-      <header className="page-header">
+      <header className="page-header" style={{ marginBottom: '20px' }}>
         <div>
           <h1 className="page-title">
             Gestão de <span className="text-gradient">Colaboradores</span>
@@ -414,43 +422,47 @@ export const Colaboradores: React.FC = () => {
             Cadastre e gerencie a equipe de colaboradores com foto ultra-leve e inativação segura.
           </p>
         </div>
-        
-        {/* Botão Novo Colaborador e Botão Robozinho 4Devs ao lado */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button onClick={openNewModal} className="btn-primary">
-            <UserPlus size={18} />
-            Novo Colaborador
+      </header>
+
+      {/* Sub-Abas de Navegação e Botões de Ícones no canto direito final */}
+      <div className="sub-tabs-container" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button
+            className={`sub-tab ${activeSubTab === 'ativos' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('ativos')}
+          >
+            Colaboradores Ativos
+            <span className="sub-tab-badge">{colaboradoresAtivos.length}</span>
           </button>
 
-          {/* Botão Robozinho 4Devs (sem texto) */}
+          <button
+            className={`sub-tab ${activeSubTab === 'inativos' ? 'active' : ''}`}
+            onClick={() => setActiveSubTab('inativos')}
+          >
+            Inativados
+            <span className="sub-tab-badge danger">{colaboradoresInativos.length}</span>
+          </button>
+        </div>
+
+        {/* Botões de Ação no canto direito (Novo Colaborador apenas ícone + Robozinho) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={openNewModal}
+            className="btn-icon-primary"
+            title="Novo Colaborador"
+          >
+            <UserPlus size={18} />
+          </button>
+
           <button
             onClick={handleRobotButtonClick}
             className="btn-robot"
-            title="Gerar Colaborador de Teste (4Devs) | Dica: Segure Shift para cadastrar direto"
+            title="Gerar Colaborador de Teste (4Devs) | Segure Shift para cadastrar direto"
             disabled={gerandoPessoa}
           >
             <Bot size={20} className={gerandoPessoa ? 'spin' : ''} />
           </button>
         </div>
-      </header>
-
-      {/* Sub-Abas de Navegação (Ativos vs Inativados) */}
-      <div className="sub-tabs-container" style={{ marginBottom: '24px' }}>
-        <button
-          className={`sub-tab ${activeSubTab === 'ativos' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('ativos')}
-        >
-          Colaboradores Ativos
-          <span className="sub-tab-badge">{colaboradoresAtivos.length}</span>
-        </button>
-
-        <button
-          className={`sub-tab ${activeSubTab === 'inativos' ? 'active' : ''}`}
-          onClick={() => setActiveSubTab('inativos')}
-        >
-          Inativados
-          <span className="sub-tab-badge danger">{colaboradoresInativos.length}</span>
-        </button>
       </div>
 
       {/* Control Bar (Busca, Seletor de Colunas e Contadores) */}
@@ -552,7 +564,6 @@ export const Colaboradores: React.FC = () => {
                   <tr key={c.id} className={c.ativo === false ? 'row-inactive' : ''}>
                     {visibleColumns.foto && (
                       <td>
-                        {/* Avatar com Hover Interativo para Troca de Foto */}
                         <div 
                           className="avatar-hover-container" 
                           onClick={() => openQuickPhotoModal(c)}
@@ -604,10 +615,16 @@ export const Colaboradores: React.FC = () => {
 
                     {visibleColumns.cidade && (
                       <td>
-                        {c.cidade ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.85rem' }}>
-                            <MapPin size={14} color="#38bdf8" /> {c.cidade}{c.estado ? `/${c.estado}` : ''}
-                          </span>
+                        {c.cidade || c.logradouro ? (
+                          <button
+                            onClick={() => openGoogleMaps(c)}
+                            className="btn-maps"
+                            title="Abrir no Google Maps em nova aba"
+                          >
+                            <MapPin size={14} color="#38bdf8" />
+                            <span>{c.cidade || 'Ver no mapa'}{c.estado ? `/${c.estado}` : ''}</span>
+                            <ExternalLink size={12} style={{ opacity: 0.7 }} />
+                          </button>
                         ) : (
                           <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>-</span>
                         )}
@@ -837,15 +854,10 @@ export const Colaboradores: React.FC = () => {
 
               <div className="form-grid-3">
                 <div className="form-group">
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    Número da Casa
-                    <span className="tooltip-icon" title="No Brasil, o número da casa indica a distância em metros a partir do início da rua.">
-                      <Info size={14} color="#38bdf8" />
-                    </span>
-                  </label>
+                  <label>Número</label>
                   <input
                     type="text"
-                    placeholder="Ex: 120 (Distância do início)"
+                    placeholder="Número"
                     value={numero}
                     onChange={(e) => setNumero(e.target.value)}
                   />
