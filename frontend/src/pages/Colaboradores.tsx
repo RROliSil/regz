@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Colaborador } from '../types/colaborador';
-import { UserPlus, Search, Edit2, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, ExternalLink } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink } from 'lucide-react';
 
 interface ColumnConfig {
   foto: boolean;
@@ -45,10 +45,13 @@ export const Colaboradores: React.FC = () => {
   const [bairro, setBairro] = useState('');
   const [cidade, setCidade] = useState('');
   const [estado, setEstado] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [fotoUrl, setFotoUrl] = useState('');
 
   // Auxiliares
   const [buscandoCep, setBuscandoCep] = useState(false);
+  const [buscandoGeo, setBuscandoGeo] = useState(false);
   const [gerandoPessoa, setGerandoPessoa] = useState(false);
   const [cepError, setCepError] = useState('');
   const [formError, setFormError] = useState('');
@@ -82,15 +85,69 @@ export const Colaboradores: React.FC = () => {
     fetchColaboradores();
   }, []);
 
-  // Abrir o endereço do colaborador no Google Maps em nova aba
+  // Abrir o endereço do colaborador no Google Maps em nova aba (usando Lat/Long se disponível)
   const openGoogleMaps = (c: Colaborador) => {
-    const addressQuery = [c.logradouro, c.numero ? `nº ${c.numero}` : '', c.bairro, c.cidade, c.estado, c.cep]
-      .filter(Boolean)
-      .join(', ');
-    
-    if (!addressQuery) return;
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressQuery)}`;
+    let url = '';
+    if (c.latitude && c.longitude) {
+      url = `https://www.google.com/maps/search/?api=1&query=${c.latitude},${c.longitude}`;
+    } else {
+      const addressQuery = [c.logradouro, c.numero ? `nº ${c.numero}` : '', c.bairro, c.cidade, c.estado, c.cep]
+        .filter(Boolean)
+        .join(', ');
+      
+      if (!addressQuery) return;
+      url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressQuery)}`;
+    }
     window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  // Abrir o endereço atual do formulário no Google Maps
+  const openCurrentFormGoogleMaps = () => {
+    let url = '';
+    if (latitude && longitude) {
+      url = `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+    } else {
+      const addressQuery = [logradouro, numero ? `nº ${numero}` : '', bairro, cidade, estado, cep]
+        .filter(Boolean)
+        .join(', ');
+      if (!addressQuery) return;
+      url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addressQuery)}`;
+    }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  // Autogeocodificação no Frontend ao alterar cidade/endereço
+  const triggerGeocoding = async (streetVal?: string, numVal?: string, cityVal?: string, stateVal?: string, cepVal?: string) => {
+    const st = streetVal !== undefined ? streetVal : logradouro;
+    const num = numVal !== undefined ? numVal : numero;
+    const ct = cityVal !== undefined ? cityVal : cidade;
+    const uf = stateVal !== undefined ? stateVal : estado;
+    const cp = cepVal !== undefined ? cepVal : cep;
+
+    if (!ct && !st) return;
+
+    setBuscandoGeo(true);
+    try {
+      const queryParams = new URLSearchParams({
+        logradouro: st || '',
+        numero: num || '',
+        cidade: ct || '',
+        estado: uf || '',
+        cep: cp || ''
+      });
+      const res = await fetch(`/api/geocode?${queryParams.toString()}`);
+      if (res.ok) {
+        const coords = await res.json();
+        if (coords.lat && coords.lon) {
+          setLatitude(coords.lat);
+          setLongitude(coords.lon);
+        }
+      }
+    } catch (err) {
+      console.error('Erro de geocodificação:', err);
+    } finally {
+      setBuscandoGeo(false);
+    }
   };
 
   // Função para Gerar Pessoa de Teste via API 4Devs
@@ -124,6 +181,8 @@ export const Colaboradores: React.FC = () => {
           setBairro(p.bairro || '');
           setCidade(p.cidade || '');
           setEstado(p.estado || '');
+          setLatitude(p.latitude || null);
+          setLongitude(p.longitude || null);
           setFotoUrl(p.foto_url || '');
           setModalOpen(true);
         }
@@ -155,7 +214,7 @@ export const Colaboradores: React.FC = () => {
     setCpf(value);
   };
 
-  // Máscara e Busca Automática de CEP via ViaCEP API
+  // Máscara e Busca Automática de CEP via ViaCEP API + OpenStreetMap Geocoding
   const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, '');
     if (value.length > 8) value = value.slice(0, 8);
@@ -177,6 +236,9 @@ export const Colaboradores: React.FC = () => {
           setBairro(data.bairro || '');
           setCidade(data.localidade || '');
           setEstado(data.uf || '');
+
+          // Disparar geocodificação de coordenadas
+          triggerGeocoding(data.logradouro, numero, data.localidade, data.uf, formattedCep);
         }
       } catch (err) {
         setCepError('Erro ao consultar CEP');
@@ -280,6 +342,8 @@ export const Colaboradores: React.FC = () => {
     setBairro('');
     setCidade('');
     setEstado('');
+    setLatitude(null);
+    setLongitude(null);
     setFotoUrl('');
     setFormError('');
     setCepError('');
@@ -301,6 +365,8 @@ export const Colaboradores: React.FC = () => {
     setBairro(c.bairro || '');
     setCidade(c.cidade || '');
     setEstado(c.estado || '');
+    setLatitude(c.latitude ? Number(c.latitude) : null);
+    setLongitude(c.longitude ? Number(c.longitude) : null);
     setFotoUrl(c.foto_url || '');
     setFormError('');
     setModalOpen(true);
@@ -332,6 +398,8 @@ export const Colaboradores: React.FC = () => {
       bairro: bairro.trim() || null,
       cidade: cidade.trim() || null,
       estado: estado.trim() || null,
+      latitude: latitude || null,
+      longitude: longitude || null,
       foto_url: fotoUrl || null
     };
 
@@ -419,7 +487,7 @@ export const Colaboradores: React.FC = () => {
             Gestão de <span className="text-gradient">Colaboradores</span>
           </h1>
           <p className="page-description">
-            Cadastre e gerencie a equipe de colaboradores com foto ultra-leve e inativação segura.
+            Cadastre e gerencie a equipe de colaboradores com foto ultra-leve, geolocalização e inativação segura.
           </p>
         </div>
       </header>
@@ -613,18 +681,13 @@ export const Colaboradores: React.FC = () => {
                       </td>
                     )}
 
+                    {/* Coluna Cidade / UF com texto limpo */}
                     {visibleColumns.cidade && (
                       <td>
-                        {c.cidade || c.logradouro ? (
-                          <button
-                            onClick={() => openGoogleMaps(c)}
-                            className="btn-maps"
-                            title="Abrir no Google Maps em nova aba"
-                          >
-                            <MapPin size={14} color="#38bdf8" />
-                            <span>{c.cidade || 'Ver no mapa'}{c.estado ? `/${c.estado}` : ''}</span>
-                            <ExternalLink size={12} style={{ opacity: 0.7 }} />
-                          </button>
+                        {c.cidade ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', color: 'var(--text-main)' }}>
+                            <MapPin size={14} color="#38bdf8" /> {c.cidade}{c.estado ? `/${c.estado}` : ''}
+                          </span>
                         ) : (
                           <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>-</span>
                         )}
@@ -637,8 +700,20 @@ export const Colaboradores: React.FC = () => {
                       </td>
                     )}
 
+                    {/* Coluna Ações com Botão Quadrado de Mapa (Google Maps + Geoposição) */}
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '8px' }}>
+                        {/* Botão de Mapa Quadrado nas Ações */}
+                        {(c.cidade || c.logradouro) && (
+                          <button
+                            onClick={() => openGoogleMaps(c)}
+                            className="btn-action map"
+                            title={`Abrir localização no Google Maps${c.latitude ? ` (Lat: ${c.latitude}, Long: ${c.longitude})` : ''}`}
+                          >
+                            <Map size={15} />
+                          </button>
+                        )}
+
                         {c.ativo !== false ? (
                           <>
                             <button
@@ -820,9 +895,30 @@ export const Colaboradores: React.FC = () => {
                 </div>
               </div>
 
-              {/* Endereço Opcional */}
-              <div className="form-section-title" style={{ marginTop: '16px' }}>
-                Endereço <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)' }}>(Opcional)</span>
+              {/* Endereço Opcional com Geolocalização */}
+              <div className="form-section-title" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Endereço <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)' }}>(Opcional)</span></span>
+                
+                {/* Botão de Mapa dentro do Modal de Cadastro / Edição */}
+                {(logradouro || cidade) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {buscandoGeo && <span style={{ fontSize: '0.75rem', color: '#38bdf8' }}><Loader2 size={12} className="spin" /> Detectando GPS...</span>}
+                    {latitude && longitude && (
+                      <span className="geo-badge" title="Coordenadas detectadas via OpenStreetMap">
+                        GPS: {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={openCurrentFormGoogleMaps}
+                      className="btn-action map"
+                      style={{ padding: '4px 10px', fontSize: '0.78rem' }}
+                      title="Abrir este endereço no Google Maps"
+                    >
+                      <Map size={14} /> Ver no Mapa <ExternalLink size={12} />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="form-grid-3">
@@ -847,7 +943,10 @@ export const Colaboradores: React.FC = () => {
                     type="text"
                     placeholder="Auto-preenchido pelo CEP"
                     value={logradouro}
-                    onChange={(e) => setLogradouro(e.target.value)}
+                    onChange={(e) => {
+                      setLogradouro(e.target.value);
+                      triggerGeocoding(e.target.value, numero, cidade, estado, cep);
+                    }}
                   />
                 </div>
               </div>
@@ -859,7 +958,10 @@ export const Colaboradores: React.FC = () => {
                     type="text"
                     placeholder="Número"
                     value={numero}
-                    onChange={(e) => setNumero(e.target.value)}
+                    onChange={(e) => {
+                      setNumero(e.target.value);
+                      triggerGeocoding(logradouro, e.target.value, cidade, estado, cep);
+                    }}
                   />
                 </div>
 
@@ -891,7 +993,10 @@ export const Colaboradores: React.FC = () => {
                     type="text"
                     placeholder="Cidade"
                     value={cidade}
-                    onChange={(e) => setCidade(e.target.value)}
+                    onChange={(e) => {
+                      setCidade(e.target.value);
+                      triggerGeocoding(logradouro, numero, e.target.value, estado, cep);
+                    }}
                   />
                 </div>
 
@@ -901,7 +1006,11 @@ export const Colaboradores: React.FC = () => {
                     type="text"
                     placeholder="UF"
                     value={estado}
-                    onChange={(e) => setEstado(e.target.value.toUpperCase())}
+                    onChange={(e) => {
+                      const uf = e.target.value.toUpperCase();
+                      setEstado(uf);
+                      triggerGeocoding(logradouro, numero, cidade, uf, cep);
+                    }}
                     maxLength={2}
                   />
                 </div>

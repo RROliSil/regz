@@ -359,28 +359,6 @@ h1, h2, h3, h4, h5, h6 {
   color: #ffffff;
 }
 
-/* Botão interativo para Google Maps na tabela */
-.btn-maps {
-  background: rgba(56, 189, 248, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  color: #38bdf8;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-}
-
-.btn-maps:hover {
-  background: rgba(56, 189, 248, 0.25);
-  border-color: rgba(56, 189, 248, 0.5);
-  color: #ffffff;
-  transform: translateY(-1px);
-}
-
 /* Status Cards & Grid */
 .status-grid {
   display: grid;
@@ -588,6 +566,7 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 3rem;
 }
 
+/* Botões de Ação na Tabela */
 .btn-action {
   padding: 8px 12px;
   border-radius: 8px;
@@ -598,6 +577,18 @@ h1, h2, h3, h4, h5, h6 {
   gap: 6px;
   font-size: 0.85rem;
   transition: all 0.2s ease;
+}
+
+.btn-action.map {
+  background: rgba(129, 140, 248, 0.15);
+  color: #a5b4fc;
+  border: 1px solid rgba(129, 140, 248, 0.3);
+}
+
+.btn-action.map:hover {
+  background: rgba(129, 140, 248, 0.3);
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .btn-action.edit {
@@ -628,6 +619,17 @@ h1, h2, h3, h4, h5, h6 {
 
 .btn-action.reactivate:hover {
   background: rgba(52, 211, 153, 0.3);
+}
+
+/* Badge Sutil de Coordenadas GPS */
+.geo-badge {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-family: monospace;
 }
 
 /* Modal Styling */

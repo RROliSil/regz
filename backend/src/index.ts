@@ -38,6 +38,8 @@ const initDb = async () => {
         bairro VARCHAR(255),
         cidade VARCHAR(255),
         estado VARCHAR(2),
+        latitude NUMERIC(10,8),
+        longitude NUMERIC(11,8),
         foto_url TEXT,
         ativo BOOLEAN DEFAULT true,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -46,9 +48,11 @@ const initDb = async () => {
     
     await pool.query(`
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true;
+      ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,8);
+      ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8);
     `);
 
-    console.log('✅ Tabela "colaboradores" verificada e atualizada no PostgreSQL!');
+    console.log('✅ Tabela "colaboradores" verificada e atualizada no PostgreSQL com suporte a Geocodificação (Lat/Long)!');
   } catch (error) {
     console.error('⚠️ Erro ao inicializar a tabela "colaboradores":', error);
   }
@@ -80,13 +84,41 @@ const NOMES_EXEMPLO = [
 ];
 
 const ENDERECOS_EXEMPLO = [
-  { cep: '01001-000', logradouro: 'Praça da Sé', bairro: 'Sé', cidade: 'São Paulo', estado: 'SP' },
-  { cep: '20040-002', logradouro: 'Rua Primeiro de Março', bairro: 'Centro', cidade: 'Rio de Janeiro', estado: 'RJ' },
-  { cep: '30130-010', logradouro: 'Avenida Afonso Pena', bairro: 'Centro', cidade: 'Belo Horizonte', estado: 'MG' },
-  { cep: '80010-000', logradouro: 'Rua XV de Novembro', bairro: 'Centro', cidade: 'Curitiba', estado: 'PR' },
-  { cep: '90010-150', logradouro: 'Avenida dos Andradas', bairro: 'Centro Histórico', cidade: 'Porto Alegre', estado: 'RS' },
-  { cep: '40020-000', logradouro: 'Avenida Sete de Setembro', bairro: 'Vitória', cidade: 'Salvador', estado: 'BA' }
+  { cep: '01001-000', logradouro: 'Praça da Sé', bairro: 'Sé', cidade: 'São Paulo', estado: 'SP', lat: -23.5505, lon: -46.6333 },
+  { cep: '20040-002', logradouro: 'Rua Primeiro de Março', bairro: 'Centro', cidade: 'Rio de Janeiro', estado: 'RJ', lat: -22.9035, lon: -43.1729 },
+  { cep: '30130-010', logradouro: 'Avenida Afonso Pena', bairro: 'Centro', cidade: 'Belo Horizonte', estado: 'MG', lat: -19.9208, lon: -43.9378 },
+  { cep: '80010-000', logradouro: 'Rua XV de Novembro', bairro: 'Centro', cidade: 'Curitiba', estado: 'PR', lat: -25.4284, lon: -49.2733 },
+  { cep: '90010-150', logradouro: 'Avenida dos Andradas', bairro: 'Centro Histórico', cidade: 'Porto Alegre', estado: 'RS', lat: -30.0346, lon: -51.2177 },
+  { cep: '40020-000', logradouro: 'Avenida Sete de Setembro', bairro: 'Vitória', cidade: 'Salvador', estado: 'BA', lat: -12.9714, lon: -38.5014 }
 ];
+
+// Helper para geocodificação via OpenStreetMap Nominatim API
+const fetchGeocoding = async (logradouro?: string, numero?: string, cidade?: string, estado?: string, cep?: string) => {
+  try {
+    const queryParts = [logradouro, numero, cidade, estado, 'Brasil'].filter(Boolean).join(', ');
+    if (!queryParts) return { lat: null, lon: null };
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryParts)}&limit=1`;
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'RegzApp/1.0 (contact@regz.app)'
+      }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return {
+          lat: parseFloat(data[0].lat),
+          lon: parseFloat(data[0].lon)
+        };
+      }
+    }
+  } catch (err) {
+    console.error('Erro na geocodificação Nominatim:', err);
+  }
+  return { lat: null, lon: null };
+};
 
 // Health check endpoint
 app.get('/api/health', (req: Request, res: Response) => {
@@ -116,11 +148,27 @@ app.get('/api/db-status', async (req: Request, res: Response) => {
 });
 
 // ==========================================
+// ROTA DE GEOCODIFICAÇÃO (OPENSTREETMAP)
+// ==========================================
+app.get('/api/geocode', async (req: Request, res: Response) => {
+  const { logradouro, numero, cidade, estado, cep } = req.query;
+  const coords = await fetchGeocoding(
+    logradouro as string,
+    numero as string,
+    cidade as string,
+    estado as string,
+    cep as string
+  );
+  res.json(coords);
+});
+
+// ==========================================
 // ROTA GERADOR DE PESSOA (4DEVS / FALLBACK)
 // ==========================================
 app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
+  let pessoaGerada: any = null;
+
   try {
-    // Tentar consultar a API pública do 4Devs
     const params = new URLSearchParams({
       acao: 'gerar_pessoa',
       sexo: 'I',
@@ -146,7 +194,9 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
 
         if (p && p.nome && p.cpf) {
           const imgIndex = Math.floor(Math.random() * 70) + 1;
-          return res.json({
+          const coords = await fetchGeocoding(p.endereco, p.numero, p.cidade, p.estado, p.cep);
+
+          pessoaGerada = {
             nome: p.nome,
             cpf: p.cpf,
             cep: p.cep || '01001-000',
@@ -156,43 +206,50 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
             bairro: p.bairro || 'Centro',
             cidade: p.cidade || 'São Paulo',
             estado: p.estado || 'SP',
+            latitude: coords.lat || -23.5505,
+            longitude: coords.lon || -46.6333,
             foto_url: `https://i.pravatar.cc/300?img=${imgIndex}`
-          });
+          };
         }
       } catch (e) {
-        // Fallback se o 4Devs retornar formato não-JSON
+        // Fallback
       }
     }
   } catch (err) {
     console.log('4Devs API inacessível, utilizando gerador nativo...');
   }
 
-  // Fallback seguro caso a API 4Devs esteja instável
-  const nomeRandom = NOMES_EXEMPLO[Math.floor(Math.random() * NOMES_EXEMPLO.length)];
-  const cpfRandom = gerarCpfValido();
-  const endRandom = ENDERECOS_EXEMPLO[Math.floor(Math.random() * ENDERECOS_EXEMPLO.length)];
-  const imgIndex = Math.floor(Math.random() * 70) + 1;
-  const numRandom = String(Math.floor(Math.random() * 950) + 15);
+  if (!pessoaGerada) {
+    const nomeRandom = NOMES_EXEMPLO[Math.floor(Math.random() * NOMES_EXEMPLO.length)];
+    const cpfRandom = gerarCpfValido();
+    const endRandom = ENDERECOS_EXEMPLO[Math.floor(Math.random() * ENDERECOS_EXEMPLO.length)];
+    const imgIndex = Math.floor(Math.random() * 70) + 1;
+    const numRandom = String(Math.floor(Math.random() * 950) + 15);
 
-  return res.json({
-    nome: nomeRandom,
-    cpf: cpfRandom,
-    cep: endRandom.cep,
-    logradouro: endRandom.logradouro,
-    numero: numRandom,
-    complemento: '',
-    bairro: endRandom.bairro,
-    cidade: endRandom.cidade,
-    estado: endRandom.estado,
-    foto_url: `https://i.pravatar.cc/300?img=${imgIndex}`
-  });
+    pessoaGerada = {
+      nome: nomeRandom,
+      cpf: cpfRandom,
+      cep: endRandom.cep,
+      logradouro: endRandom.logradouro,
+      numero: numRandom,
+      complemento: '',
+      bairro: endRandom.bairro,
+      cidade: endRandom.cidade,
+      estado: endRandom.estado,
+      latitude: endRandom.lat,
+      longitude: endRandom.lon,
+      foto_url: `https://i.pravatar.cc/300?img=${imgIndex}`
+    };
+  }
+
+  return res.json(pessoaGerada);
 });
 
 // ==========================================
 // ROTAS CRUD DE COLABORADORES
 // ==========================================
 
-// Listar todos os colaboradores (com suporte a filtro status=ativos|inativos)
+// Listar todos os colaboradores
 app.get('/api/colaboradores', async (req: Request, res: Response) => {
   const { status } = req.query;
   try {
@@ -229,7 +286,7 @@ app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
 
 // Cadastrar novo colaborador
 app.post('/api/colaboradores', async (req: Request, res: Response) => {
-  const { nome, cpf, cep, logradouro, numero, complemento, bairro, cidade, estado, foto_url } = req.body;
+  const { nome, cpf, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url } = req.body;
 
   if (!nome || !cpf) {
     return res.status(400).json({ error: 'Campos Nome e CPF são obrigatórios' });
@@ -241,12 +298,21 @@ app.post('/api/colaboradores', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Este CPF já está cadastrado' });
     }
 
+    // Tentar buscar coordenadas se não informadas
+    let finalLat = latitude;
+    let finalLon = longitude;
+    if (!finalLat && (logradouro || cidade)) {
+      const coords = await fetchGeocoding(logradouro, numero, cidade, estado, cep);
+      finalLat = coords.lat;
+      finalLon = coords.lon;
+    }
+
     const result = await pool.query(
       `INSERT INTO colaboradores 
-      (nome, cpf, cep, logradouro, numero, complemento, bairro, cidade, estado, foto_url, ativo) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true) 
+      (nome, cpf, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, ativo) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true) 
       RETURNING *`,
-      [nome, cpf, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, foto_url || null]
+      [nome, cpf, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null]
     );
 
     res.status(201).json(result.rows[0]);
@@ -258,7 +324,7 @@ app.post('/api/colaboradores', async (req: Request, res: Response) => {
 // Atualizar dados de um colaborador
 app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { nome, cpf, cep, logradouro, numero, complemento, bairro, cidade, estado, foto_url } = req.body;
+  const { nome, cpf, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url } = req.body;
 
   if (!nome || !cpf) {
     return res.status(400).json({ error: 'Campos Nome e CPF são obrigatórios' });
@@ -270,12 +336,20 @@ app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Este CPF pertence a outro colaborador' });
     }
 
+    let finalLat = latitude;
+    let finalLon = longitude;
+    if (!finalLat && (logradouro || cidade)) {
+      const coords = await fetchGeocoding(logradouro, numero, cidade, estado, cep);
+      finalLat = coords.lat;
+      finalLon = coords.lon;
+    }
+
     const result = await pool.query(
       `UPDATE colaboradores 
-       SET nome = $1, cpf = $2, cep = $3, logradouro = $4, numero = $5, complemento = $6, bairro = $7, cidade = $8, estado = $9, foto_url = $10 
-       WHERE id = $11 
+       SET nome = $1, cpf = $2, cep = $3, logradouro = $4, numero = $5, complemento = $6, bairro = $7, cidade = $8, estado = $9, latitude = $10, longitude = $11, foto_url = $12 
+       WHERE id = $13 
        RETURNING *`,
-      [nome, cpf, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, foto_url || null, id]
+      [nome, cpf, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null, id]
     );
 
     if (result.rows.length === 0) {
@@ -338,7 +412,8 @@ app.get('/', (req: Request, res: Response) => {
       health: '/api/health',
       dbStatus: '/api/db-status',
       colaboradores: '/api/colaboradores',
-      gerarPessoa: '/api/gerar-pessoa'
+      gerarPessoa: '/api/gerar-pessoa',
+      geocode: '/api/geocode'
     }
   });
 });
