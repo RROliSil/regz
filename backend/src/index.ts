@@ -44,7 +44,6 @@ const initDb = async () => {
       );
     `);
     
-    // Migration para garantir que a coluna 'ativo' exista em tabelas já criadas
     await pool.query(`
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true;
     `);
@@ -56,6 +55,38 @@ const initDb = async () => {
 };
 
 initDb();
+
+// Funções auxiliares para gerador nativo de CPF e pessoas brasileiras
+const gerarCpfValido = (): string => {
+  const randDigit = () => Math.floor(Math.random() * 9);
+  const n = Array.from({ length: 9 }, randDigit);
+
+  let d1 = n.reduce((acc, val, i) => acc + val * (10 - i), 0);
+  d1 = 11 - (d1 % 11);
+  if (d1 >= 10) d1 = 0;
+
+  let d2 = [...n, d1].reduce((acc, val, i) => acc + val * (11 - i), 0);
+  d2 = 11 - (d2 % 11);
+  if (d2 >= 10) d2 = 0;
+
+  return `${n.slice(0,3).join('')}.${n.slice(3,6).join('')}.${n.slice(6,9).join('')}-${d1}${d2}`;
+};
+
+const NOMES_EXEMPLO = [
+  'Gabriel Silveira Santos', 'Mariana Oliveira Costa', 'Lucas Fernandes Lima',
+  'Beatriz Alves Rocha', 'Matheus Henrique Ribeiro', 'Camila Martins Souza',
+  'Rafael Barbosa de Melo', 'Juliana Castro Ferreira', 'Thiago Mendes de Araujo',
+  'Larissa Machado Cardoso', 'Felipe Eduardo Peixoto', 'Amanda Reis Guimarães'
+];
+
+const ENDERECOS_EXEMPLO = [
+  { cep: '01001-000', logradouro: 'Praça da Sé', bairro: 'Sé', cidade: 'São Paulo', estado: 'SP' },
+  { cep: '20040-002', logradouro: 'Rua Primeiro de Março', bairro: 'Centro', cidade: 'Rio de Janeiro', estado: 'RJ' },
+  { cep: '30130-010', logradouro: 'Avenida Afonso Pena', bairro: 'Centro', cidade: 'Belo Horizonte', estado: 'MG' },
+  { cep: '80010-000', logradouro: 'Rua XV de Novembro', bairro: 'Centro', cidade: 'Curitiba', estado: 'PR' },
+  { cep: '90010-150', logradouro: 'Avenida dos Andradas', bairro: 'Centro Histórico', cidade: 'Porto Alegre', estado: 'RS' },
+  { cep: '40020-000', logradouro: 'Avenida Sete de Setembro', bairro: 'Vitória', cidade: 'Salvador', estado: 'BA' }
+];
 
 // Health check endpoint
 app.get('/api/health', (req: Request, res: Response) => {
@@ -82,6 +113,79 @@ app.get('/api/db-status', async (req: Request, res: Response) => {
       error: error.message || 'Falha na conexão com o banco de dados'
     });
   }
+});
+
+// ==========================================
+// ROTA GERADOR DE PESSOA (4DEVS / FALLBACK)
+// ==========================================
+app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
+  try {
+    // Tentar consultar a API pública do 4Devs
+    const params = new URLSearchParams({
+      acao: 'gerar_pessoa',
+      sexo: 'I',
+      pontuacao: 'S',
+      idade: '0',
+      cep_estado: '',
+      cep_cidade: ''
+    });
+
+    const response = await fetch('https://www.4devs.com.br/ferramentas_online.php', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params.toString()
+    });
+
+    if (response.ok) {
+      const text = await response.text();
+      try {
+        const data = JSON.parse(text);
+        const p = Array.isArray(data) ? data[0] : data;
+
+        if (p && p.nome && p.cpf) {
+          const imgIndex = Math.floor(Math.random() * 70) + 1;
+          return res.json({
+            nome: p.nome,
+            cpf: p.cpf,
+            cep: p.cep || '01001-000',
+            logradouro: p.endereco || 'Avenida Principal',
+            numero: p.numero ? String(p.numero) : String(Math.floor(Math.random() * 800) + 20),
+            complemento: p.complemento || '',
+            bairro: p.bairro || 'Centro',
+            cidade: p.cidade || 'São Paulo',
+            estado: p.estado || 'SP',
+            foto_url: `https://i.pravatar.cc/300?img=${imgIndex}`
+          });
+        }
+      } catch (e) {
+        // Fallback se o 4Devs retornar formato não-JSON
+      }
+    }
+  } catch (err) {
+    console.log('4Devs API inacessível, utilizando gerador nativo...');
+  }
+
+  // Fallback seguro caso a API 4Devs esteja instável
+  const nomeRandom = NOMES_EXEMPLO[Math.floor(Math.random() * NOMES_EXEMPLO.length)];
+  const cpfRandom = gerarCpfValido();
+  const endRandom = ENDERECOS_EXEMPLO[Math.floor(Math.random() * ENDERECOS_EXEMPLO.length)];
+  const imgIndex = Math.floor(Math.random() * 70) + 1;
+  const numRandom = String(Math.floor(Math.random() * 950) + 15);
+
+  return res.json({
+    nome: nomeRandom,
+    cpf: cpfRandom,
+    cep: endRandom.cep,
+    logradouro: endRandom.logradouro,
+    numero: numRandom,
+    complemento: '',
+    bairro: endRandom.bairro,
+    cidade: endRandom.cidade,
+    estado: endRandom.estado,
+    foto_url: `https://i.pravatar.cc/300?img=${imgIndex}`
+  });
 });
 
 // ==========================================
@@ -132,7 +236,6 @@ app.post('/api/colaboradores', async (req: Request, res: Response) => {
   }
 
   try {
-    // Verificar se o CPF já está cadastrado
     const existingCpf = await pool.query('SELECT id FROM colaboradores WHERE cpf = $1', [cpf]);
     if (existingCpf.rows.length > 0) {
       return res.status(400).json({ error: 'Este CPF já está cadastrado' });
@@ -234,7 +337,8 @@ app.get('/', (req: Request, res: Response) => {
     endpoints: {
       health: '/api/health',
       dbStatus: '/api/db-status',
-      colaboradores: '/api/colaboradores'
+      colaboradores: '/api/colaboradores',
+      gerarPessoa: '/api/gerar-pessoa'
     }
   });
 });

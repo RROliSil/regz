@@ -315,6 +315,29 @@ h1, h2, h3, h4, h5, h6 {
   color: #ffffff;
 }
 
+/* Botão Robozinho 4Devs (sem texto) */
+.btn-robot {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(129, 140, 248, 0.15));
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.2);
+}
+
+.btn-robot:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.05);
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(129, 140, 248, 0.3));
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+  color: #ffffff;
+}
+
 /* Status Cards & Grid */
 .status-grid {
   display: grid;

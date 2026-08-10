@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Colaborador } from '../types/colaborador';
-import { UserPlus, Search, Edit2, Trash2, MapPin, Upload, Camera, Info, X, Check, Loader2, RotateCcw, Columns, ChevronDown } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, MapPin, Upload, Camera, Info, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot } from 'lucide-react';
 
 interface ColumnConfig {
   foto: boolean;
@@ -49,6 +49,7 @@ export const Colaboradores: React.FC = () => {
 
   // Auxiliares
   const [buscandoCep, setBuscandoCep] = useState(false);
+  const [gerandoPessoa, setGerandoPessoa] = useState(false);
   const [cepError, setCepError] = useState('');
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -80,6 +81,59 @@ export const Colaboradores: React.FC = () => {
   useEffect(() => {
     fetchColaboradores();
   }, []);
+
+  // Função para Gerar Pessoa de Teste via API 4Devs
+  const handleGerarPessoa = async (autoSave: boolean = false) => {
+    setGerandoPessoa(true);
+    try {
+      const res = await fetch('/api/gerar-pessoa');
+      if (res.ok) {
+        const p = await res.json();
+        
+        if (autoSave) {
+          // Auto-cadastro direto (Shift + Clique)
+          const postRes = await fetch('/api/colaboradores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(p)
+          });
+          if (postRes.ok) {
+            fetchColaboradores();
+          } else {
+            const errData = await postRes.json();
+            alert(errData.error || 'Erro ao auto-cadastrar');
+          }
+        } else {
+          // Preencher formulário e abrir modal
+          resetForm();
+          setNome(p.nome || '');
+          setCpf(p.cpf || '');
+          setCep(p.cep || '');
+          setLogradouro(p.logradouro || '');
+          setNumero(p.numero || '');
+          setComplemento(p.complemento || '');
+          setBairro(p.bairro || '');
+          setCidade(p.cidade || '');
+          setEstado(p.estado || '');
+          setFotoUrl(p.foto_url || '');
+          setModalOpen(true);
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao gerar pessoa 4Devs:', err);
+    } finally {
+      setGerandoPessoa(false);
+    }
+  };
+
+  const handleRobotButtonClick = (e: React.MouseEvent) => {
+    // Se o usuário segurar Shift + Clique no robô, gera e salva direto no banco!
+    if (e.shiftKey) {
+      handleGerarPessoa(true);
+    } else {
+      handleGerarPessoa(false);
+    }
+  };
 
   // Máscara de CPF: 000.000.000-00
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,13 +192,11 @@ export const Colaboradores: React.FC = () => {
         const ctx = canvas.getContext('2d');
         
         if (ctx) {
-          // Crop quadrado centralizado
           const minDim = Math.min(img.width, img.height);
           const sx = (img.width - minDim) / 2;
           const sy = (img.height - minDim) / 2;
           
           ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, targetSize, targetSize);
-          // Compressão de qualidade 0.70 (~25KB)
           const ultraLightBase64 = canvas.toDataURL('image/jpeg', 0.70);
           callback(ultraLightBase64);
         }
@@ -362,10 +414,24 @@ export const Colaboradores: React.FC = () => {
             Cadastre e gerencie a equipe de colaboradores com foto ultra-leve e inativação segura.
           </p>
         </div>
-        <button onClick={openNewModal} className="btn-primary">
-          <UserPlus size={18} />
-          Novo Colaborador
-        </button>
+        
+        {/* Botão Novo Colaborador e Botão Robozinho 4Devs ao lado */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button onClick={openNewModal} className="btn-primary">
+            <UserPlus size={18} />
+            Novo Colaborador
+          </button>
+
+          {/* Botão Robozinho 4Devs (sem texto) */}
+          <button
+            onClick={handleRobotButtonClick}
+            className="btn-robot"
+            title="Gerar Colaborador de Teste (4Devs) | Dica: Segure Shift para cadastrar direto"
+            disabled={gerandoPessoa}
+          >
+            <Bot size={20} className={gerandoPessoa ? 'spin' : ''} />
+          </button>
+        </div>
       </header>
 
       {/* Sub-Abas de Navegação (Ativos vs Inativados) */}
@@ -640,7 +706,21 @@ export const Colaboradores: React.FC = () => {
         <div className="modal-backdrop">
           <div className="modal-content glass-panel">
             <div className="modal-header">
-              <h3>{editingId ? 'Editar Colaborador' : 'Novo Colaborador'}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <h3>{editingId ? 'Editar Colaborador' : 'Novo Colaborador'}</h3>
+                {!editingId && (
+                  <button
+                    type="button"
+                    onClick={() => handleGerarPessoa(false)}
+                    className="btn-robot"
+                    title="Sortear outra pessoa (4Devs)"
+                    disabled={gerandoPessoa}
+                    style={{ width: '36px', height: '36px' }}
+                  >
+                    <Bot size={18} className={gerandoPessoa ? 'spin' : ''} />
+                  </button>
+                )}
+              </div>
               <button onClick={() => setModalOpen(false)} className="btn-close">
                 <X size={20} />
               </button>
