@@ -451,25 +451,25 @@ export const Administracao: React.FC = () => {
             </button>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-flex-wrapper" style={{ overflowX: 'hidden' }}>
             <table className="custom-table" style={{ tableLayout: 'fixed', width: '100%' }}>
               <thead>
                 <tr>
                   <th style={{ width: `${userColumnWidths.nome}px`, position: 'relative' }}>
                     Nome do Usuário
-                    <div className="col-resizer" onMouseDown={(e) => handleMouseDownResize(e, 'nome')} />
+                    <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'nome')} />
                   </th>
                   <th style={{ width: `${userColumnWidths.email}px`, position: 'relative' }}>
                     E-mail
-                    <div className="col-resizer" onMouseDown={(e) => handleMouseDownResize(e, 'email')} />
+                    <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'email')} />
                   </th>
                   <th style={{ width: `${userColumnWidths.perfil}px`, position: 'relative' }}>
                     Perfil
-                    <div className="col-resizer" onMouseDown={(e) => handleMouseDownResize(e, 'perfil')} />
+                    <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'perfil')} />
                   </th>
                   <th style={{ width: `${userColumnWidths.acoes}px`, textAlign: 'center', position: 'relative' }}>
                     Ações
-                    <div className="col-resizer" onMouseDown={(e) => handleMouseDownResize(e, 'acoes')} />
+                    <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'acoes')} />
                   </th>
                 </tr>
               </thead>

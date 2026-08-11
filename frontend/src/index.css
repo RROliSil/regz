@@ -550,6 +550,7 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-muted);
   font-weight: 600;
   border-bottom: 1px solid var(--card-border);
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
   white-space: nowrap;
   position: relative;
   user-select: none;
@@ -557,22 +558,26 @@ h1, h2, h3, h4, h5, h6 {
   text-overflow: ellipsis;
 }
 
-/* Alça de Redimensionar Coluna por Arraste */
-.custom-table th .resizer {
+/* Alça de Redimensionar Coluna por Arraste com Divisória Neon Cyan */
+.custom-table th .resizer,
+.custom-table th .col-resizer {
   position: absolute;
-  right: 0;
+  right: -3px;
   top: 0;
   bottom: 0;
-  width: 7px;
+  width: 6px;
   cursor: col-resize;
   user-select: none;
   z-index: 10;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .custom-table th .resizer:hover,
-.custom-table th .resizer:active {
-  background: rgba(56, 189, 248, 0.6);
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
+.custom-table th .resizer:active,
+.custom-table th .col-resizer:hover,
+.custom-table th .col-resizer:active {
+  background: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.9);
 }
 
 .custom-table td {
