@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Usuario, PerfilAcesso, PermissoesAba, PermissaoNivel } from '../types/auth';
-import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX, Eye, Edit3, Slash } from 'lucide-react';
+import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX } from 'lucide-react';
 
 export const Administracao: React.FC = () => {
   const [subTab, setSubTab] = useState<'usuarios' | 'perfis'>('usuarios');
@@ -25,9 +25,9 @@ export const Administracao: React.FC = () => {
   const [perfis, setPerfis] = useState<PerfilAcesso[]>([]);
   const [loadingPerfis, setLoadingPerfis] = useState(true);
   const [modalPerfilOpen, setModalPerfilOpen] = useState(false);
-  const [editingPerfilId, setEditingPerfilId] = useState<number | null>(null);
+  const [savedRowId, setSavedRowId] = useState<number | null>(null);
 
-  // Form de Perfil
+  // Form de Criar Novo Perfil
   const [perfilNome, setPerfilNome] = useState('');
   const [perfilDescricao, setPerfilDescricao] = useState('');
   const [perfilIsAdmin, setPerfilIsAdmin] = useState(false);
@@ -93,7 +93,7 @@ export const Administracao: React.FC = () => {
     setEditingUserId(u.id);
     setUserNome(u.nome);
     setUserEmail(u.email);
-    setUserSenha(''); // Não exibir hash
+    setUserSenha('');
     setUserPerfilId(u.perfil_id || '');
     setUserAtivo(u.ativo);
     setUserError('');
@@ -174,7 +174,6 @@ export const Administracao: React.FC = () => {
 
   // Handlers de Perfis
   const handleOpenNewPerfil = () => {
-    setEditingPerfilId(null);
     setPerfilNome('');
     setPerfilDescricao('');
     setPerfilIsAdmin(false);
@@ -184,16 +183,6 @@ export const Administracao: React.FC = () => {
       campos: 'escrita',
       administracao: 'sem_acesso'
     });
-    setPerfilError('');
-    setModalPerfilOpen(true);
-  };
-
-  const handleOpenEditPerfil = (p: PerfilAcesso) => {
-    setEditingPerfilId(p.id);
-    setPerfilNome(p.nome);
-    setPerfilDescricao(p.descricao || '');
-    setPerfilIsAdmin(p.is_admin);
-    setPerfilPermissoes(p.permissoes || { home: 'escrita', colaboradores: 'escrita', campos: 'escrita', administracao: 'sem_acesso' });
     setPerfilError('');
     setModalPerfilOpen(true);
   };
@@ -210,11 +199,8 @@ export const Administracao: React.FC = () => {
 
     setSubmittingPerfil(true);
     try {
-      const url = editingPerfilId ? `/api/perfis-acesso/${editingPerfilId}` : '/api/perfis-acesso';
-      const method = editingPerfilId ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method,
+      const res = await fetch('/api/perfis-acesso', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           nome: perfilNome.trim(),
@@ -229,7 +215,7 @@ export const Administracao: React.FC = () => {
         setPerfilError(data.error || 'Erro ao salvar perfil');
       } else {
         setModalPerfilOpen(false);
-        setPerfilSuccess(`Perfil "${data.nome}" salvo com sucesso!`);
+        setPerfilSuccess(`Perfil "${data.nome}" criado com sucesso!`);
         fetchPerfis();
         setTimeout(() => setPerfilSuccess(''), 3000);
       }
@@ -237,6 +223,60 @@ export const Administracao: React.FC = () => {
       setPerfilError('Erro de conexão ao salvar perfil');
     } finally {
       setSubmittingPerfil(false);
+    }
+  };
+
+  // Atualização Direta de Permissão na Matriz da Tabela
+  const handleTogglePermissaoDirect = async (perfil: PerfilAcesso, aba: keyof PermissoesAba, tipo: 'leitura' | 'escrita') => {
+    if (perfil.is_admin) return;
+
+    const nivelAtual = perfil.permissoes?.[aba] || 'sem_acesso';
+    let novoNivel: PermissaoNivel = 'sem_acesso';
+
+    if (tipo === 'leitura') {
+      if (nivelAtual === 'sem_acesso') {
+        novoNivel = 'leitura';
+      } else if (nivelAtual === 'leitura') {
+        novoNivel = 'sem_acesso';
+      } else if (nivelAtual === 'escrita') {
+        novoNivel = 'sem_acesso';
+      }
+    } else if (tipo === 'escrita') {
+      if (nivelAtual === 'escrita') {
+        novoNivel = 'leitura';
+      } else {
+        novoNivel = 'escrita';
+      }
+    }
+
+    const novaspermissoes = {
+      ...perfil.permissoes,
+      [aba]: novoNivel
+    };
+
+    // Atualização otimista no estado local
+    setPerfis(prev => prev.map(p => p.id === perfil.id ? { ...p, permissoes: novaspermissoes } : p));
+
+    try {
+      const res = await fetch(`/api/perfis-acesso/${perfil.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: perfil.nome,
+          descricao: perfil.descricao,
+          is_admin: perfil.is_admin,
+          permissoes: novaspermissoes
+        })
+      });
+
+      if (res.ok) {
+        setSavedRowId(perfil.id);
+        setTimeout(() => setSavedRowId(null), 2000);
+      } else {
+        fetchPerfis(); // Reverter se falhar
+      }
+    } catch (err) {
+      fetchPerfis();
     }
   };
 
@@ -253,17 +293,6 @@ export const Administracao: React.FC = () => {
       } catch (err) {
         alert('Erro ao excluir perfil');
       }
-    }
-  };
-
-  const renderBadgePermissao = (nivel: PermissaoNivel) => {
-    switch (nivel) {
-      case 'escrita':
-        return <span style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Edit3 size={11} /> Escrita / Total</span>;
-      case 'leitura':
-        return <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Eye size={11} /> Leitura</span>;
-      default:
-        return <span style={{ background: 'rgba(148, 163, 184, 0.12)', color: '#94a3b8', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Slash size={11} /> Sem Acesso</span>;
     }
   };
 
@@ -415,7 +444,7 @@ export const Administracao: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* CONTEÚDO DA ABA: PERFIS DE ACESSO */}
+      {/* CONTEÚDO DA ABA: PERFIS DE ACESSO (MATRIZ DIRETA COM CHECKBOXES) */}
       {/* ======================================================== */}
       {subTab === 'perfis' && (
         <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
@@ -434,56 +463,106 @@ export const Administracao: React.FC = () => {
               <thead>
                 <tr>
                   <th style={{ width: '60px' }}>#ID</th>
-                  <th>Nome do Perfil</th>
-                  <th>Permissão Home</th>
-                  <th>Permissão Colaboradores</th>
-                  <th>Permissão Campos</th>
-                  <th>Permissão Administração</th>
-                  <th style={{ textAlign: 'right' }}>Ações</th>
+                  <th style={{ minWidth: '180px' }}>Nome do Perfil</th>
+                  <th style={{ textAlign: 'center', minWidth: '160px' }}>Home</th>
+                  <th style={{ textAlign: 'center', minWidth: '160px' }}>Colaboradores</th>
+                  <th style={{ textAlign: 'center', minWidth: '160px' }}>Campos</th>
+                  <th style={{ textAlign: 'center', minWidth: '160px' }}>Administração</th>
+                  <th style={{ textAlign: 'right', minWidth: '80px' }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {loadingPerfis ? (
                   <tr>
                     <td colSpan={7} style={{ textAlign: 'center', padding: '40px' }}>
-                      <Loader2 className="spin" size={20} /> Carregando perfis...
+                      <Loader2 className="spin" size={20} /> Carregando matriz de perfis...
                     </td>
                   </tr>
-                ) : perfis.map((p) => (
-                  <tr key={p.id}>
-                    <td style={{ color: 'var(--text-dim)' }}>#{p.id}</td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: '#f8fafc' }}>
-                        {p.nome} {p.is_admin && <span style={{ fontSize: '0.72rem', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>ADMIN</span>}
-                      </div>
-                      {p.descricao && <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{p.descricao}</div>}
-                    </td>
-                    <td>{p.is_admin ? renderBadgePermissao('escrita') : renderBadgePermissao(p.permissoes?.home || 'sem_acesso')}</td>
-                    <td>{p.is_admin ? renderBadgePermissao('escrita') : renderBadgePermissao(p.permissoes?.colaboradores || 'sem_acesso')}</td>
-                    <td>{p.is_admin ? renderBadgePermissao('escrita') : renderBadgePermissao(p.permissoes?.campos || 'sem_acesso')}</td>
-                    <td>{p.is_admin ? renderBadgePermissao('escrita') : renderBadgePermissao(p.permissoes?.administracao || 'sem_acesso')}</td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '6px' }}>
-                        <button
-                          onClick={() => handleOpenEditPerfil(p)}
-                          className="btn-action map"
-                          title="Editar Perfil"
-                        >
-                          <Edit size={14} />
-                        </button>
-                        {!p.is_admin && (
+                ) : perfis.map((p) => {
+                  const isAdmin = p.is_admin;
+                  const permissoes = p.permissoes || { home: 'sem_acesso', colaboradores: 'sem_acesso', campos: 'sem_acesso', administracao: 'sem_acesso' };
+
+                  return (
+                    <tr key={p.id}>
+                      <td style={{ color: 'var(--text-dim)' }}>#{p.id}</td>
+                      <td>
+                        <div style={{ fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {p.nome}
+                          {isAdmin && (
+                            <span style={{ fontSize: '0.7rem', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', padding: '1px 6px', borderRadius: '4px' }}>
+                              ADMIN
+                            </span>
+                          )}
+                          {savedRowId === p.id && (
+                            <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 600, animation: 'fadeIn 0.3s' }}>
+                              ✓ Salvo
+                            </span>
+                          )}
+                        </div>
+                        {p.descricao && <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '2px' }}>{p.descricao}</div>}
+                      </td>
+
+                      {/* Células da Matriz com Checkboxes para cada Aba */}
+                      {(['home', 'colaboradores', 'campos', 'administracao'] as Array<keyof PermissoesAba>).map((aba) => {
+                        const nivel = permissoes[aba] || 'sem_acesso';
+                        const isLeitura = isAdmin || nivel === 'leitura' || nivel === 'escrita';
+                        const isEscrita = isAdmin || nivel === 'escrita';
+
+                        return (
+                          <td key={aba} style={{ textAlign: 'center', padding: '12px 8px' }}>
+                            {isAdmin ? (
+                              <div style={{ display: 'inline-flex', gap: '12px', opacity: 0.85, fontSize: '0.82rem', color: '#818cf8', fontWeight: 600 }}>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <input type="checkbox" checked disabled readOnly /> Leitura
+                                </span>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                  <input type="checkbox" checked disabled readOnly /> Escrita
+                                </span>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'inline-flex', gap: '14px', fontSize: '0.84rem' }}>
+                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer', color: isLeitura ? '#38bdf8' : 'var(--text-muted)' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isLeitura}
+                                    onChange={() => handleTogglePermissaoDirect(p, aba, 'leitura')}
+                                    style={{ cursor: 'pointer', accentColor: '#38bdf8' }}
+                                  />
+                                  <span>Leitura</span>
+                                </label>
+
+                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer', color: isEscrita ? '#34d399' : 'var(--text-muted)' }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={isEscrita}
+                                    onChange={() => handleTogglePermissaoDirect(p, aba, 'escrita')}
+                                    style={{ cursor: 'pointer', accentColor: '#34d399' }}
+                                  />
+                                  <span>Escrita</span>
+                                </label>
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+
+                      {/* Coluna de Ações (Apenas Botão de Excluir Perfil, Sem Lápis) */}
+                      <td style={{ textAlign: 'right' }}>
+                        {!isAdmin ? (
                           <button
                             onClick={() => handleDeletePerfil(p.id, p.nome)}
                             className="btn-action delete"
-                            title="Excluir Perfil"
+                            title="Excluir Perfil de Acesso"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={15} />
                           </button>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Fixo</span>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -491,7 +570,7 @@ export const Administracao: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* MODAL DE CADASTRO / EDIÇÃO DE USUÁRIO */}
+      {/* MODAL DE CADASTRO DE USUÁRIO */}
       {/* ======================================================== */}
       {modalUserOpen && (
         <div className="modal-backdrop" onClick={() => setModalUserOpen(false)}>
@@ -499,7 +578,7 @@ export const Administracao: React.FC = () => {
             <div className="modal-header">
               <h3>{editingUserId ? 'Editar Usuário' : 'Novo Usuário do Sistema'}</h3>
               <button onClick={() => setModalUserOpen(false)} className="btn-close">
-                <Trash2 size={18} style={{ display: 'none' }} /> ✕
+                ✕
               </button>
             </div>
 
@@ -590,13 +669,13 @@ export const Administracao: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* MODAL DE CADASTRO / EDIÇÃO DE PERFIL DE ACESSO */}
+      {/* MODAL DE CRIAÇÃO DE NOVO PERFIL DE ACESSO */}
       {/* ======================================================== */}
       {modalPerfilOpen && (
         <div className="modal-backdrop" onClick={() => setModalPerfilOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '650px' }}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
             <div className="modal-header">
-              <h3>{editingPerfilId ? 'Editar Perfil de Acesso' : 'Novo Perfil de Acesso'}</h3>
+              <h3>Criar Novo Perfil de Acesso</h3>
               <button onClick={() => setModalPerfilOpen(false)} className="btn-close">
                 ✕
               </button>
@@ -613,7 +692,7 @@ export const Administracao: React.FC = () => {
                 <label>Nome do Perfil *</label>
                 <input
                   type="text"
-                  placeholder="Ex: Gestor de RH, Operador de Cadastro..."
+                  placeholder="Ex: Operador de Cadastro, Assistente de RH..."
                   value={perfilNome}
                   onChange={(e) => setPerfilNome(e.target.value)}
                   disabled={submittingPerfil}
@@ -625,55 +704,41 @@ export const Administracao: React.FC = () => {
                 <label>Descrição do Perfil</label>
                 <input
                   type="text"
-                  placeholder="Descreva as responsabilidades deste perfil..."
+                  placeholder="Descreva a finalidade deste perfil..."
                   value={perfilDescricao}
                   onChange={(e) => setPerfilDescricao(e.target.value)}
                   disabled={submittingPerfil}
                 />
               </div>
 
-              <div className="form-group">
-                <label className="checkbox-label" style={{ margin: 0 }}>
-                  <input
-                    type="checkbox"
-                    checked={perfilIsAdmin}
-                    onChange={(e) => setPerfilIsAdmin(e.target.checked)}
-                    disabled={submittingPerfil}
-                  />
-                  <span style={{ fontWeight: 700, color: '#a5b4fc' }}>Perfil Administrador (Acesso Total e Irrestrito)</span>
-                </label>
-              </div>
-
-              {!perfilIsAdmin && (
-                <div style={{ marginTop: '16px', borderTop: '1px solid var(--card-border)', paddingTop: '16px' }}>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '12px', color: '#38bdf8' }}>Matriz de Permissões por Aba</h4>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    {(['home', 'colaboradores', 'campos', 'administracao'] as Array<keyof PermissoesAba>).map((aba) => (
-                      <div key={aba} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.5)', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--card-border)' }}>
-                        <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>Aba {aba}</span>
-                        <select
-                          value={perfilPermissoes[aba]}
-                          onChange={(e: any) => setPerfilPermissoes(prev => ({ ...prev, [aba]: e.target.value }))}
-                          className="custom-select-small"
-                          disabled={submittingPerfil}
-                        >
-                          <option value="sem_acesso">Sem Acesso (Oculto)</option>
-                          <option value="leitura">Somente Leitura</option>
-                          <option value="escrita">Escrita / Controle Total</option>
-                        </select>
-                      </div>
-                    ))}
-                  </div>
+              <div style={{ marginTop: '16px', borderTop: '1px solid var(--card-border)', paddingTop: '16px' }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '12px', color: '#38bdf8' }}>Permissões Iniciais do Perfil</h4>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {(['home', 'colaboradores', 'campos', 'administracao'] as Array<keyof PermissoesAba>).map((aba) => (
+                    <div key={aba} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.5)', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--card-border)' }}>
+                      <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>Aba {aba}</span>
+                      <select
+                        value={perfilPermissoes[aba]}
+                        onChange={(e: any) => setPerfilPermissoes(prev => ({ ...prev, [aba]: e.target.value }))}
+                        className="custom-select-small"
+                        disabled={submittingPerfil}
+                      >
+                        <option value="sem_acesso">Sem Acesso</option>
+                        <option value="leitura">Somente Leitura</option>
+                        <option value="escrita">Escrita / Controle Total</option>
+                      </select>
+                    </div>
+                  ))}
                 </div>
-              )}
+              </div>
 
               <div className="modal-footer">
                 <button type="button" onClick={() => setModalPerfilOpen(false)} className="btn-secondary" disabled={submittingPerfil}>
                   Cancelar
                 </button>
                 <button type="submit" className="btn-primary" disabled={submittingPerfil}>
-                  {submittingPerfil ? <Loader2 size={16} className="spin" /> : <Check size={16} />} Salvar Perfil
+                  {submittingPerfil ? <Loader2 size={16} className="spin" /> : <Check size={16} />} Criar Perfil
                 </button>
               </div>
             </form>
