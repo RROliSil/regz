@@ -464,6 +464,7 @@ h1, h2, h3, h4, h5, h6 {
   outline: none;
   transition: all 0.2s ease;
   cursor: pointer;
+  width: 100%;
 }
 
 .form-group select.custom-select:focus {
@@ -652,7 +653,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: monospace;
 }
 
-/* Modal Styling */
+/* Modal Styling (Largura de 900px e Sem Barra de Rolagem Horizontal) */
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -666,15 +667,36 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   justify-content: center;
   padding: 20px;
+  overflow-x: hidden;
 }
 
 .modal-content {
-  width: 720px;
-  max-width: 100%;
+  width: 900px;
+  max-width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
-  padding: 32px;
+  overflow-x: hidden;
+  padding: 36px;
   box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* Estilização Discreta da Barra de Rolagem Vertical do Modal */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 8px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.4);
+  border-radius: 8px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.7);
 }
 
 .modal-header {
@@ -700,6 +722,8 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 .form-section-title {
@@ -717,12 +741,14 @@ h1, h2, h3, h4, h5, h6 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  width: 100%;
 }
 
 .form-grid-3 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 16px;
+  width: 100%;
 }
 
 @media (max-width: 600px) {
@@ -735,6 +761,7 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
 }
 
 .form-group label {
@@ -752,6 +779,7 @@ h1, h2, h3, h4, h5, h6 {
   font-size: 0.92rem;
   outline: none;
   transition: all 0.2s ease;
+  width: 100%;
 }
 
 .form-group input:focus {
@@ -769,6 +797,7 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px dashed var(--card-border);
   border-radius: 16px;
   margin-bottom: 8px;
+  width: 100%;
 }
 
 .photo-avatar-container {
@@ -850,6 +879,7 @@ h1, h2, h3, h4, h5, h6 {
   margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid var(--card-border);
+  width: 100%;
 }
 
 .spin {
