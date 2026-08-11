@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Colaborador, Cargo } from '../types/colaborador';
-import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink, Briefcase, RotateCw } from 'lucide-react';
+import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink, Briefcase, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ColumnConfig {
   foto: boolean;
@@ -40,6 +40,16 @@ export const Colaboradores: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSubTab, setActiveSubTab] = useState<'ativos' | 'inativos'>('ativos');
+
+  // Paginação State (5 por padrão)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState<number | 'todos'>(() => {
+    const saved = localStorage.getItem('regz_page_size');
+    if (saved) {
+      return saved === 'todos' ? 'todos' : Number(saved) || 5;
+    }
+    return 5;
+  });
 
   // Modal Principal de Cadastro / Edição
   const [modalOpen, setModalOpen] = useState(false);
@@ -102,6 +112,11 @@ export const Colaboradores: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('regz_column_widths', JSON.stringify(columnWidths));
   }, [columnWidths]);
+
+  // Resetar página atual ao alterar busca, filtro ou sub-aba
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, activeSubTab, pageSize]);
 
   // Função para Arrastar e Redimensionar Colunas
   const handleResizeStart = (colKey: keyof ColumnWidths, e: React.MouseEvent) => {
@@ -544,6 +559,15 @@ export const Colaboradores: React.FC = () => {
     (c.cidade && c.cidade.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  // Fatiar Colaboradores de acordo com a Paginação
+  const totalItems = filteredColaboradores.length;
+  const effectivePageSize = pageSize === 'todos' ? (totalItems || 1) : Number(pageSize);
+  const totalPages = Math.ceil(totalItems / effectivePageSize) || 1;
+  const startIndex = (currentPage - 1) * effectivePageSize;
+  const endIndex = Math.min(startIndex + effectivePageSize, totalItems);
+
+  const paginatedColaboradores = filteredColaboradores.slice(startIndex, endIndex);
+
   const toggleColumn = (key: keyof ColumnConfig) => {
     setVisibleColumns(prev => ({ ...prev, [key]: !prev[key] }));
   };
@@ -670,12 +694,12 @@ export const Colaboradores: React.FC = () => {
           </div>
 
           <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-            Exibindo: <strong style={{ color: '#38bdf8' }}>{filteredColaboradores.length}</strong> de {listTarget.length}
+            Exibindo: <strong style={{ color: '#38bdf8' }}>{totalItems > 0 ? `${startIndex + 1}-${endIndex}` : '0'}</strong> de {totalItems}
           </div>
         </div>
       </div>
 
-      {/* Tabela de Colaboradores com Colunas Redimensionáveis via Arraste */}
+      {/* Tabela de Colaboradores Fluida com Colunas Redimensionáveis por Arraste */}
       <div className="glass-panel table-responsive-container" style={{ padding: '0' }}>
         <table className="custom-table">
           <thead>
@@ -737,7 +761,7 @@ export const Colaboradores: React.FC = () => {
                   </div>
                 </td>
               </tr>
-            ) : filteredColaboradores.length === 0 ? (
+            ) : paginatedColaboradores.length === 0 ? (
               <tr>
                 <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
                   {searchTerm 
@@ -748,7 +772,7 @@ export const Colaboradores: React.FC = () => {
                 </td>
               </tr>
             ) : (
-              filteredColaboradores.map((c) => (
+              paginatedColaboradores.map((c) => (
                 <tr
                   key={c.id}
                   className={`clickable-row ${c.ativo === false ? 'row-inactive' : ''}`}
@@ -896,6 +920,67 @@ export const Colaboradores: React.FC = () => {
             )}
           </tbody>
         </table>
+
+        {/* Rodapé de Paginação no Canto Inferior Direito */}
+        <div className="table-pagination-footer">
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            {totalItems > 0 ? (
+              <>Mostrando <strong style={{ color: '#38bdf8' }}>{startIndex + 1}</strong> a <strong style={{ color: '#38bdf8' }}>{endIndex}</strong> de <strong style={{ color: '#38bdf8' }}>{totalItems}</strong> colaboradores</>
+            ) : (
+              'Nenhum colaborador na lista'
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {/* Seletor Dropdown para Escolher Quantidade por Página (5, 15, 50, 100, todos) */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Exibir:</span>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  const val = e.target.value === 'todos' ? 'todos' : Number(e.target.value);
+                  setPageSize(val);
+                  setCurrentPage(1);
+                  localStorage.setItem('regz_page_size', String(val));
+                }}
+                className="custom-select-small"
+              >
+                <option value={5}>5 por página</option>
+                <option value={15}>15 por página</option>
+                <option value={50}>50 por página</option>
+                <option value={100}>100 por página</option>
+                <option value="todos">Todos</option>
+              </select>
+            </div>
+
+            {/* Controles de Navegação de Página no Canto Inferior Direito */}
+            {pageSize !== 'todos' && totalPages > 1 && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="btn-pagination"
+                  title="Página Anterior"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', padding: '0 4px' }}>
+                  {currentPage} / {totalPages}
+                </span>
+
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage >= totalPages}
+                  className="btn-pagination"
+                  title="Próxima Página"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Modal Quick Photo */}

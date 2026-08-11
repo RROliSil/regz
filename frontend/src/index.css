@@ -191,6 +191,7 @@ h1, h2, h3, h4, h5, h6 {
   max-width: 1200px;
   margin: 0 auto;
   padding: 40px 32px;
+  overflow-x: hidden;
 }
 
 .page-header {
@@ -477,35 +478,16 @@ h1, h2, h3, h4, h5, h6 {
   color: #ffffff;
 }
 
-/* Contêiner com Rolagem Horizontal Responsiva na Base */
+/* Contêiner de Tabela (Sem Barra de Rolagem Horizontal) */
 .table-responsive-container {
   width: 100%;
   max-width: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: hidden;
   border-radius: 20px;
 }
 
-/* Barra de Rolagem Horizontal Estilizada na Parte Inferior */
-.table-responsive-container::-webkit-scrollbar {
-  height: 8px;
-}
-
-.table-responsive-container::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
-  border-radius: 8px;
-}
-
-.table-responsive-container::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.4);
-  border-radius: 8px;
-}
-
-.table-responsive-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(99, 102, 241, 0.7);
-}
-
-/* Custom Table Fluida (Sem Min-Width Forçado) com Suporte a Colunas Redimensionáveis */
+/* Custom Table Fluida (Sem Min-Width) com Suporte a Colunas Redimensionáveis */
 .custom-table {
   width: 100%;
   table-layout: fixed;
@@ -547,6 +529,61 @@ h1, h2, h3, h4, h5, h6 {
   padding: 16px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   vertical-align: middle;
+}
+
+/* Rodapé de Paginação no Canto Inferior Direito */
+.table-pagination-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
+  border-top: 1px solid var(--card-border);
+  background: rgba(15, 23, 42, 0.4);
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.custom-select-small {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--card-border);
+  padding: 6px 12px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.82rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.custom-select-small option {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.btn-pagination {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--card-border);
+  color: var(--text-muted);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-pagination:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.2);
+  color: #ffffff;
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+.btn-pagination:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 /* Linha da Tabela Clicável para Edição */
