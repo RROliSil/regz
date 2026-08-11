@@ -194,6 +194,17 @@ export const Colaboradores: React.FC = () => {
     fetchCamposCustomizados();
   }, []);
 
+  // Fechar modal ao pressionar a tecla ESC
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && modalOpen) {
+        setModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalOpen]);
+
   // Abrir o endereço do colaborador no Google Maps com ALTA PRECISÃO
   const openGoogleMaps = (c: Colaborador) => {
     const fullAddress = [c.logradouro, c.numero ? `nº ${c.numero}` : '', c.bairro, c.cidade, c.estado, c.cep]
