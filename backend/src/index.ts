@@ -179,6 +179,17 @@ const initDb = async () => {
       console.log('✅ Usuário administrador inicial (admin@regz.app / admin123) criado com sucesso!');
     }
 
+    // Migration SQL para corrigir usuários com perfil_id ausente ou órfão
+    await pool.query(`
+      UPDATE usuarios u
+      SET perfil_id = COALESCE(
+        (SELECT p.id FROM perfis_acesso p WHERE LOWER(p.nome) LIKE '%' || LOWER(u.nome) || '%' LIMIT 1),
+        (SELECT p.id FROM perfis_acesso p WHERE p.is_admin = true LIMIT 1)
+      )
+      WHERE u.perfil_id IS NULL OR u.perfil_id NOT IN (SELECT id FROM perfis_acesso);
+    `);
+    console.log('✅ Migração de vínculo de perfis de usuários executada!');
+
     // 3. Tabela de Cargos CBO
     await pool.query(`
       CREATE TABLE IF NOT EXISTS cargos (
@@ -648,11 +659,36 @@ app.post('/api/usuarios', async (req: Request, res: Response) => {
 
     const senhaHash = await bcrypt.hash(senha, 10);
     const result = await pool.query(
-      'INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, email, perfil_id, ativo, criado_em',
+      'INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo) VALUES ($1, $2, $3, $4, $5) RETURNING id',
       [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false]
     );
 
-    res.status(201).json(result.rows[0]);
+    const newId = result.rows[0].id;
+    const queryUser = `
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em,
+             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes
+      FROM usuarios u
+      LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
+      WHERE u.id = $1
+    `;
+    const resUser = await pool.query(queryUser, [newId]);
+    const u = resUser.rows[0];
+
+    res.status(201).json({
+      id: u.id,
+      nome: u.nome,
+      email: u.email,
+      ativo: u.ativo,
+      perfil_id: u.perfil_id,
+      criado_em: u.criado_em,
+      perfil: u.perfil_id ? {
+        id: u.perfil_id,
+        nome: u.perfil_nome,
+        descricao: u.perfil_descricao,
+        is_admin: !!u.is_admin,
+        permissoes: u.permissoes
+      } : null
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao cadastrar usuário' });
   }
@@ -687,12 +723,31 @@ app.put('/api/usuarios/:id', async (req: Request, res: Response) => {
       );
     }
 
-    const resUser = await pool.query(
-      'SELECT id, nome, email, perfil_id, ativo, criado_em FROM usuarios WHERE id = $1',
-      [id]
-    );
+    const queryUser = `
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em,
+             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes
+      FROM usuarios u
+      LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
+      WHERE u.id = $1
+    `;
+    const resUser = await pool.query(queryUser, [id]);
+    const u = resUser.rows[0];
 
-    res.json(resUser.rows[0]);
+    res.json({
+      id: u.id,
+      nome: u.nome,
+      email: u.email,
+      ativo: u.ativo,
+      perfil_id: u.perfil_id,
+      criado_em: u.criado_em,
+      perfil: u.perfil_id ? {
+        id: u.perfil_id,
+        nome: u.perfil_nome,
+        descricao: u.perfil_descricao,
+        is_admin: !!u.is_admin,
+        permissoes: u.permissoes
+      } : null
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao atualizar usuário' });
   }

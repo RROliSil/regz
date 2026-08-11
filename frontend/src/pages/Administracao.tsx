@@ -329,6 +329,7 @@ export const Administracao: React.FC = () => {
         setModalPerfilOpen(false);
         setPerfilSuccess(`Perfil "${data.nome}" criado com sucesso!`);
         fetchPerfis();
+        fetchUsuarios();
         setTimeout(() => setPerfilSuccess(''), 3000);
       }
     } catch (err) {
@@ -601,15 +602,21 @@ export const Administracao: React.FC = () => {
                     )}
                     {userVisibleColumns.perfil && (
                       <td>
-                        {u.perfil?.is_admin ? (
-                          <span style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.4)', padding: '3px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Shield size={12} /> Administrador Total
-                          </span>
-                        ) : (
-                          <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
-                            {u.perfil?.nome || 'Sem Perfil'}
-                          </span>
-                        )}
+                        {(() => {
+                          const pObj = u.perfil || perfis.find(p => p.id === u.perfil_id);
+                          if (pObj?.is_admin) {
+                            return (
+                              <span style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.4)', padding: '3px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <Shield size={12} /> Administrador Total
+                              </span>
+                            );
+                          }
+                          return (
+                            <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
+                              {pObj?.nome || 'Sem Perfil'}
+                            </span>
+                          );
+                        })()}
                       </td>
                     )}
                     {userVisibleColumns.status && (
