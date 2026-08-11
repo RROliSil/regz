@@ -37,7 +37,7 @@ const DEFAULT_COLUMN_WIDTHS: ColumnWidths = {
 import { useAuth } from '../context/AuthContext';
 
 export const Colaboradores: React.FC = () => {
-  const { temPermissao } = useAuth();
+  const { usuario, temPermissao } = useAuth();
   const podeEditar = temPermissao('colaboradores', 'escrita');
 
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
@@ -112,15 +112,37 @@ export const Colaboradores: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const quickFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Salvar preferências de colunas no LocalStorage
+  // Carregar preferências salvas do LocalStorage específicas do usuário logado
   useEffect(() => {
-    localStorage.setItem('regz_visible_columns', JSON.stringify(visibleColumns));
-  }, [visibleColumns]);
+    if (usuario?.id) {
+      const savedWidths = localStorage.getItem(`regz_colab_column_widths_${usuario.id}`);
+      if (savedWidths) {
+        try { setColumnWidths({ ...DEFAULT_COLUMN_WIDTHS, ...JSON.parse(savedWidths) }); } catch (e) { }
+      }
+      const savedCols = localStorage.getItem(`regz_colab_visible_columns_${usuario.id}`);
+      if (savedCols) {
+        try { setVisibleColumns(JSON.parse(savedCols)); } catch (e) { }
+      }
+      const savedPageSize = localStorage.getItem(`regz_colab_page_size_${usuario.id}`);
+      if (savedPageSize) {
+        setPageSize(savedPageSize === 'todos' ? 'todos' : Number(savedPageSize) || 5);
+      }
+    }
+  }, [usuario?.id]);
 
-  // Salvar larguras de colunas no LocalStorage
+  // Salvar preferências de colunas no LocalStorage por usuário
   useEffect(() => {
-    localStorage.setItem('regz_column_widths', JSON.stringify(columnWidths));
-  }, [columnWidths]);
+    if (usuario?.id) {
+      localStorage.setItem(`regz_colab_visible_columns_${usuario.id}`, JSON.stringify(visibleColumns));
+    }
+  }, [visibleColumns, usuario?.id]);
+
+  // Salvar larguras de colunas no LocalStorage por usuário
+  useEffect(() => {
+    if (usuario?.id) {
+      localStorage.setItem(`regz_colab_column_widths_${usuario.id}`, JSON.stringify(columnWidths));
+    }
+  }, [columnWidths, usuario?.id]);
 
   // Resetar página atual ao alterar busca, filtro ou sub-aba
   useEffect(() => {
