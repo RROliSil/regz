@@ -249,8 +249,15 @@ const initDb = async () => {
         tipo VARCHAR(50) DEFAULT 'texto',
         opcoes TEXT,
         obrigatorio BOOLEAN DEFAULT false,
+        min_caracteres INT,
+        max_caracteres INT,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    await pool.query(`
+      ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS min_caracteres INT;
+      ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS max_caracteres INT;
     `);
 
     // 6. Tabela de Valores dos Campos Customizados por Colaborador
@@ -877,7 +884,7 @@ app.get('/api/campos-customizados', async (req: Request, res: Response) => {
 
 // Cadastrar novo campo customizado
 app.post('/api/campos-customizados', checkPermission('campos'), async (req: Request, res: Response) => {
-  const { nome, tipo, opcoes, obrigatorio } = req.body;
+  const { nome, tipo, opcoes, obrigatorio, min_caracteres, max_caracteres } = req.body;
   if (!nome || !nome.trim()) {
     return res.status(400).json({ error: 'O nome do campo é obrigatório' });
   }
@@ -889,9 +896,12 @@ app.post('/api/campos-customizados', checkPermission('campos'), async (req: Requ
       return res.status(400).json({ error: 'Um campo com este nome já foi criado' });
     }
 
+    const minVal = min_caracteres !== undefined && min_caracteres !== null && min_caracteres !== '' ? Number(min_caracteres) : null;
+    const maxVal = max_caracteres !== undefined && max_caracteres !== null && max_caracteres !== '' ? Number(max_caracteres) : null;
+
     const result = await pool.query(
-      'INSERT INTO campos_customizados (nome, tipo, opcoes, obrigatorio) VALUES ($1, $2, $3, $4) RETURNING *',
-      [nomeTrimmed, tipo || 'texto', opcoes || null, !!obrigatorio]
+      'INSERT INTO campos_customizados (nome, tipo, opcoes, obrigatorio, min_caracteres, max_caracteres) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [nomeTrimmed, tipo || 'texto', opcoes || null, !!obrigatorio, minVal, maxVal]
     );
 
     res.status(201).json(result.rows[0]);

@@ -36,6 +36,8 @@ export interface CampoCustomizado {
   tipo: 'texto' | 'numero' | 'data' | 'selecao';
   opcoes?: string | null;
   obrigatorio?: boolean;
+  min_caracteres?: number | null;
+  max_caracteres?: number | null;
   criado_em?: string;
 }
 

@@ -539,6 +539,41 @@ export const Colaboradores: React.FC = () => {
       return;
     }
 
+    // Validação de regras para Campos Customizados (min/max e dígitos numéricos)
+    for (const campo of camposCustomizadosList) {
+      if (!campo.id) continue;
+      const val = (valoresCustomizados[campo.id] || '').trim();
+
+      if (campo.obrigatorio && !val) {
+        setFormError(`O campo "${campo.nome}" é obrigatório.`);
+        return;
+      }
+
+      if (val) {
+        if (campo.tipo === 'numero') {
+          // Contabilizar somente dígitos numéricos ignorando pontuações e símbolos
+          const digitsOnly = val.replace(/\D/g, '');
+          if (campo.min_caracteres !== null && campo.min_caracteres !== undefined && digitsOnly.length < campo.min_caracteres) {
+            setFormError(`O campo "${campo.nome}" exige no mínimo ${campo.min_caracteres} dígitos numéricos.`);
+            return;
+          }
+          if (campo.max_caracteres !== null && campo.max_caracteres !== undefined && digitsOnly.length > campo.max_caracteres) {
+            setFormError(`O campo "${campo.nome}" permite no máximo ${campo.max_caracteres} dígitos numéricos.`);
+            return;
+          }
+        } else if (campo.tipo === 'texto') {
+          if (campo.min_caracteres !== null && campo.min_caracteres !== undefined && val.length < campo.min_caracteres) {
+            setFormError(`O campo "${campo.nome}" exige no mínimo ${campo.min_caracteres} caracteres.`);
+            return;
+          }
+          if (campo.max_caracteres !== null && campo.max_caracteres !== undefined && val.length > campo.max_caracteres) {
+            setFormError(`O campo "${campo.nome}" permite no máximo ${campo.max_caracteres} caracteres.`);
+            return;
+          }
+        }
+      }
+    }
+
     setSubmitting(true);
     const payload = {
       nome: nome.trim(),
@@ -1457,12 +1492,22 @@ export const Colaboradores: React.FC = () => {
                         <div key={campo.id} className="form-group">
                           <label>{campo.nome} {campo.obrigatorio && '*'}</label>
                           <input
-                            type={campo.tipo === 'numero' ? 'number' : campo.tipo === 'data' ? 'date' : 'text'}
+                            type={campo.tipo === 'data' ? 'date' : 'text'}
                             placeholder={`Informe ${campo.nome.toLowerCase()}...`}
                             value={valorAtual}
                             onChange={(e) => setValorAtual(e.target.value)}
                             required={campo.obrigatorio}
                           />
+                          {campo.tipo === 'numero' && (campo.min_caracteres || campo.max_caracteres) && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                              Dígitos numéricos: {campo.min_caracteres ? `Mín: ${campo.min_caracteres}` : ''} {campo.min_caracteres && campo.max_caracteres ? ' | ' : ''} {campo.max_caracteres ? `Máx: ${campo.max_caracteres}` : ''}
+                            </span>
+                          )}
+                          {campo.tipo === 'texto' && (campo.min_caracteres || campo.max_caracteres) && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                              Caracteres: {campo.min_caracteres ? `Mín: ${campo.min_caracteres}` : ''} {campo.min_caracteres && campo.max_caracteres ? ' | ' : ''} {campo.max_caracteres ? `Máx: ${campo.max_caracteres}` : ''}
+                            </span>
+                          )}
                         </div>
                       );
                     })}

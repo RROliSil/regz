@@ -34,3 +34,14 @@ export interface AuthContextType {
   logout: () => void;
   temPermissao: (aba: keyof PermissoesAba, nivelExigido?: 'leitura' | 'escrita') => boolean;
 }
+
+export interface CampoCustomizado {
+  id?: number;
+  nome: string;
+  tipo: 'texto' | 'numero' | 'data' | 'selecao';
+  opcoes?: string | null;
+  obrigatorio?: boolean;
+  min_caracteres?: number | null;
+  max_caracteres?: number | null;
+  criado_em?: string;
+}
