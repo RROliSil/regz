@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Colaborador, Cargo } from '../types/colaborador';
+import { Colaborador, Cargo, CampoCustomizado } from '../types/colaborador';
 import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink, Briefcase, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ColumnConfig {
@@ -37,6 +37,8 @@ const DEFAULT_COLUMN_WIDTHS: ColumnWidths = {
 export const Colaboradores: React.FC = () => {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [cargosList, setCargosList] = useState<Cargo[]>([]);
+  const [camposCustomizadosList, setCamposCustomizadosList] = useState<CampoCustomizado[]>([]);
+  const [valoresCustomizados, setValoresCustomizados] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSubTab, setActiveSubTab] = useState<'ativos' | 'inativos'>('ativos');
@@ -174,9 +176,22 @@ export const Colaboradores: React.FC = () => {
     }
   };
 
+  const fetchCamposCustomizados = async () => {
+    try {
+      const res = await fetch('/api/campos-customizados');
+      if (res.ok) {
+        const data = await res.json();
+        setCamposCustomizadosList(data);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar campos customizados:', err);
+    }
+  };
+
   useEffect(() => {
     fetchColaboradores();
     fetchCargosList();
+    fetchCamposCustomizados();
   }, []);
 
   // Abrir o endereço do colaborador no Google Maps com ALTA PRECISÃO
@@ -429,6 +444,7 @@ export const Colaboradores: React.FC = () => {
     setLatitude(null);
     setLongitude(null);
     setFotoUrl('');
+    setValoresCustomizados({});
     setFormError('');
     setCepError('');
   };
@@ -438,7 +454,7 @@ export const Colaboradores: React.FC = () => {
     setModalOpen(true);
   };
 
-  const openEditModal = (c: Colaborador) => {
+  const openEditModal = async (c: Colaborador) => {
     setEditingId(c.id || null);
     setNome(c.nome);
     setCpf(c.cpf);
@@ -454,7 +470,20 @@ export const Colaboradores: React.FC = () => {
     setLongitude(c.longitude ? Number(c.longitude) : null);
     setFotoUrl(c.foto_url || '');
     setFormError('');
+    setValoresCustomizados({});
     setModalOpen(true);
+
+    if (c.id) {
+      try {
+        const res = await fetch(`/api/colaboradores/${c.id}/valores-customizados`);
+        if (res.ok) {
+          const vals = await res.json();
+          setValoresCustomizados(vals);
+        }
+      } catch (e) {
+        console.error('Erro ao carregar valores customizados:', e);
+      }
+    }
   };
 
   // Salvar / Atualizar Colaborador
@@ -486,7 +515,8 @@ export const Colaboradores: React.FC = () => {
       estado: estado.trim() || null,
       latitude: latitude || null,
       longitude: longitude || null,
-      foto_url: fotoUrl || null
+      foto_url: fotoUrl || null,
+      valores_customizados: valoresCustomizados
     };
 
     try {
@@ -1340,6 +1370,58 @@ export const Colaboradores: React.FC = () => {
                   />
                 </div>
               </div>
+
+              {/* Seção de Campos Personalizados */}
+              {camposCustomizadosList.length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                  <div className="form-section-title" style={{ marginBottom: '14px' }}>
+                    <span>CAMPOS PERSONALIZADOS</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                    {camposCustomizadosList.map((campo) => {
+                      const valorAtual = campo.id ? (valoresCustomizados[campo.id] || '') : '';
+                      const setValorAtual = (val: string) => {
+                        if (!campo.id) return;
+                        setValoresCustomizados(prev => ({ ...prev, [campo.id!]: val }));
+                      };
+
+                      if (campo.tipo === 'selecao' && campo.opcoes) {
+                        const opcoesArr = campo.opcoes.split(',').map(o => o.trim()).filter(Boolean);
+                        return (
+                          <div key={campo.id} className="form-group">
+                            <label>{campo.nome} {campo.obrigatorio && '*'}</label>
+                            <select
+                              value={valorAtual}
+                              onChange={(e) => setValorAtual(e.target.value)}
+                              className="custom-select"
+                              required={campo.obrigatorio}
+                            >
+                              <option value="">Selecione...</option>
+                              {opcoesArr.map((opt, i) => (
+                                <option key={i} value={opt}>{opt}</option>
+                              ))}
+                            </select>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div key={campo.id} className="form-group">
+                          <label>{campo.nome} {campo.obrigatorio && '*'}</label>
+                          <input
+                            type={campo.tipo === 'numero' ? 'number' : campo.tipo === 'data' ? 'date' : 'text'}
+                            placeholder={`Informe ${campo.nome.toLowerCase()}...`}
+                            value={valorAtual}
+                            onChange={(e) => setValorAtual(e.target.value)}
+                            required={campo.obrigatorio}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               <div className="modal-footer">
                 <button

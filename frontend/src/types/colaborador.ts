@@ -15,6 +15,7 @@ export interface Colaborador {
   foto_url?: string | null;
   ativo?: boolean;
   criado_em?: string;
+  valores_customizados?: Record<number, string>;
 }
 
 export interface Cargo {
@@ -27,4 +28,20 @@ export interface Cargo {
 export interface CboItem {
   codigo: string;
   titulo: string;
+}
+
+export interface CampoCustomizado {
+  id?: number;
+  nome: string;
+  tipo: 'texto' | 'numero' | 'data' | 'selecao';
+  opcoes?: string | null;
+  obrigatorio?: boolean;
+  criado_em?: string;
+}
+
+export interface ValorCustomizado {
+  id?: number;
+  colaborador_id: number;
+  campo_id: number;
+  valor: string;
 }

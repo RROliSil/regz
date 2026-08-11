@@ -121,10 +121,10 @@ const CBO_DATASET = [
   { codigo: '5174-10', titulo: 'Porteiro de edifício' }
 ];
 
-// Inicialização e migrations do banco de dados (tabelas cargos e colaboradores)
+// Inicialização e migrations do banco de dados
 const initDb = async () => {
   try {
-    // 1. Tabela de Cargos (Exclusivamente Catálogo CBO Oficial)
+    // 1. Tabela de Cargos CBO
     await pool.query(`
       CREATE TABLE IF NOT EXISTS cargos (
         id SERIAL PRIMARY KEY,
@@ -145,7 +145,6 @@ const initDb = async () => {
         [item.titulo, item.codigo]
       );
     }
-    console.log(`✅ Base Oficial CBO Brasil (MTE) sincronizada no banco com 100% de ocupações!`);
 
     // 2. Tabela de Colaboradores
     await pool.query(`
@@ -176,7 +175,50 @@ const initDb = async () => {
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8);
     `);
 
-    console.log('✅ Tabelas "cargos" e "colaboradores" inicializadas com sucesso no PostgreSQL!');
+    // 3. Tabela de Campos Customizados / Dinâmicos (Setor, Nome do Pai, Nome da Mãe, etc.)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS campos_customizados (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL UNIQUE,
+        tipo VARCHAR(50) DEFAULT 'texto',
+        opcoes TEXT,
+        obrigatorio BOOLEAN DEFAULT false,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // 4. Tabela de Valores dos Campos Customizados por Colaborador
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS colaboradores_valores_customizados (
+        id SERIAL PRIMARY KEY,
+        colaborador_id INT REFERENCES colaboradores(id) ON DELETE CASCADE,
+        campo_id INT REFERENCES campos_customizados(id) ON DELETE CASCADE,
+        valor TEXT,
+        CONSTRAINT unique_colab_campo UNIQUE (colaborador_id, campo_id)
+      );
+    `);
+
+    // Inicializar campos customizados exemplo se a tabela estiver vazia
+    const countCampos = await pool.query('SELECT COUNT(*) FROM campos_customizados');
+    if (parseInt(countCampos.rows[0].count, 10) === 0) {
+      const camposIniciais = [
+        { nome: 'Setor / Departamento', tipo: 'selecao', opcoes: 'Tecnologia da Informação, Recursos Humanos, Financeiro, Vendas, Operações, Diretoria', obrigatorio: false },
+        { nome: 'Nome da Mãe', tipo: 'texto', opcoes: null, obrigatorio: false },
+        { nome: 'Nome do Pai', tipo: 'texto', opcoes: null, obrigatorio: false },
+        { nome: 'Estado Civil', tipo: 'selecao', opcoes: 'Solteiro(a), Casado(a), Divorciado(a), Viúvo(a), União Estável', obrigatorio: false },
+        { nome: 'PIS / PASEP', tipo: 'texto', opcoes: null, obrigatorio: false }
+      ];
+
+      for (const c of camposIniciais) {
+        await pool.query(
+          'INSERT INTO campos_customizados (nome, tipo, opcoes, obrigatorio) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
+          [c.nome, c.tipo, c.opcoes, c.obrigatorio]
+        );
+      }
+      console.log('✅ Campos customizados padrão (Setor, Nome da Mãe, Pai, etc.) inicializados!');
+    }
+
+    console.log('✅ Tabelas e migrations do PostgreSQL inicializadas com sucesso!');
   } catch (error) {
     console.error('⚠️ Erro ao inicializar o banco de dados:', error);
   }
@@ -300,7 +342,7 @@ app.get('/api/db-status', async (req: Request, res: Response) => {
 });
 
 // ==========================================
-// ROTA DA API CBO BRASIL (CONSULTA EM TEMPO REAL)
+// ROTA DA API CBO BRASIL (CONSULTA INTERNA DE CARGOS)
 // ==========================================
 app.get('/api/cbo/search', (req: Request, res: Response) => {
   const query = (req.query.q as string || '').toLowerCase().trim();
@@ -317,11 +359,7 @@ app.get('/api/cbo/search', (req: Request, res: Response) => {
   res.json(filtered);
 });
 
-// ==========================================
-// ROTAS DE CARGOS (CATÁLOGO 100% CBO)
-// ==========================================
-
-// Listar todos os cargos do catálogo (suporta filtro por query `q`)
+// Listar todos os cargos do catálogo
 app.get('/api/cargos', async (req: Request, res: Response) => {
   const q = (req.query.q as string || '').toLowerCase().trim();
   try {
@@ -341,42 +379,115 @@ app.get('/api/cargos', async (req: Request, res: Response) => {
   }
 });
 
-// Cadastrar novo cargo CBO no catálogo
-app.post('/api/cargos', async (req: Request, res: Response) => {
-  const { nome, codigo_cbo } = req.body;
+// ==========================================
+// ROTAS CRUD DE CAMPOS CUSTOMIZADOS (NOVO)
+// ==========================================
+
+// Listar todos os campos customizados definidos
+app.get('/api/campos-customizados', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query('SELECT * FROM campos_customizados ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar campos customizados' });
+  }
+});
+
+// Cadastrar novo campo customizado
+app.post('/api/campos-customizados', async (req: Request, res: Response) => {
+  const { nome, tipo, opcoes, obrigatorio } = req.body;
   if (!nome || !nome.trim()) {
-    return res.status(400).json({ error: 'O nome do cargo é obrigatório' });
+    return res.status(400).json({ error: 'O nome do campo é obrigatório' });
   }
 
   try {
     const nomeTrimmed = nome.trim();
-    const existing = await pool.query('SELECT id FROM cargos WHERE LOWER(nome) = LOWER($1)', [nomeTrimmed]);
+    const existing = await pool.query('SELECT id FROM campos_customizados WHERE LOWER(nome) = LOWER($1)', [nomeTrimmed]);
     if (existing.rows.length > 0) {
-      return res.status(400).json({ error: 'Este cargo CBO já está no catálogo' });
+      return res.status(400).json({ error: 'Um campo com este nome já foi criado' });
     }
 
     const result = await pool.query(
-      'INSERT INTO cargos (nome, codigo_cbo) VALUES ($1, $2) RETURNING *',
-      [nomeTrimmed, codigo_cbo || null]
+      'INSERT INTO campos_customizados (nome, tipo, opcoes, obrigatorio) VALUES ($1, $2, $3, $4) RETURNING *',
+      [nomeTrimmed, tipo || 'texto', opcoes || null, !!obrigatorio]
     );
 
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao cadastrar cargo' });
+    res.status(500).json({ error: error.message || 'Erro ao cadastrar campo customizado' });
   }
 });
 
-// Excluir um cargo do catálogo
-app.delete('/api/cargos/:id', async (req: Request, res: Response) => {
+// Excluir um campo customizado
+app.delete('/api/campos-customizados/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('DELETE FROM cargos WHERE id = $1 RETURNING id', [id]);
+    const result = await pool.query('DELETE FROM campos_customizados WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Cargo não encontrado' });
+      return res.status(404).json({ error: 'Campo customizado não encontrado' });
     }
-    res.json({ success: true, message: 'Cargo removido com sucesso' });
+    res.json({ success: true, message: 'Campo removido com sucesso' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao remover cargo' });
+    res.status(500).json({ error: error.message || 'Erro ao remover campo customizado' });
+  }
+});
+
+// Buscar valores dos campos customizados de um colaborador específico
+app.get('/api/colaboradores/:id/valores-customizados', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT v.campo_id, c.nome as campo_nome, v.valor 
+       FROM colaboradores_valores_customizados v
+       JOIN campos_customizados c ON v.campo_id = c.id
+       WHERE v.colaborador_id = $1`,
+      [id]
+    );
+    
+    // Retornar no formato de dicionário { [campo_id]: valor }
+    const mapaValores: Record<number, string> = {};
+    result.rows.forEach((row: any) => {
+      mapaValores[row.campo_id] = row.valor;
+    });
+
+    res.json(mapaValores);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar valores customizados' });
+  }
+});
+
+// Salvar/Atualizar valores dos campos customizados de um colaborador
+app.put('/api/colaboradores/:id/valores-customizados', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { valores } = req.body; // { [campo_id]: string }
+
+  if (!valores || typeof valores !== 'object') {
+    return res.status(400).json({ error: 'Valores customizados devem ser fornecidos como um objeto' });
+  }
+
+  try {
+    for (const [campoIdStr, val] of Object.entries(valores)) {
+      const campoId = parseInt(campoIdStr, 10);
+      const valStr = String(val ?? '').trim();
+
+      if (valStr) {
+        await pool.query(
+          `INSERT INTO colaboradores_valores_customizados (colaborador_id, campo_id, valor)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (colaborador_id, campo_id) DO UPDATE SET valor = EXCLUDED.valor`,
+          [id, campoId, valStr]
+        );
+      } else {
+        await pool.query(
+          `DELETE FROM colaboradores_valores_customizados WHERE colaborador_id = $1 AND campo_id = $2`,
+          [id, campoId]
+        );
+      }
+    }
+
+    res.json({ success: true, message: 'Valores customizados salvos com sucesso' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao salvar valores customizados' });
   }
 });
 
@@ -532,7 +643,7 @@ app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
 
 // Cadastrar novo colaborador
 app.post('/api/colaboradores', async (req: Request, res: Response) => {
-  const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url } = req.body;
+  const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, valores_customizados } = req.body;
 
   if (!nome || !cpf) {
     return res.status(400).json({ error: 'Campos Nome e CPF são obrigatórios' });
@@ -560,7 +671,23 @@ app.post('/api/colaboradores', async (req: Request, res: Response) => {
       [nome, cpf, cargo || null, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null]
     );
 
-    res.status(201).json(result.rows[0]);
+    const novoColaborador = result.rows[0];
+
+    // Salvar valores customizados se fornecidos
+    if (valores_customizados && typeof valores_customizados === 'object') {
+      for (const [campoIdStr, val] of Object.entries(valores_customizados)) {
+        const campoId = parseInt(campoIdStr, 10);
+        const valStr = String(val ?? '').trim();
+        if (valStr) {
+          await pool.query(
+            'INSERT INTO colaboradores_valores_customizados (colaborador_id, campo_id, valor) VALUES ($1, $2, $3)',
+            [novoColaborador.id, campoId, valStr]
+          );
+        }
+      }
+    }
+
+    res.status(201).json(novoColaborador);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao cadastrar colaborador' });
   }
@@ -569,7 +696,7 @@ app.post('/api/colaboradores', async (req: Request, res: Response) => {
 // Atualizar colaborador
 app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url } = req.body;
+  const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, valores_customizados } = req.body;
 
   if (!nome || !cpf) {
     return res.status(400).json({ error: 'Campos Nome e CPF são obrigatórios' });
@@ -599,6 +726,28 @@ app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
+    }
+
+    // Salvar valores customizados se fornecidos
+    if (valores_customizados && typeof valores_customizados === 'object') {
+      for (const [campoIdStr, val] of Object.entries(valores_customizados)) {
+        const campoId = parseInt(campoIdStr, 10);
+        const valStr = String(val ?? '').trim();
+
+        if (valStr) {
+          await pool.query(
+            `INSERT INTO colaboradores_valores_customizados (colaborador_id, campo_id, valor)
+             VALUES ($1, $2, $3)
+             ON CONFLICT (colaborador_id, campo_id) DO UPDATE SET valor = EXCLUDED.valor`,
+            [id, campoId, valStr]
+          );
+        } else {
+          await pool.query(
+            `DELETE FROM colaboradores_valores_customizados WHERE colaborador_id = $1 AND campo_id = $2`,
+            [id, campoId]
+          );
+        }
+      }
     }
 
     res.json(result.rows[0]);
@@ -652,12 +801,13 @@ app.delete('/api/colaboradores/:id', async (req: Request, res: Response) => {
 // Root welcome route
 app.get('/', (req: Request, res: Response) => {
   res.json({
-    message: '🚀 Regz API - Sistema de Gestão de Colaboradores com CBO Brasil 100%',
+    message: '🚀 Regz API - Gestão de Colaboradores e Campos Customizados',
     endpoints: {
       health: '/api/health',
       dbStatus: '/api/db-status',
       colaboradores: '/api/colaboradores',
       cargos: '/api/cargos',
+      camposCustomizados: '/api/campos-customizados',
       cboSearch: '/api/cbo/search',
       gerarPessoa: '/api/gerar-pessoa',
       geocode: '/api/geocode'
