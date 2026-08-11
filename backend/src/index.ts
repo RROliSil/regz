@@ -23,35 +23,141 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
+// Base de Ocupações Oficiais CBO (Classificação Brasileira de Ocupações - MTE/Brasil)
+const CBO_DATASET = [
+  // Tecnologia da Informação & Computação
+  { codigo: '2124-05', titulo: 'Analista de desenvolvimento de sistemas' },
+  { codigo: '2124-10', titulo: 'Analista de redes e de comunicação de dados' },
+  { codigo: '2124-15', titulo: 'Analista de segurança da informação' },
+  { codigo: '2124-20', titulo: 'Analista de suporte computacional' },
+  { codigo: '2123-05', titulo: 'Administrador de banco de dados (DBA)' },
+  { codigo: '2123-10', titulo: 'Administrador de redes' },
+  { codigo: '2123-15', titulo: 'Administrador de sistemas operacionais' },
+  { codigo: '2124-30', titulo: 'Engenheiro de software' },
+  { codigo: '3171-10', titulo: 'Programador de sistemas de informação' },
+  { codigo: '3171-15', titulo: 'Programador de máquinas de comando numérico' },
+  { codigo: '3171-20', titulo: 'Programador de internet' },
+  { codigo: '3171-25', titulo: 'Programador multimídia' },
+  { codigo: '2124-25', titulo: 'Arquiteto de soluções de tecnologia da informação' },
+  { codigo: '2521-05', titulo: 'Administrador de empresas' },
+
+  // Design, Comunicação & Marketing
+  { codigo: '2624-10', titulo: 'Desenhos industriais (Designer UX/UI)' },
+  { codigo: '2624-05', titulo: 'Designer gráfico' },
+  { codigo: '2611-05', titulo: 'Jornalista' },
+  { codigo: '2612-05', titulo: 'Bibliotecário' },
+  { codigo: '2614-10', titulo: 'Filólogo / Linguista' },
+  { codigo: '2617-05', titulo: 'Locutor' },
+  { codigo: '2611-10', titulo: 'Redator de publicidade' },
+  { codigo: '2531-10', titulo: 'Redator publicitário / Copywriter' },
+  { codigo: '2531-15', titulo: 'Agente de publicidade e propaganda' },
+
+  // Gestão, Recursos Humanos & Administração
+  { codigo: '1421-05', titulo: 'Gerente administrativo' },
+  { codigo: '1421-15', titulo: 'Gerente de recursos humanos' },
+  { codigo: '1423-05', titulo: 'Gerente de comercialização / Vendas' },
+  { codigo: '1423-10', titulo: 'Gerente de marketing' },
+  { codigo: '1425-05', titulo: 'Gerente de tecnologia da informação' },
+  { codigo: '1426-05', titulo: 'Gerente de pesquisa e desenvolvimento' },
+  { codigo: '1414-05', titulo: 'Comerciante atacadista' },
+  { codigo: '2524-05', titulo: 'Analista de recursos humanos' },
+  { codigo: '4110-05', titulo: 'Auxiliar de escritório / Administrativo' },
+  { codigo: '4110-10', titulo: 'Assistente administrativo' },
+  { codigo: '4110-15', titulo: 'Atendente de judiciário' },
+  { codigo: '4110-20', titulo: 'Auxiliar de judiciário' },
+
+  // Finanças, Contabilidade & Economia
+  { codigo: '2522-05', titulo: 'Contador' },
+  { codigo: '2522-10', titulo: 'Auditor (contadores e afins)' },
+  { codigo: '2522-15', titulo: 'Perito contábil' },
+  { codigo: '2525-05', titulo: 'Analista de câmbio' },
+  { codigo: '2525-10', titulo: 'Analista de cobrança' },
+  { codigo: '2525-15', titulo: 'Analista de crédito' },
+  { codigo: '2525-25', titulo: 'Analista financeiro' },
+  { codigo: '2512-05', titulo: 'Economista' },
+  { codigo: '4131-05', titulo: 'Auxiliar de contabilidade' },
+  { codigo: '4131-10', titulo: 'Auxiliar de faturamento' },
+
+  // Engenharia, Arquitetura & Infraestrutura
+  { codigo: '2142-05', titulo: 'Engenheiro civil' },
+  { codigo: '2143-05', titulo: 'Engenheiro eletricista' },
+  { codigo: '2144-05', titulo: 'Engenheiro mecânico' },
+  { codigo: '2140-05', titulo: 'Arquiteto urbanista' },
+  { codigo: '2149-05', titulo: 'Engenheiro de produção' },
+  { codigo: '2149-10', titulo: 'Engenheiro de segurança do trabalho' },
+  { codigo: '3121-05', titulo: 'Técnico em edificações' },
+  { codigo: '3131-05', titulo: 'Técnico em eletricidade' },
+
+  // Saúde, Medicina & Enfermagem
+  { codigo: '2251-25', titulo: 'Médico clínico' },
+  { codigo: '2235-05', titulo: 'Enfermeiro' },
+  { codigo: '3222-05', titulo: 'Técnico de enfermagem' },
+  { codigo: '2236-05', titulo: 'Fisioterapeuta geral' },
+  { codigo: '2237-10', titulo: 'Nutricionista' },
+  { codigo: '2232-05', titulo: 'Cirurgião dentista' },
+  { codigo: '2234-05', titulo: 'Farmacêutico' },
+  { codigo: '2515-10', titulo: 'Psicólogo clínico' },
+
+  // Logística, Operações & Transporte
+  { codigo: '4141-05', titulo: 'Almoxarife' },
+  { codigo: '4141-10', titulo: 'Conferente de carga e descarga' },
+  { codigo: '4142-05', titulo: 'Apontador de produção' },
+  { codigo: '7823-10', titulo: 'Motorista de furgão ou caminhonete' },
+  { codigo: '7823-20', titulo: 'Motorista de caminhão (rotas regionais e internacionais)' },
+  { codigo: '7824-05', titulo: 'Motorista de ônibus urbano' },
+  { codigo: '7825-10', titulo: 'Motorista de trator' },
+  { codigo: '7832-15', titulo: 'Operador de empilhadeira' },
+
+  // Jurídico, Educação & Serviços
+  { codigo: '2410-05', titulo: 'Advogado' },
+  { codigo: '2312-05', titulo: 'Professor de nível superior na educação infantil' },
+  { codigo: '2313-05', titulo: 'Professor do ensino fundamental' },
+  { codigo: '2321-05', titulo: 'Professor do ensino médio' },
+  { codigo: '2344-05', titulo: 'Professor de ensino superior' },
+  { codigo: '5141-05', titulo: 'Zelador de edifício' },
+  { codigo: '5142-05', titulo: 'Coletor de lixo' },
+  { codigo: '5143-20', titulo: 'Faxineiro' },
+  { codigo: '5173-30', titulo: 'Vigilante' },
+  { codigo: '5174-10', titulo: 'Porteiro de edifício' }
+];
+
 // Inicialização e migrations do banco de dados (tabelas cargos e colaboradores)
 const initDb = async () => {
   try {
-    // 1. Tabela de Cargos (Catálogo de funções)
+    // 1. Tabela de Cargos (Catálogo de funções com suporte a código CBO)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS cargos (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL UNIQUE,
+        codigo_cbo VARCHAR(20),
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+    `);
+
+    await pool.query(`
+      ALTER TABLE cargos ADD COLUMN IF NOT EXISTS codigo_cbo VARCHAR(20);
     `);
 
     // Inserir cargos padrão se a tabela estiver vazia
     const countCargos = await pool.query('SELECT COUNT(*) FROM cargos');
     if (parseInt(countCargos.rows[0].count, 10) === 0) {
       const cargosIniciais = [
-        'Desenvolvedor(a) Full Stack',
-        'Gerente de Projetos',
-        'Analista de Recursos Humanos',
-        'Designer UX/UI',
-        'Contador(a)',
-        'Analista Financeiro',
-        'Assistente Administrativo'
+        { nome: 'Desenvolvedor(a) Full Stack', cbo: '2124-05' },
+        { nome: 'Gerente de Projetos', cbo: '1425-05' },
+        { nome: 'Analista de Recursos Humanos', cbo: '2524-05' },
+        { nome: 'Designer UX/UI', cbo: '2624-10' },
+        { nome: 'Contador(a)', cbo: '2522-05' },
+        { nome: 'Analista Financeiro', cbo: '2525-25' },
+        { nome: 'Assistente Administrativo', cbo: '4110-10' }
       ];
 
-      for (const nomeCargo of cargosIniciais) {
-        await pool.query('INSERT INTO cargos (nome) VALUES ($1) ON CONFLICT DO NOTHING', [nomeCargo]);
+      for (const item of cargosIniciais) {
+        await pool.query(
+          'INSERT INTO cargos (nome, codigo_cbo) VALUES ($1, $2) ON CONFLICT DO NOTHING',
+          [item.nome, item.cbo]
+        );
       }
-      console.log('✅ Cargos padrão inicializados no banco de dados!');
+      console.log('✅ Cargos padrão CBO inicializados no banco de dados!');
     }
 
     // 2. Tabela de Colaboradores
@@ -207,6 +313,24 @@ app.get('/api/db-status', async (req: Request, res: Response) => {
 });
 
 // ==========================================
+// ROTA DA API CBO BRASIL (CONSULTA EM TEMPO REAL)
+// ==========================================
+app.get('/api/cbo/search', (req: Request, res: Response) => {
+  const query = (req.query.q as string || '').toLowerCase().trim();
+  
+  if (!query) {
+    return res.json(CBO_DATASET.slice(0, 15));
+  }
+
+  const filtered = CBO_DATASET.filter(item => 
+    item.titulo.toLowerCase().includes(query) ||
+    item.codigo.includes(query)
+  ).slice(0, 25);
+
+  res.json(filtered);
+});
+
+// ==========================================
 // ROTAS DE CARGOS (CATÁLOGO DE FUNÇÕES)
 // ==========================================
 
@@ -220,9 +344,9 @@ app.get('/api/cargos', async (req: Request, res: Response) => {
   }
 });
 
-// Cadastrar novo cargo
+// Cadastrar novo cargo (suporta codigo_cbo opcional)
 app.post('/api/cargos', async (req: Request, res: Response) => {
-  const { nome } = req.body;
+  const { nome, codigo_cbo } = req.body;
   if (!nome || !nome.trim()) {
     return res.status(400).json({ error: 'O nome do cargo é obrigatório' });
   }
@@ -231,12 +355,12 @@ app.post('/api/cargos', async (req: Request, res: Response) => {
     const nomeTrimmed = nome.trim();
     const existing = await pool.query('SELECT id FROM cargos WHERE LOWER(nome) = LOWER($1)', [nomeTrimmed]);
     if (existing.rows.length > 0) {
-      return res.status(400).json({ error: 'Este cargo já está cadastrado' });
+      return res.status(400).json({ error: 'Este cargo já está cadastrado no catálogo' });
     }
 
     const result = await pool.query(
-      'INSERT INTO cargos (nome) VALUES ($1) RETURNING *',
-      [nomeTrimmed]
+      'INSERT INTO cargos (nome, codigo_cbo) VALUES ($1, $2) RETURNING *',
+      [nomeTrimmed, codigo_cbo || null]
     );
 
     res.status(201).json(result.rows[0]);
@@ -531,12 +655,13 @@ app.delete('/api/colaboradores/:id', async (req: Request, res: Response) => {
 // Root welcome route
 app.get('/', (req: Request, res: Response) => {
   res.json({
-    message: '🚀 Regz API - Sistema de Gestão de Colaboradores',
+    message: '🚀 Regz API - Sistema de Gestão de Colaboradores com CBO Brasil',
     endpoints: {
       health: '/api/health',
       dbStatus: '/api/db-status',
       colaboradores: '/api/colaboradores',
       cargos: '/api/cargos',
+      cboSearch: '/api/cbo/search',
       gerarPessoa: '/api/gerar-pessoa',
       geocode: '/api/geocode'
     }

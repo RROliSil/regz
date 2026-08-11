@@ -20,5 +20,11 @@ export interface Colaborador {
 export interface Cargo {
   id?: number;
   nome: string;
+  codigo_cbo?: string | null;
   criado_em?: string;
+}
+
+export interface CboItem {
+  codigo: string;
+  titulo: string;
 }

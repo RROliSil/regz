@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Cargo } from '../types/colaborador';
-import { Briefcase, Plus, Trash2, Loader2, Check, Sliders, AlertCircle } from 'lucide-react';
+import { Cargo, CboItem } from '../types/colaborador';
+import { Briefcase, Plus, Trash2, Loader2, Check, Sliders, AlertCircle, Search, Award, Download } from 'lucide-react';
 
 export const Campos: React.FC = () => {
   const [cargos, setCargos] = useState<Cargo[]>([]);
@@ -9,6 +9,12 @@ export const Campos: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // Estados da Busca Oficial CBO Brasil
+  const [cboQuery, setCboQuery] = useState('');
+  const [cboResults, setCboResults] = useState<CboItem[]>([]);
+  const [loadingCbo, setLoadingCbo] = useState(false);
+  const [importingCode, setImportingCode] = useState<string | null>(null);
 
   // Carregar catálogo de cargos da API
   const fetchCargos = async () => {
@@ -26,27 +32,62 @@ export const Campos: React.FC = () => {
     }
   };
 
+  // Buscar Ocupações na API CBO Brasil
+  const fetchCbo = async (query: string) => {
+    setLoadingCbo(true);
+    try {
+      const res = await fetch(`/api/cbo/search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCboResults(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar CBO:', err);
+    } finally {
+      setLoadingCbo(false);
+    }
+  };
+
   useEffect(() => {
     fetchCargos();
+    fetchCbo('');
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchCbo(cboQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [cboQuery]);
+
   // Cadastrar novo cargo no catálogo
-  const handleAddCargo = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleAddCargo = async (e?: React.FormEvent, cargoCustom?: { nome: string; cbo?: string }) => {
+    if (e) e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!novoCargo.trim()) {
+    const nomeParaCadastrar = cargoCustom ? cargoCustom.nome : novoCargo.trim();
+    const cboParaCadastrar = cargoCustom ? cargoCustom.cbo : null;
+
+    if (!nomeParaCadastrar) {
       setErrorMsg('Digite o nome do cargo para cadastrar.');
       return;
     }
 
-    setSubmitting(true);
+    if (cargoCustom) {
+      setImportingCode(cargoCustom.cbo || cargoCustom.nome);
+    } else {
+      setSubmitting(true);
+    }
+
     try {
       const res = await fetch('/api/cargos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nome: novoCargo.trim() })
+        body: JSON.stringify({
+          nome: nomeParaCadastrar,
+          codigo_cbo: cboParaCadastrar
+        })
       });
 
       const data = await res.json();
@@ -54,15 +95,16 @@ export const Campos: React.FC = () => {
       if (!res.ok) {
         setErrorMsg(data.error || 'Erro ao cadastrar cargo.');
       } else {
-        setNovoCargo('');
-        setSuccessMsg(`Cargo "${data.nome}" adicionado com sucesso!`);
+        if (!cargoCustom) setNovoCargo('');
+        setSuccessMsg(`Cargo "${data.nome}" ${data.codigo_cbo ? `(CBO ${data.codigo_cbo})` : ''} adicionado ao catálogo!`);
         fetchCargos();
-        setTimeout(() => setSuccessMsg(''), 3000);
+        setTimeout(() => setSuccessMsg(''), 3500);
       }
     } catch (err) {
       setErrorMsg('Erro de conexão ao cadastrar cargo.');
     } finally {
       setSubmitting(false);
+      setImportingCode(null);
     }
   };
 
@@ -88,24 +130,24 @@ export const Campos: React.FC = () => {
       <header className="page-header" style={{ marginBottom: '28px' }}>
         <div>
           <h1 className="page-title">
-            Catálogo de <span className="text-gradient">Campos & Cargos</span>
+            Catálogo de <span className="text-gradient">Campos & CBO Brasil</span>
           </h1>
           <p className="page-description">
-            Gerencie os cargos e opções pré-definidas para seleção no formulário de colaboradores.
+            Gerencie os cargos com suporte à Classificação Brasileira de Ocupações (CBO - MTE/Brasil).
           </p>
         </div>
       </header>
 
-      {/* Grid com Painel de Cadastro e Lista de Cargos */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px' }}>
+      {/* Seção Principal de Consulta e Cadastro CBO */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '24px', marginBottom: '32px' }}>
         
-        {/* Formulário de Adição de Cargo */}
+        {/* Formulário de Adição de Cargo Manual */}
         <div className="glass-panel" style={{ padding: '24px', height: 'fit-content' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
             <div className="brand-logo" style={{ padding: '8px', borderRadius: '10px' }}>
               <Briefcase size={20} color="#ffffff" />
             </div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Novo Cargo</h3>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Novo Cargo Customizado</h3>
           </div>
 
           {errorMsg && (
@@ -120,12 +162,12 @@ export const Campos: React.FC = () => {
             </div>
           )}
 
-          <form onSubmit={handleAddCargo} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form onSubmit={(e) => handleAddCargo(e)} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div className="form-group">
               <label>Nome do Cargo *</label>
               <input
                 type="text"
-                placeholder="Ex: Desenvolvedor(a), Gerente de Vendas..."
+                placeholder="Ex: Desenvolvedor(a), Coordenador(a)..."
                 value={novoCargo}
                 onChange={(e) => setNovoCargo(e.target.value)}
                 disabled={submitting}
@@ -151,69 +193,168 @@ export const Campos: React.FC = () => {
           </form>
         </div>
 
-        {/* Lista/Tabela de Cargos Cadastrados */}
-        <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {/* Painel de Busca Oficial CBO Brasil (MTE) */}
+        <div className="glass-panel" style={{ padding: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Sliders size={18} color="#38bdf8" />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Cargos Disponíveis ({cargos.length})</h3>
+              <Award size={22} color="#38bdf8" />
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Catálogo Oficial CBO Brasil (MTE)</h3>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Classificação Brasileira de Ocupações</span>
+              </div>
+            </div>
+
+            <div className="search-box" style={{ width: '280px' }}>
+              <Search size={16} color="var(--text-muted)" />
+              <input
+                type="text"
+                placeholder="Buscar por código CBO ou nome..."
+                value={cboQuery}
+                onChange={(e) => setCboQuery(e.target.value)}
+              />
             </div>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table className="custom-table">
+          <div style={{ maxHeight: '280px', overflowY: 'auto', border: '1px solid var(--card-border)', borderRadius: '12px', background: 'rgba(15, 23, 42, 0.4)' }}>
+            <table className="custom-table" style={{ fontSize: '0.85rem' }}>
               <thead>
                 <tr>
-                  <th>#ID</th>
-                  <th>Nome do Cargo</th>
-                  <th>Data de Adição</th>
-                  <th style={{ textAlign: 'right' }}>Ação</th>
+                  <th style={{ width: '110px' }}>Código CBO</th>
+                  <th>Título Oficial da Ocupação</th>
+                  <th style={{ textAlign: 'right', width: '140px' }}>Ação</th>
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
+                {loadingCbo ? (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'center', padding: '40px' }}>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)' }}>
-                        <Loader2 className="spin" size={20} /> Carregando cargos...
-                      </div>
+                    <td colSpan={3} style={{ textAlign: 'center', padding: '20px' }}>
+                      <Loader2 className="spin" size={18} /> Buscando na base CBO...
                     </td>
                   </tr>
-                ) : cargos.length === 0 ? (
+                ) : cboResults.length === 0 ? (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
-                      Nenhum cargo cadastrado no catálogo. Adicione um no painel ao lado.
+                    <td colSpan={3} style={{ textAlign: 'center', padding: '20px', color: 'var(--text-dim)' }}>
+                      Nenhuma ocupação CBO encontrada para "{cboQuery}".
                     </td>
                   </tr>
                 ) : (
-                  cargos.map((cargo) => (
-                    <tr key={cargo.id}>
-                      <td style={{ width: '60px', color: 'var(--text-dim)' }}>#{cargo.id}</td>
-                      <td>
-                        <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.95rem' }}>
-                          {cargo.nome}
-                        </span>
-                      </td>
-                      <td style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>
-                        {cargo.criado_em ? new Date(cargo.criado_em).toLocaleDateString('pt-BR') : '-'}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button
-                          onClick={() => cargo.id && handleDeleteCargo(cargo.id, cargo.nome)}
-                          className="btn-action delete"
-                          title="Remover cargo do catálogo"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+                  cboResults.map((item) => {
+                    const jaExiste = cargos.some(c => c.nome.toLowerCase() === item.titulo.toLowerCase());
+                    return (
+                      <tr key={item.codigo}>
+                        <td>
+                          <code style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                            {item.codigo}
+                          </code>
+                        </td>
+                        <td>
+                          <span style={{ fontWeight: 600, color: '#f8fafc' }}>{item.titulo}</span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          {jaExiste ? (
+                            <span style={{ fontSize: '0.75rem', color: '#34d399', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <Check size={14} /> Importado
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleAddCargo(undefined, { nome: item.titulo, cbo: item.codigo })}
+                              className="btn-action map"
+                              style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+                              disabled={importingCode === item.codigo}
+                              title="Importar esta ocupação CBO para o catálogo"
+                            >
+                              {importingCode === item.codigo ? (
+                                <Loader2 size={12} className="spin" />
+                              ) : (
+                                <>
+                                  <Download size={12} /> Importar
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
         </div>
 
+      </div>
+
+      {/* Tabela dos Cargos Atualmente Disponíveis no Sistema */}
+      <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Sliders size={18} color="#38bdf8" />
+            <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Cargos Ativos no Catálogo do Banco de Dados ({cargos.length})</h3>
+          </div>
+        </div>
+
+        <div style={{ overflowX: 'auto' }}>
+          <table className="custom-table">
+            <thead>
+              <tr>
+                <th style={{ width: '80px' }}>#ID</th>
+                <th>Código CBO</th>
+                <th>Nome do Cargo</th>
+                <th>Data de Cadastro</th>
+                <th style={{ textAlign: 'right' }}>Ação</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '40px' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)' }}>
+                      <Loader2 className="spin" size={20} /> Carregando catálogo...
+                    </div>
+                  </td>
+                </tr>
+              ) : cargos.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
+                    Nenhum cargo cadastrado no catálogo. Importe da CBO acima ou adicione um manualmente.
+                  </td>
+                </tr>
+              ) : (
+                cargos.map((cargo) => (
+                  <tr key={cargo.id}>
+                    <td style={{ color: 'var(--text-dim)' }}>#{cargo.id}</td>
+                    <td>
+                      {cargo.codigo_cbo ? (
+                        <span style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#a5b4fc', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '2px 8px', borderRadius: '6px', fontSize: '0.78rem', fontFamily: 'monospace' }}>
+                          CBO {cargo.codigo_cbo}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>Customizado</span>
+                      )}
+                    </td>
+                    <td>
+                      <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.95rem' }}>
+                        {cargo.nome}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>
+                      {cargo.criado_em ? new Date(cargo.criado_em).toLocaleDateString('pt-BR') : '-'}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button
+                        onClick={() => cargo.id && handleDeleteCargo(cargo.id, cargo.nome)}
+                        className="btn-action delete"
+                        title="Remover cargo do catálogo"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

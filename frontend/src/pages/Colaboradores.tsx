@@ -1141,7 +1141,7 @@ export const Colaboradores: React.FC = () => {
                     <option value="">Selecione um cargo...</option>
                     {cargosList.map((cg) => (
                       <option key={cg.id} value={cg.nome}>
-                        {cg.nome}
+                        {cg.nome} {cg.codigo_cbo ? `(CBO ${cg.codigo_cbo})` : ''}
                       </option>
                     ))}
                   </select>
