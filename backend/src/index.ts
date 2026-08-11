@@ -23,14 +23,44 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
-// Inicialização e migrations da tabela de colaboradores
+// Inicialização e migrations do banco de dados (tabelas cargos e colaboradores)
 const initDb = async () => {
   try {
+    // 1. Tabela de Cargos (Catálogo de funções)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS cargos (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL UNIQUE,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Inserir cargos padrão se a tabela estiver vazia
+    const countCargos = await pool.query('SELECT COUNT(*) FROM cargos');
+    if (parseInt(countCargos.rows[0].count, 10) === 0) {
+      const cargosIniciais = [
+        'Desenvolvedor(a) Full Stack',
+        'Gerente de Projetos',
+        'Analista de Recursos Humanos',
+        'Designer UX/UI',
+        'Contador(a)',
+        'Analista Financeiro',
+        'Assistente Administrativo'
+      ];
+
+      for (const nomeCargo of cargosIniciais) {
+        await pool.query('INSERT INTO cargos (nome) VALUES ($1) ON CONFLICT DO NOTHING', [nomeCargo]);
+      }
+      console.log('✅ Cargos padrão inicializados no banco de dados!');
+    }
+
+    // 2. Tabela de Colaboradores
     await pool.query(`
       CREATE TABLE IF NOT EXISTS colaboradores (
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL,
         cpf VARCHAR(14) NOT NULL UNIQUE,
+        cargo VARCHAR(255),
         cep VARCHAR(9),
         logradouro VARCHAR(255),
         numero VARCHAR(50),
@@ -48,13 +78,14 @@ const initDb = async () => {
     
     await pool.query(`
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true;
+      ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS cargo VARCHAR(255);
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,8);
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8);
     `);
 
-    console.log('✅ Tabela "colaboradores" inicializada com suporte a Geolocalização de Alta Precisão!');
+    console.log('✅ Tabelas "cargos" e "colaboradores" inicializadas com sucesso no PostgreSQL!');
   } catch (error) {
-    console.error('⚠️ Erro ao inicializar a tabela "colaboradores":', error);
+    console.error('⚠️ Erro ao inicializar o banco de dados:', error);
   }
 };
 
@@ -93,12 +124,11 @@ const ENDERECOS_EXEMPLO = [
   { cep: '12220-520', logradouro: 'Rua Alfredo Pereira Filho', bairro: 'Vila Industrial', cidade: 'São José dos Campos', estado: 'SP', lat: -23.1818, lon: -45.8655 }
 ];
 
-// Geocodificação de Alta Precisão via OpenStreetMap (Busca Encadeada por Endereço Completo)
+// Geocodificação de Alta Precisão via OpenStreetMap
 const fetchGeocodingHighPrecision = async (logradouro?: string, numeroStr?: string, cidade?: string, estado?: string, cep?: string) => {
   try {
     const headers = { 'User-Agent': 'RegzApp/1.0 (contact@regz.app)' };
 
-    // Etapa 1: Busca completa por Endereço + Número + Bairro + Cidade + Estado + CEP
     const fullQuery = [logradouro, numeroStr ? `nº ${numeroStr}` : '', cidade, estado, cep, 'Brasil'].filter(Boolean).join(', ');
     if (fullQuery) {
       const url1 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullQuery)}&limit=1`;
@@ -114,7 +144,6 @@ const fetchGeocodingHighPrecision = async (logradouro?: string, numeroStr?: stri
       }
     }
 
-    // Etapa 2: Busca por Rua + Cidade + Estado + CEP
     const streetQuery = [logradouro, cidade, estado, cep, 'Brasil'].filter(Boolean).join(', ');
     if (streetQuery) {
       const url2 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(streetQuery)}&limit=1`;
@@ -130,7 +159,6 @@ const fetchGeocodingHighPrecision = async (logradouro?: string, numeroStr?: stri
       }
     }
 
-    // Etapa 3: Busca apenas pelo CEP
     if (cep) {
       const cepQuery = `${cep}, Brasil`;
       const url3 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cepQuery)}&limit=1`;
@@ -178,7 +206,62 @@ app.get('/api/db-status', async (req: Request, res: Response) => {
   }
 });
 
-// Rota de geocodificação de precisão
+// ==========================================
+// ROTAS DE CARGOS (CATÁLOGO DE FUNÇÕES)
+// ==========================================
+
+// Listar todos os cargos cadastrados
+app.get('/api/cargos', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query('SELECT * FROM cargos ORDER BY nome ASC');
+    res.json(result.rows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar cargos' });
+  }
+});
+
+// Cadastrar novo cargo
+app.post('/api/cargos', async (req: Request, res: Response) => {
+  const { nome } = req.body;
+  if (!nome || !nome.trim()) {
+    return res.status(400).json({ error: 'O nome do cargo é obrigatório' });
+  }
+
+  try {
+    const nomeTrimmed = nome.trim();
+    const existing = await pool.query('SELECT id FROM cargos WHERE LOWER(nome) = LOWER($1)', [nomeTrimmed]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Este cargo já está cadastrado' });
+    }
+
+    const result = await pool.query(
+      'INSERT INTO cargos (nome) VALUES ($1) RETURNING *',
+      [nomeTrimmed]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao cadastrar cargo' });
+  }
+});
+
+// Excluir um cargo do catálogo
+app.delete('/api/cargos/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM cargos WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Cargo não encontrado' });
+    }
+    res.json({ success: true, message: 'Cargo removido com sucesso' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao remover cargo' });
+  }
+});
+
+// ==========================================
+// ROTA DE GEOCODIFICAÇÃO DE PRECISÃO
+// ==========================================
 app.get('/api/geocode', async (req: Request, res: Response) => {
   const { logradouro, numero, cidade, estado, cep } = req.query;
   const coords = await fetchGeocodingHighPrecision(
@@ -191,9 +274,21 @@ app.get('/api/geocode', async (req: Request, res: Response) => {
   res.json(coords);
 });
 
-// Rota gerador de pessoas (4Devs / Fallback)
+// ==========================================
+// ROTA GERADOR DE PESSOA (4DEVS / FALLBACK)
+// ==========================================
 app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
   let pessoaGerada: any = null;
+
+  // Buscar cargos disponíveis no banco de dados para sortear um
+  let cargoSorteado = 'Desenvolvedor(a) Full Stack';
+  try {
+    const cargosRes = await pool.query('SELECT nome FROM cargos');
+    if (cargosRes.rows.length > 0) {
+      const idx = Math.floor(Math.random() * cargosRes.rows.length);
+      cargoSorteado = cargosRes.rows[idx].nome;
+    }
+  } catch (e) { /* fallback */ }
 
   try {
     const params = new URLSearchParams({
@@ -226,6 +321,7 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
           pessoaGerada = {
             nome: p.nome,
             cpf: p.cpf,
+            cargo: cargoSorteado,
             cep: p.cep || '01001-000',
             logradouro: p.endereco || 'Avenida Principal',
             numero: p.numero ? String(p.numero) : String(Math.floor(Math.random() * 800) + 20),
@@ -257,6 +353,7 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
     pessoaGerada = {
       nome: nomeRandom,
       cpf: cpfRandom,
+      cargo: cargoSorteado,
       cep: endRandom.cep,
       logradouro: endRandom.logradouro,
       numero: numRandom,
@@ -273,9 +370,48 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
   return res.json(pessoaGerada);
 });
 
+// ==========================================
+// ROTAS CRUD DE COLABORADORES
+// ==========================================
+
+// Listar todos os colaboradores
+app.get('/api/colaboradores', async (req: Request, res: Response) => {
+  const { status } = req.query;
+  try {
+    let query = 'SELECT * FROM colaboradores';
+    const values: any[] = [];
+
+    if (status === 'ativos') {
+      query += ' WHERE ativo = true';
+    } else if (status === 'inativos') {
+      query += ' WHERE ativo = false';
+    }
+
+    query += ' ORDER BY id DESC';
+    const result = await pool.query(query, values);
+    res.json(result.rows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar colaboradores' });
+  }
+});
+
+// Buscar colaborador por ID
+app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM colaboradores WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Colaborador não encontrado' });
+    }
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar colaborador' });
+  }
+});
+
 // Cadastrar novo colaborador
 app.post('/api/colaboradores', async (req: Request, res: Response) => {
-  const { nome, cpf, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url } = req.body;
+  const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url } = req.body;
 
   if (!nome || !cpf) {
     return res.status(400).json({ error: 'Campos Nome e CPF são obrigatórios' });
@@ -297,10 +433,10 @@ app.post('/api/colaboradores', async (req: Request, res: Response) => {
 
     const result = await pool.query(
       `INSERT INTO colaboradores 
-      (nome, cpf, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, ativo) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true) 
+      (nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, ativo) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, true) 
       RETURNING *`,
-      [nome, cpf, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null]
+      [nome, cpf, cargo || null, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null]
     );
 
     res.status(201).json(result.rows[0]);
@@ -312,7 +448,7 @@ app.post('/api/colaboradores', async (req: Request, res: Response) => {
 // Atualizar colaborador
 app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { nome, cpf, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url } = req.body;
+  const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url } = req.body;
 
   if (!nome || !cpf) {
     return res.status(400).json({ error: 'Campos Nome e CPF são obrigatórios' });
@@ -334,10 +470,10 @@ app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
 
     const result = await pool.query(
       `UPDATE colaboradores 
-       SET nome = $1, cpf = $2, cep = $3, logradouro = $4, numero = $5, complemento = $6, bairro = $7, cidade = $8, estado = $9, latitude = $10, longitude = $11, foto_url = $12 
-       WHERE id = $13 
+       SET nome = $1, cpf = $2, cargo = $3, cep = $4, logradouro = $5, numero = $6, complemento = $7, bairro = $8, cidade = $9, estado = $10, latitude = $11, longitude = $12, foto_url = $13 
+       WHERE id = $14 
        RETURNING *`,
-      [nome, cpf, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null, id]
+      [nome, cpf, cargo || null, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null, id]
     );
 
     if (result.rows.length === 0) {
@@ -347,27 +483,6 @@ app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
     res.json(result.rows[0]);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao atualizar colaborador' });
-  }
-});
-
-// Listar colaboradores
-app.get('/api/colaboradores', async (req: Request, res: Response) => {
-  const { status } = req.query;
-  try {
-    let query = 'SELECT * FROM colaboradores';
-    const values: any[] = [];
-
-    if (status === 'ativos') {
-      query += ' WHERE ativo = true';
-    } else if (status === 'inativos') {
-      query += ' WHERE ativo = false';
-    }
-
-    query += ' ORDER BY id DESC';
-    const result = await pool.query(query, values);
-    res.json(result.rows);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Erro ao buscar colaboradores' });
   }
 });
 
@@ -421,6 +536,7 @@ app.get('/', (req: Request, res: Response) => {
       health: '/api/health',
       dbStatus: '/api/db-status',
       colaboradores: '/api/colaboradores',
+      cargos: '/api/cargos',
       gerarPessoa: '/api/gerar-pessoa',
       geocode: '/api/geocode'
     }

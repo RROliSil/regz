@@ -1,12 +1,8 @@
 import React from 'react';
-import { Home, Users, Briefcase, FileBarChart, Settings, Container, Plus } from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import { Home, Users, Sliders, Briefcase, FileBarChart, Settings, Container, Plus } from 'lucide-react';
 
-interface SidebarProps {
-  activeTab: 'home' | 'colaboradores';
-  setActiveTab: (tab: 'home' | 'colaboradores') => void;
-}
-
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+export const Sidebar: React.FC = () => {
   return (
     <aside className="sidebar">
       {/* App Logo & Header */}
@@ -24,21 +20,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       <nav className="sidebar-nav">
         <div className="nav-section-label">Navegação Principal</div>
         
-        <button
-          className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
-          onClick={() => setActiveTab('home')}
+        <NavLink
+          to="/home"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
         >
           <Home size={20} />
           <span>Home</span>
-        </button>
+        </NavLink>
 
-        <button
-          className={`nav-item ${activeTab === 'colaboradores' ? 'active' : ''}`}
-          onClick={() => setActiveTab('colaboradores')}
+        <NavLink
+          to="/colaboradores"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
         >
           <Users size={20} />
           <span>Colaboradores</span>
-        </button>
+        </NavLink>
+
+        <NavLink
+          to="/campos"
+          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+        >
+          <Sliders size={20} />
+          <span>Campos</span>
+        </NavLink>
 
         {/* Espaços para Futuras Abas */}
         <div className="nav-section-label" style={{ marginTop: '24px' }}>Módulos Futuros</div>

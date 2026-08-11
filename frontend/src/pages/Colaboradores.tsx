@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Colaborador } from '../types/colaborador';
-import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink } from 'lucide-react';
+import { Colaborador, Cargo } from '../types/colaborador';
+import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink, Briefcase } from 'lucide-react';
 
 interface ColumnConfig {
   foto: boolean;
   nome: boolean;
   cpf: boolean;
+  cargo: boolean;
   endereco: boolean;
   cidade: boolean;
   criado_em: boolean;
@@ -13,6 +14,7 @@ interface ColumnConfig {
 
 export const Colaboradores: React.FC = () => {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
+  const [cargosList, setCargosList] = useState<Cargo[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSubTab, setActiveSubTab] = useState<'ativos' | 'inativos'>('ativos');
@@ -32,12 +34,13 @@ export const Colaboradores: React.FC = () => {
     if (saved) {
       try { return JSON.parse(saved); } catch (e) { /* fallback */ }
     }
-    return { foto: true, nome: true, cpf: true, endereco: true, cidade: true, criado_em: false };
+    return { foto: true, nome: true, cpf: true, cargo: true, endereco: true, cidade: true, criado_em: false };
   });
 
   // Formulário State
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
+  const [cargo, setCargo] = useState('');
   const [cep, setCep] = useState('');
   const [logradouro, setLogradouro] = useState('');
   const [numero, setNumero] = useState('');
@@ -64,7 +67,7 @@ export const Colaboradores: React.FC = () => {
     localStorage.setItem('regz_visible_columns', JSON.stringify(visibleColumns));
   }, [visibleColumns]);
 
-  // Buscar lista completa de colaboradores
+  // Buscar lista completa de colaboradores e catálogo de cargos
   const fetchColaboradores = async () => {
     setLoading(true);
     try {
@@ -80,8 +83,21 @@ export const Colaboradores: React.FC = () => {
     }
   };
 
+  const fetchCargosList = async () => {
+    try {
+      const res = await fetch('/api/cargos');
+      if (res.ok) {
+        const data = await res.json();
+        setCargosList(data);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar lista de cargos:', err);
+    }
+  };
+
   useEffect(() => {
     fetchColaboradores();
+    fetchCargosList();
   }, []);
 
   // Abrir o endereço do colaborador no Google Maps com ALTA PRECISÃO
@@ -161,6 +177,7 @@ export const Colaboradores: React.FC = () => {
           resetForm();
           setNome(p.nome || '');
           setCpf(p.cpf || '');
+          setCargo(p.cargo || '');
           setCep(p.cep || '');
           setLogradouro(p.logradouro || '');
           setNumero(p.numero || '');
@@ -322,6 +339,7 @@ export const Colaboradores: React.FC = () => {
     setEditingId(null);
     setNome('');
     setCpf('');
+    setCargo('');
     setCep('');
     setLogradouro('');
     setNumero('');
@@ -345,6 +363,7 @@ export const Colaboradores: React.FC = () => {
     setEditingId(c.id || null);
     setNome(c.nome);
     setCpf(c.cpf);
+    setCargo(c.cargo || '');
     setCep(c.cep || '');
     setLogradouro(c.logradouro || '');
     setNumero(c.numero || '');
@@ -378,6 +397,7 @@ export const Colaboradores: React.FC = () => {
     const payload = {
       nome: nome.trim(),
       cpf: cpf.trim(),
+      cargo: cargo.trim() || null,
       cep: cep.trim() || null,
       logradouro: logradouro.trim() || null,
       numero: numero.trim() || null,
@@ -458,6 +478,7 @@ export const Colaboradores: React.FC = () => {
   const filteredColaboradores = listTarget.filter(c => 
     c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.cpf.includes(searchTerm) ||
+    (c.cargo && c.cargo.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (c.cidade && c.cidade.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -526,7 +547,7 @@ export const Colaboradores: React.FC = () => {
           <Search size={18} color="var(--text-muted)" />
           <input
             type="text"
-            placeholder="Buscar por nome, CPF ou cidade..."
+            placeholder="Buscar por nome, CPF, cargo ou cidade..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -559,6 +580,10 @@ export const Colaboradores: React.FC = () => {
                   <span>CPF</span>
                 </label>
                 <label className="checkbox-label">
+                  <input type="checkbox" checked={visibleColumns.cargo} onChange={() => toggleColumn('cargo')} />
+                  <span>Cargo / Função</span>
+                </label>
+                <label className="checkbox-label">
                   <input type="checkbox" checked={visibleColumns.endereco} onChange={() => toggleColumn('endereco')} />
                   <span>Endereço</span>
                 </label>
@@ -589,6 +614,7 @@ export const Colaboradores: React.FC = () => {
                 {visibleColumns.foto && <th style={{ width: '70px' }}>Foto</th>}
                 {visibleColumns.nome && <th>Nome</th>}
                 {visibleColumns.cpf && <th>CPF</th>}
+                {visibleColumns.cargo && <th>Cargo</th>}
                 {visibleColumns.endereco && <th>Endereço</th>}
                 {visibleColumns.cidade && <th>Cidade / UF</th>}
                 {visibleColumns.criado_em && <th>Data de Cadastro</th>}
@@ -598,7 +624,7 @@ export const Colaboradores: React.FC = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)' }}>
                       <Loader2 className="spin" size={20} /> Carregando lista...
                     </div>
@@ -606,7 +632,7 @@ export const Colaboradores: React.FC = () => {
                 </tr>
               ) : filteredColaboradores.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
                     {searchTerm 
                       ? 'Nenhum resultado encontrado para a busca.' 
                       : activeSubTab === 'ativos'
@@ -663,6 +689,18 @@ export const Colaboradores: React.FC = () => {
                       </td>
                     )}
 
+                    {visibleColumns.cargo && (
+                      <td>
+                        {c.cargo ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#a5b4fc', background: 'rgba(99, 102, 241, 0.12)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
+                            <Briefcase size={13} color="#818cf8" /> {c.cargo}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Não definido</span>
+                        )}
+                      </td>
+                    )}
+
                     {visibleColumns.endereco && (
                       <td>
                         {c.logradouro ? (
@@ -676,7 +714,6 @@ export const Colaboradores: React.FC = () => {
                       </td>
                     )}
 
-                    {/* Coluna Cidade / UF com texto limpo */}
                     {visibleColumns.cidade && (
                       <td>
                         {c.cidade ? (
@@ -695,10 +732,9 @@ export const Colaboradores: React.FC = () => {
                       </td>
                     )}
 
-                    {/* Coluna Ações (Sem o lápis; linha inteira é clicável para editar) */}
+                    {/* Coluna Ações */}
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '8px' }}>
-                        {/* Botão de Mapa Quadrado nas Ações */}
                         {(c.cidade || c.logradouro || c.cep) && (
                           <button
                             onClick={(e) => {
@@ -865,7 +901,7 @@ export const Colaboradores: React.FC = () => {
 
               {/* Dados Obrigatórios */}
               <div className="form-section-title">Dados Obrigatórios</div>
-              <div className="form-grid-2">
+              <div className="form-grid-3">
                 <div className="form-group">
                   <label>Nome Completo *</label>
                   <input
@@ -888,13 +924,29 @@ export const Colaboradores: React.FC = () => {
                     required
                   />
                 </div>
+
+                {/* Dropdown de Cargo Selecionável */}
+                <div className="form-group">
+                  <label>Cargo / Função</label>
+                  <select
+                    value={cargo}
+                    onChange={(e) => setCargo(e.target.value)}
+                    className="custom-select"
+                  >
+                    <option value="">Selecione um cargo...</option>
+                    {cargosList.map((cg) => (
+                      <option key={cg.id} value={cg.nome}>
+                        {cg.nome}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              {/* Endereço Opcional com Geolocalização de Alta Precisão */}
+              {/* Endereço Opcional */}
               <div className="form-section-title" style={{ marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span>Endereço <span style={{ fontSize: '0.8rem', fontWeight: 400, color: 'var(--text-muted)' }}>(Opcional)</span></span>
                 
-                {/* Botão de Mapa dentro do Modal de Cadastro / Edição */}
                 {(logradouro || cidade || cep) && (
                   <button
                     type="button"
