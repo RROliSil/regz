@@ -82,6 +82,8 @@ export const Colaboradores: React.FC = () => {
   const [nome, setNome] = useState('');
   const [cpf, setCpf] = useState('');
   const [cargo, setCargo] = useState('');
+  const [cargoSearchOpen, setCargoSearchOpen] = useState(false);
+  const [cargoSearchTerm, setCargoSearchTerm] = useState('');
   const [cep, setCep] = useState('');
   const [logradouro, setLogradouro] = useState('');
   const [numero, setNumero] = useState('');
@@ -1130,21 +1132,100 @@ export const Colaboradores: React.FC = () => {
                   />
                 </div>
 
-                {/* Dropdown de Cargo Selecionável */}
-                <div className="form-group">
-                  <label>Cargo / Função</label>
-                  <select
-                    value={cargo}
-                    onChange={(e) => setCargo(e.target.value)}
-                    className="custom-select"
-                  >
-                    <option value="">Selecione um cargo...</option>
-                    {cargosList.map((cg) => (
-                      <option key={cg.id} value={cg.nome}>
-                        {cg.nome} {cg.codigo_cbo ? `(CBO ${cg.codigo_cbo})` : ''}
-                      </option>
-                    ))}
-                  </select>
+                {/* Dropdown Selecionável com Busca por Nome ou Código CBO */}
+                <div className="form-group" style={{ position: 'relative' }}>
+                  <label>Cargo / Função (Pesquisa por Nome ou CBO)</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      placeholder="Pesquisar por cargo ou CBO..."
+                      value={cargoSearchOpen ? cargoSearchTerm : cargo}
+                      onFocus={() => {
+                        setCargoSearchOpen(true);
+                        setCargoSearchTerm(cargo || '');
+                      }}
+                      onChange={(e) => {
+                        setCargoSearchTerm(e.target.value);
+                        setCargo(e.target.value);
+                        setCargoSearchOpen(true);
+                      }}
+                      style={{ paddingRight: '36px' }}
+                    />
+                    <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                  </div>
+
+                  {cargoSearchOpen && (
+                    <>
+                      <div 
+                        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 998 }} 
+                        onClick={() => setCargoSearchOpen(false)} 
+                      />
+                      <div 
+                        className="glass-panel" 
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          right: 0,
+                          top: '100%',
+                          marginTop: '6px',
+                          maxHeight: '230px',
+                          overflowY: 'auto',
+                          zIndex: 999,
+                          padding: '6px',
+                          boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                          border: '1px solid rgba(56, 189, 248, 0.3)',
+                          background: '#0f172a'
+                        }}
+                      >
+                        {cargosList
+                          .filter(cg => {
+                            const q = cargoSearchTerm.toLowerCase().trim();
+                            if (!q) return true;
+                            return cg.nome.toLowerCase().includes(q) || (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().includes(q));
+                          })
+                          .map(cg => (
+                            <div
+                              key={cg.id}
+                              onClick={() => {
+                                setCargo(cg.nome);
+                                setCargoSearchTerm(cg.nome);
+                                setCargoSearchOpen(false);
+                              }}
+                              style={{
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                transition: 'background 0.15s ease',
+                                background: cargo === cg.nome ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+                                marginBottom: '2px'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = cargo === cg.nome ? 'rgba(56, 189, 248, 0.2)' : 'transparent'}
+                            >
+                              <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.88rem' }}>{cg.nome}</span>
+                              {cg.codigo_cbo && (
+                                <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 600 }}>
+                                  CBO {cg.codigo_cbo}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+
+                        {cargosList.filter(cg => {
+                          const q = cargoSearchTerm.toLowerCase().trim();
+                          if (!q) return true;
+                          return cg.nome.toLowerCase().includes(q) || (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().includes(q));
+                        }).length === 0 && (
+                          <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.84rem' }}>
+                            Nenhum cargo CBO encontrado para "{cargoSearchTerm}".
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 

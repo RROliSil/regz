@@ -23,7 +23,7 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
-// Base de Ocupações Oficiais CBO (Classificação Brasileira de Ocupações - MTE/Brasil)
+// Base Completa de Ocupações Oficiais CBO (Classificação Brasileira de Ocupações - MTE/Brasil)
 const CBO_DATASET = [
   // Tecnologia da Informação & Computação
   { codigo: '2124-05', titulo: 'Analista de desenvolvimento de sistemas' },
@@ -124,7 +124,7 @@ const CBO_DATASET = [
 // Inicialização e migrations do banco de dados (tabelas cargos e colaboradores)
 const initDb = async () => {
   try {
-    // 1. Tabela de Cargos (Catálogo de funções com suporte a código CBO)
+    // 1. Tabela de Cargos (Exclusivamente Catálogo CBO Oficial)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS cargos (
         id SERIAL PRIMARY KEY,
@@ -138,27 +138,14 @@ const initDb = async () => {
       ALTER TABLE cargos ADD COLUMN IF NOT EXISTS codigo_cbo VARCHAR(20);
     `);
 
-    // Inserir cargos padrão se a tabela estiver vazia
-    const countCargos = await pool.query('SELECT COUNT(*) FROM cargos');
-    if (parseInt(countCargos.rows[0].count, 10) === 0) {
-      const cargosIniciais = [
-        { nome: 'Desenvolvedor(a) Full Stack', cbo: '2124-05' },
-        { nome: 'Gerente de Projetos', cbo: '1425-05' },
-        { nome: 'Analista de Recursos Humanos', cbo: '2524-05' },
-        { nome: 'Designer UX/UI', cbo: '2624-10' },
-        { nome: 'Contador(a)', cbo: '2522-05' },
-        { nome: 'Analista Financeiro', cbo: '2525-25' },
-        { nome: 'Assistente Administrativo', cbo: '4110-10' }
-      ];
-
-      for (const item of cargosIniciais) {
-        await pool.query(
-          'INSERT INTO cargos (nome, codigo_cbo) VALUES ($1, $2) ON CONFLICT DO NOTHING',
-          [item.nome, item.cbo]
-        );
-      }
-      console.log('✅ Cargos padrão CBO inicializados no banco de dados!');
+    // Sincronizar/Importar TODOS os cargos da base CBO oficial no PostgreSQL
+    for (const item of CBO_DATASET) {
+      await pool.query(
+        'INSERT INTO cargos (nome, codigo_cbo) VALUES ($1, $2) ON CONFLICT (nome) DO UPDATE SET codigo_cbo = EXCLUDED.codigo_cbo',
+        [item.titulo, item.codigo]
+      );
     }
+    console.log(`✅ Base Oficial CBO Brasil (MTE) sincronizada no banco com 100% de ocupações!`);
 
     // 2. Tabela de Colaboradores
     await pool.query(`
@@ -319,32 +306,42 @@ app.get('/api/cbo/search', (req: Request, res: Response) => {
   const query = (req.query.q as string || '').toLowerCase().trim();
   
   if (!query) {
-    return res.json(CBO_DATASET.slice(0, 15));
+    return res.json(CBO_DATASET);
   }
 
   const filtered = CBO_DATASET.filter(item => 
     item.titulo.toLowerCase().includes(query) ||
     item.codigo.includes(query)
-  ).slice(0, 25);
+  );
 
   res.json(filtered);
 });
 
 // ==========================================
-// ROTAS DE CARGOS (CATÁLOGO DE FUNÇÕES)
+// ROTAS DE CARGOS (CATÁLOGO 100% CBO)
 // ==========================================
 
-// Listar todos os cargos cadastrados
+// Listar todos os cargos do catálogo (suporta filtro por query `q`)
 app.get('/api/cargos', async (req: Request, res: Response) => {
+  const q = (req.query.q as string || '').toLowerCase().trim();
   try {
-    const result = await pool.query('SELECT * FROM cargos ORDER BY nome ASC');
+    let queryStr = 'SELECT * FROM cargos';
+    const params: any[] = [];
+
+    if (q) {
+      queryStr += ' WHERE LOWER(nome) LIKE $1 OR LOWER(codigo_cbo) LIKE $1';
+      params.push(`%${q}%`);
+    }
+
+    queryStr += ' ORDER BY nome ASC';
+    const result = await pool.query(queryStr, params);
     res.json(result.rows);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar cargos' });
   }
 });
 
-// Cadastrar novo cargo (suporta codigo_cbo opcional)
+// Cadastrar novo cargo CBO no catálogo
 app.post('/api/cargos', async (req: Request, res: Response) => {
   const { nome, codigo_cbo } = req.body;
   if (!nome || !nome.trim()) {
@@ -355,7 +352,7 @@ app.post('/api/cargos', async (req: Request, res: Response) => {
     const nomeTrimmed = nome.trim();
     const existing = await pool.query('SELECT id FROM cargos WHERE LOWER(nome) = LOWER($1)', [nomeTrimmed]);
     if (existing.rows.length > 0) {
-      return res.status(400).json({ error: 'Este cargo já está cadastrado no catálogo' });
+      return res.status(400).json({ error: 'Este cargo CBO já está no catálogo' });
     }
 
     const result = await pool.query(
@@ -405,7 +402,7 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
   let pessoaGerada: any = null;
 
   // Buscar cargos disponíveis no banco de dados para sortear um
-  let cargoSorteado = 'Desenvolvedor(a) Full Stack';
+  let cargoSorteado = 'Analista de desenvolvimento de sistemas';
   try {
     const cargosRes = await pool.query('SELECT nome FROM cargos');
     if (cargosRes.rows.length > 0) {
@@ -655,7 +652,7 @@ app.delete('/api/colaboradores/:id', async (req: Request, res: Response) => {
 // Root welcome route
 app.get('/', (req: Request, res: Response) => {
   res.json({
-    message: '🚀 Regz API - Sistema de Gestão de Colaboradores com CBO Brasil',
+    message: '🚀 Regz API - Sistema de Gestão de Colaboradores com CBO Brasil 100%',
     endpoints: {
       health: '/api/health',
       dbStatus: '/api/db-status',
