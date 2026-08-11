@@ -47,20 +47,24 @@ export const Administracao: React.FC = () => {
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
   const columnMenuRef = useRef<HTMLDivElement>(null);
 
-  // Listener para fechar o menu ao clicar fora
+  // Estados de Perfis
+  const [perfis, setPerfis] = useState<PerfilAcesso[]>([]);
+  const [loadingPerfis, setLoadingPerfis] = useState(true);
+  const [modalPerfilOpen, setModalPerfilOpen] = useState(false);
+  const [savedRowId, setSavedRowId] = useState<number | null>(null);
+
+  // Listener para fechar modais e popovers exclusivamente ao pressionar a tecla ESC
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (columnMenuRef.current && !columnMenuRef.current.contains(event.target as Node)) {
-        setColumnMenuOpen(false);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (columnMenuOpen) setColumnMenuOpen(false);
+        if (modalUserOpen) setModalUserOpen(false);
+        if (modalPerfilOpen) setModalPerfilOpen(false);
       }
     };
-    if (columnMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [columnMenuOpen]);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [columnMenuOpen, modalUserOpen, modalPerfilOpen]);
 
   // Estados para Largura Arrastável de Colunas na Tabela de Usuários
   const [userColumnWidths, setUserColumnWidths] = useState<UserColumnWidths>(() => {
@@ -88,12 +92,6 @@ export const Administracao: React.FC = () => {
   const [userError, setUserError] = useState('');
   const [userSuccess, setUserSuccess] = useState('');
   const [submittingUser, setSubmittingUser] = useState(false);
-
-  // Estados de Perfis
-  const [perfis, setPerfis] = useState<PerfilAcesso[]>([]);
-  const [loadingPerfis, setLoadingPerfis] = useState(true);
-  const [modalPerfilOpen, setModalPerfilOpen] = useState(false);
-  const [savedRowId, setSavedRowId] = useState<number | null>(null);
 
   // Form de Criar Novo Perfil
   const [perfilNome, setPerfilNome] = useState('');
@@ -492,8 +490,17 @@ export const Administracao: React.FC = () => {
                     flexDirection: 'column',
                     gap: '10px'
                   }}>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      Colunas Visíveis
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                      <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Colunas Visíveis
+                      </span>
+                      <button
+                        onClick={() => setColumnMenuOpen(false)}
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', padding: '0 4px', lineHeight: 1 }}
+                        title="Fechar (ESC)"
+                      >
+                        ✕
+                      </button>
                     </div>
                     {([
                       { key: 'id', label: '#ID' },
@@ -814,8 +821,8 @@ export const Administracao: React.FC = () => {
       {/* MODAL DE CADASTRO DE USUÁRIO */}
       {/* ======================================================== */}
       {modalUserOpen && (
-        <div className="modal-backdrop" onClick={() => setModalUserOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+        <div className="modal-backdrop">
+          <div className="modal-content" style={{ maxWidth: '500px' }}>
             <div className="modal-header">
               <h3>{editingUserId ? 'Editar Usuário' : 'Novo Usuário do Sistema'}</h3>
               <button onClick={() => setModalUserOpen(false)} className="btn-close">
@@ -913,8 +920,8 @@ export const Administracao: React.FC = () => {
       {/* MODAL DE CRIAÇÃO DE NOVO PERFIL DE ACESSO */}
       {/* ======================================================== */}
       {modalPerfilOpen && (
-        <div className="modal-backdrop" onClick={() => setModalPerfilOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+        <div className="modal-backdrop">
+          <div className="modal-content" style={{ maxWidth: '600px' }}>
             <div className="modal-header">
               <h3>Criar Novo Perfil de Acesso</h3>
               <button onClick={() => setModalPerfilOpen(false)} className="btn-close">

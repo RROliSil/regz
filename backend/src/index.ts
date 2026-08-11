@@ -600,13 +600,28 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
   try {
     const query = `
       SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em,
-             p.nome as perfil_nome, p.is_admin, p.permissoes
+             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
       ORDER BY u.id ASC
     `;
     const result = await pool.query(query);
-    res.json(result.rows);
+    const usuariosFormatados = result.rows.map(u => ({
+      id: u.id,
+      nome: u.nome,
+      email: u.email,
+      ativo: u.ativo,
+      perfil_id: u.perfil_id,
+      criado_em: u.criado_em,
+      perfil: u.perfil_id ? {
+        id: u.perfil_id,
+        nome: u.perfil_nome,
+        descricao: u.perfil_descricao,
+        is_admin: !!u.is_admin,
+        permissoes: u.permissoes
+      } : null
+    }));
+    res.json(usuariosFormatados);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar usuários' });
   }
