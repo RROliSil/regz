@@ -827,19 +827,19 @@ export const Colaboradores: React.FC = () => {
                 paginatedColaboradores.map((c) => (
                   <tr
                     key={c.id}
-                    className={`clickable-row ${c.ativo === false ? 'row-inactive' : ''}`}
-                    onClick={() => openEditModal(c)}
-                    title="Clique para editar este colaborador"
+                    className={`${podeEditar ? 'clickable-row' : ''} ${c.ativo === false ? 'row-inactive' : ''}`}
+                    onClick={podeEditar ? () => openEditModal(c) : undefined}
+                    title={podeEditar ? "Clique para editar este colaborador" : ""}
                   >
                     {visibleColumns.foto && (
                       <td style={{ width: `${columnWidths.foto}px`, whiteSpace: 'nowrap' }}>
                         <div 
-                          className="avatar-hover-container" 
-                          onClick={(e) => {
+                          className={podeEditar ? "avatar-hover-container" : "avatar-preview-wrapper"} 
+                          onClick={podeEditar ? (e) => {
                             e.stopPropagation();
                             openQuickPhotoModal(c);
-                          }}
-                          title="Clique para alterar ou remover a foto"
+                          } : undefined}
+                          title={podeEditar ? "Clique para alterar ou remover a foto" : ""}
                         >
                           <div className="avatar-preview">
                             {c.foto_url ? (
@@ -848,9 +848,11 @@ export const Colaboradores: React.FC = () => {
                               <div className="avatar-placeholder">{c.nome.charAt(0).toUpperCase()}</div>
                             )}
                           </div>
-                          <div className="avatar-hover-overlay">
-                            <Camera size={14} color="#ffffff" />
-                          </div>
+                          {podeEditar && (
+                            <div className="avatar-hover-overlay">
+                              <Camera size={14} color="#ffffff" />
+                            </div>
+                          )}
                         </div>
                       </td>
                     )}
@@ -942,28 +944,30 @@ export const Colaboradores: React.FC = () => {
                           </button>
                         )}
 
-                        {c.ativo !== false ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              c.id && handleInativar(c.id, c.nome);
-                            }}
-                            className="btn-action delete"
-                            title="Inativar Colaborador (Soft Delete)"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              c.id && handleReativar(c.id, c.nome);
-                            }}
-                            className="btn-action reactivate"
-                            title="Reativar Colaborador"
-                          >
-                            <RotateCcw size={15} /> Reativar
-                          </button>
+                        {podeEditar && (
+                          c.ativo !== false ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                c.id && handleInativar(c.id, c.nome);
+                              }}
+                              className="btn-action delete"
+                              title="Inativar Colaborador (Soft Delete)"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                c.id && handleReativar(c.id, c.nome);
+                              }}
+                              className="btn-action reactivate"
+                              title="Reativar Colaborador"
+                            >
+                              <RotateCcw size={15} /> Reativar
+                            </button>
+                          )
                         )}
                       </div>
                     </td>

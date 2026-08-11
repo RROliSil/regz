@@ -57,12 +57,18 @@ const ProtectedLayout: React.FC = () => {
 
       {/* Conteúdo Principal Ajustado Dinamicamente ao Menu Lateral */}
       <main className={`main-viewport ${sidebarCollapsed ? 'collapsed' : ''}`} style={{ padding: 0 }}>
-        {/* Banner Top Alert de Modo Somente Leitura */}
+        {/* Banner Top Alert de Modo Somente Leitura - Congelado no Topo */}
         {isSomenteLeitura && (
           <div style={{
-            background: 'linear-gradient(90deg, rgba(234, 179, 8, 0.15) 0%, rgba(245, 158, 11, 0.25) 100%)',
-            borderBottom: '1px solid rgba(245, 158, 11, 0.4)',
-            color: '#fbbf24',
+            position: 'fixed',
+            top: 0,
+            left: sidebarCollapsed ? '80px' : '260px',
+            right: 0,
+            zIndex: 99999,
+            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            background: 'linear-gradient(90deg, #78350f 0%, #92400e 50%, #b45309 100%)',
+            borderBottom: '1px solid #f59e0b',
+            color: '#fef3c7',
             padding: '10px 24px',
             fontSize: '0.85rem',
             fontWeight: 600,
@@ -70,20 +76,19 @@ const ProtectedLayout: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '12px',
-            zIndex: 10,
-            position: 'sticky',
-            top: 0,
-            backdropFilter: 'blur(8px)'
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.6)',
+            backdropFilter: 'blur(12px)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Eye size={18} color="#fbbf24" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <Eye size={18} color="#fde68a" />
               <span>
                 <strong>Modo Somente Leitura:</strong> Seu perfil de acesso ({usuario.perfil?.nome || 'Consulta'}) possui permissão apenas de visualização nesta aba. Alterações e adições estão desativadas.
               </span>
             </div>
             <span style={{
-              background: 'rgba(245, 158, 11, 0.25)',
-              border: '1px solid rgba(245, 158, 11, 0.4)',
+              background: 'rgba(245, 158, 11, 0.3)',
+              border: '1px solid rgba(253, 230, 138, 0.5)',
+              color: '#fef3c7',
               borderRadius: '20px',
               padding: '3px 12px',
               fontSize: '0.75rem',
@@ -97,7 +102,7 @@ const ProtectedLayout: React.FC = () => {
           </div>
         )}
 
-        <div style={{ padding: '24px 32px' }}>
+        <div style={{ padding: isSomenteLeitura ? '68px 32px 24px 32px' : '24px 32px' }}>
           <Routes>
             <Route path="/" element={<Navigate to="/colaboradores" replace />} />
             <Route path="/home" element={<RequireAuth aba="home"><Home /></RequireAuth>} />
