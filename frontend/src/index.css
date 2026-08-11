@@ -477,9 +477,37 @@ h1, h2, h3, h4, h5, h6 {
   color: #ffffff;
 }
 
-/* Custom Table */
+/* Contêiner com Rolagem Horizontal Responsiva */
+.table-responsive-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 20px;
+}
+
+/* Barra de Rolagem Horizontal Estilizada */
+.table-responsive-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-responsive-container::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 8px;
+}
+
+.table-responsive-container::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.4);
+  border-radius: 8px;
+}
+
+.table-responsive-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.7);
+}
+
+/* Custom Table com Largura Mínima Garantida */
 .custom-table {
   width: 100%;
+  min-width: 1050px;
   border-collapse: collapse;
   text-align: left;
   font-size: 0.92rem;
@@ -491,11 +519,13 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-muted);
   font-weight: 600;
   border-bottom: 1px solid var(--card-border);
+  white-space: nowrap;
 }
 
 .custom-table td {
   padding: 16px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: middle;
 }
 
 /* Linha da Tabela Clicável para Edição */
@@ -653,7 +683,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: monospace;
 }
 
-/* Modal Styling (Largura de 900px e Sem Barra de Rolagem Horizontal) */
+/* Modal Styling */
 .modal-backdrop {
   position: fixed;
   top: 0;
@@ -680,7 +710,6 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.5);
 }
 
-/* Estilização Discreta da Barra de Rolagem Vertical do Modal */
 .modal-content::-webkit-scrollbar {
   width: 6px;
 }

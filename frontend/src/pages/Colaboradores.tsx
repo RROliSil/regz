@@ -520,7 +520,7 @@ export const Colaboradores: React.FC = () => {
           </button>
         </div>
 
-        {/* Botões de Ação no canto direito (Novo Colaborador apenas ícone + Robozinho) */}
+        {/* Botões de Ação no canto direito */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             onClick={openNewModal}
@@ -605,183 +605,184 @@ export const Colaboradores: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabela de Colaboradores (Linha inteira clicável para editar) */}
-      <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table className="custom-table">
-            <thead>
+      {/* Tabela Responsiva de Colaboradores com Rolagem Horizontal e Células em 1 Linha */}
+      <div className="glass-panel table-responsive-container" style={{ padding: '0' }}>
+        <table className="custom-table">
+          <thead>
+            <tr>
+              {visibleColumns.foto && <th style={{ width: '70px', whiteSpace: 'nowrap' }}>Foto</th>}
+              {visibleColumns.nome && <th style={{ whiteSpace: 'nowrap' }}>Nome</th>}
+              {visibleColumns.cpf && <th style={{ whiteSpace: 'nowrap' }}>CPF</th>}
+              {visibleColumns.cargo && <th style={{ whiteSpace: 'nowrap' }}>Cargo</th>}
+              {visibleColumns.endereco && <th style={{ whiteSpace: 'nowrap' }}>Endereço</th>}
+              {visibleColumns.cidade && <th style={{ whiteSpace: 'nowrap' }}>Cidade / UF</th>}
+              {visibleColumns.criado_em && <th style={{ whiteSpace: 'nowrap' }}>Data de Cadastro</th>}
+              <th style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
               <tr>
-                {visibleColumns.foto && <th style={{ width: '70px' }}>Foto</th>}
-                {visibleColumns.nome && <th>Nome</th>}
-                {visibleColumns.cpf && <th>CPF</th>}
-                {visibleColumns.cargo && <th>Cargo</th>}
-                {visibleColumns.endereco && <th>Endereço</th>}
-                {visibleColumns.cidade && <th>Cidade / UF</th>}
-                {visibleColumns.criado_em && <th>Data de Cadastro</th>}
-                <th style={{ textAlign: 'right' }}>Ações</th>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)' }}>
+                    <Loader2 className="spin" size={20} /> Carregando lista...
+                  </div>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)' }}>
-                      <Loader2 className="spin" size={20} /> Carregando lista...
+            ) : filteredColaboradores.length === 0 ? (
+              <tr>
+                <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
+                  {searchTerm 
+                    ? 'Nenhum resultado encontrado para a busca.' 
+                    : activeSubTab === 'ativos'
+                      ? 'Nenhum colaborador ativo no momento.'
+                      : 'Nenhum colaborador inativado.'}
+                </td>
+              </tr>
+            ) : (
+              filteredColaboradores.map((c) => (
+                <tr
+                  key={c.id}
+                  className={`clickable-row ${c.ativo === false ? 'row-inactive' : ''}`}
+                  onClick={() => openEditModal(c)}
+                  title="Clique para editar este colaborador"
+                >
+                  {visibleColumns.foto && (
+                    <td style={{ width: '70px', whiteSpace: 'nowrap' }}>
+                      <div 
+                        className="avatar-hover-container" 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openQuickPhotoModal(c);
+                        }}
+                        title="Clique para alterar ou remover a foto"
+                      >
+                        <div className="avatar-preview">
+                          {c.foto_url ? (
+                            <img src={c.foto_url} alt={c.nome} />
+                          ) : (
+                            <div className="avatar-placeholder">{c.nome.charAt(0).toUpperCase()}</div>
+                          )}
+                        </div>
+                        <div className="avatar-hover-overlay">
+                          <Camera size={14} color="#ffffff" />
+                        </div>
+                      </div>
+                    </td>
+                  )}
+
+                  {visibleColumns.nome && (
+                    <td>
+                      <div style={{ fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap' }}>{c.nome}</div>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+                        ID: #{c.id} {c.ativo === false && <span className="badge-inactive">Inativo</span>}
+                      </div>
+                    </td>
+                  )}
+
+                  {visibleColumns.cpf && (
+                    <td>
+                      <code style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                        {c.cpf}
+                      </code>
+                    </td>
+                  )}
+
+                  {visibleColumns.cargo && (
+                    <td>
+                      {c.cargo ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#a5b4fc', background: 'rgba(99, 102, 241, 0.12)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.25)', whiteSpace: 'nowrap' }}>
+                          <Briefcase size={13} color="#818cf8" /> {c.cargo}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Não definido</span>
+                      )}
+                    </td>
+                  )}
+
+                  {visibleColumns.endereco && (
+                    <td>
+                      {c.logradouro ? (
+                        <div 
+                          style={{ fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '260px' }}
+                          title={`${c.logradouro}${c.numero ? `, nº ${c.numero}` : ''}${c.bairro ? ` - ${c.bairro}` : ''}`}
+                        >
+                          {c.logradouro}{c.numero ? `, nº ${c.numero}` : ''}
+                          {c.bairro ? ` - ${c.bairro}` : ''}
+                        </div>
+                      ) : (
+                        <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Não informado</span>
+                      )}
+                    </td>
+                  )}
+
+                  {visibleColumns.cidade && (
+                    <td>
+                      {c.cidade ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>
+                          <MapPin size={14} color="#38bdf8" /> {c.cidade}{c.estado ? `/${c.estado}` : ''}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>-</span>
+                      )}
+                    </td>
+                  )}
+
+                  {visibleColumns.criado_em && (
+                    <td style={{ fontSize: '0.85rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+                      {c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : '-'}
+                    </td>
+                  )}
+
+                  {/* Coluna Ações */}
+                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'inline-flex', gap: '8px' }}>
+                      {(c.cidade || c.logradouro || c.cep) && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openGoogleMaps(c);
+                          }}
+                          className="btn-action map"
+                          title="Abrir localização no Google Maps"
+                        >
+                          <Map size={15} />
+                        </button>
+                      )}
+
+                      {c.ativo !== false ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            c.id && handleInativar(c.id, c.nome);
+                          }}
+                          className="btn-action delete"
+                          title="Inativar Colaborador (Soft Delete)"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            c.id && handleReativar(c.id, c.nome);
+                          }}
+                          className="btn-action reactivate"
+                          title="Reativar Colaborador"
+                        >
+                          <RotateCcw size={15} /> Reativar
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
-              ) : filteredColaboradores.length === 0 ? (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
-                    {searchTerm 
-                      ? 'Nenhum resultado encontrado para a busca.' 
-                      : activeSubTab === 'ativos'
-                        ? 'Nenhum colaborador ativo no momento.'
-                        : 'Nenhum colaborador inativado.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredColaboradores.map((c) => (
-                  <tr
-                    key={c.id}
-                    className={`clickable-row ${c.ativo === false ? 'row-inactive' : ''}`}
-                    onClick={() => openEditModal(c)}
-                    title="Clique para editar este colaborador"
-                  >
-                    {visibleColumns.foto && (
-                      <td>
-                        <div 
-                          className="avatar-hover-container" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openQuickPhotoModal(c);
-                          }}
-                          title="Clique para alterar ou remover a foto"
-                        >
-                          <div className="avatar-preview">
-                            {c.foto_url ? (
-                              <img src={c.foto_url} alt={c.nome} />
-                            ) : (
-                              <div className="avatar-placeholder">{c.nome.charAt(0).toUpperCase()}</div>
-                            )}
-                          </div>
-                          <div className="avatar-hover-overlay">
-                            <Camera size={14} color="#ffffff" />
-                          </div>
-                        </div>
-                      </td>
-                    )}
-
-                    {visibleColumns.nome && (
-                      <td>
-                        <div style={{ fontWeight: 600, color: '#f8fafc' }}>{c.nome}</div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
-                          ID: #{c.id} {c.ativo === false && <span className="badge-inactive">Inativo</span>}
-                        </div>
-                      </td>
-                    )}
-
-                    {visibleColumns.cpf && (
-                      <td>
-                        <code style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem' }}>
-                          {c.cpf}
-                        </code>
-                      </td>
-                    )}
-
-                    {visibleColumns.cargo && (
-                      <td>
-                        {c.cargo ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#a5b4fc', background: 'rgba(99, 102, 241, 0.12)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
-                            <Briefcase size={13} color="#818cf8" /> {c.cargo}
-                          </span>
-                        ) : (
-                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Não definido</span>
-                        )}
-                      </td>
-                    )}
-
-                    {visibleColumns.endereco && (
-                      <td>
-                        {c.logradouro ? (
-                          <div style={{ fontSize: '0.88rem' }}>
-                            {c.logradouro}{c.numero ? `, nº ${c.numero}` : ''}
-                            {c.bairro ? ` - ${c.bairro}` : ''}
-                          </div>
-                        ) : (
-                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>Não informado</span>
-                        )}
-                      </td>
-                    )}
-
-                    {visibleColumns.cidade && (
-                      <td>
-                        {c.cidade ? (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', color: 'var(--text-main)' }}>
-                            <MapPin size={14} color="#38bdf8" /> {c.cidade}{c.estado ? `/${c.estado}` : ''}
-                          </span>
-                        ) : (
-                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem' }}>-</span>
-                        )}
-                      </td>
-                    )}
-
-                    {visibleColumns.criado_em && (
-                      <td style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>
-                        {c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : '-'}
-                      </td>
-                    )}
-
-                    {/* Coluna Ações */}
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '8px' }}>
-                        {(c.cidade || c.logradouro || c.cep) && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openGoogleMaps(c);
-                            }}
-                            className="btn-action map"
-                            title="Abrir localização no Google Maps"
-                          >
-                            <Map size={15} />
-                          </button>
-                        )}
-
-                        {c.ativo !== false ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              c.id && handleInativar(c.id, c.nome);
-                            }}
-                            className="btn-action delete"
-                            title="Inativar Colaborador (Soft Delete)"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              c.id && handleReativar(c.id, c.nome);
-                            }}
-                            className="btn-action reactivate"
-                            title="Reativar Colaborador"
-                          >
-                            <RotateCcw size={15} /> Reativar
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
 
-      {/* Modal Quick Photo (Alterar / Remover Foto ao Clicar no Hover) */}
+      {/* Modal Quick Photo */}
       {quickPhotoModalOpen && targetPhotoColaborador && (
         <div className="modal-backdrop">
           <div className="modal-content glass-panel" style={{ width: '420px', textAlign: 'center' }}>
