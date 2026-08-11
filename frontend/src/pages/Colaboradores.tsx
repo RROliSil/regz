@@ -24,14 +24,14 @@ interface ColumnWidths {
 }
 
 const DEFAULT_COLUMN_WIDTHS: ColumnWidths = {
-  foto: 70,
-  nome: 220,
-  cpf: 160,
-  cargo: 200,
-  endereco: 260,
-  cidade: 180,
-  criado_em: 140,
-  acoes: 100
+  foto: 65,
+  nome: 200,
+  cpf: 150,
+  cargo: 180,
+  endereco: 240,
+  cidade: 160,
+  criado_em: 130,
+  acoes: 90
 };
 
 export const Colaboradores: React.FC = () => {
@@ -118,7 +118,7 @@ export const Colaboradores: React.FC = () => {
     setCurrentPage(1);
   }, [searchTerm, activeSubTab, pageSize]);
 
-  // Função para Arrastar e Redimensionar Colunas
+  // Função para Arrastar e Redimensionar Colunas mantendo contêiner travado em 100%
   const handleResizeStart = (colKey: keyof ColumnWidths, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -127,7 +127,7 @@ export const Colaboradores: React.FC = () => {
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
-      const newWidth = Math.max(50, startWidth + deltaX);
+      const newWidth = Math.max(45, startWidth + deltaX);
       setColumnWidths(prev => ({ ...prev, [colKey]: newWidth }));
     };
 
@@ -627,8 +627,8 @@ export const Colaboradores: React.FC = () => {
         </div>
       </div>
 
-      {/* Control Bar (Busca, Seletor de Colunas e Contadores) */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+      {/* Control Bar (Busca e Botão Colunas RIGOROSAMENTE FIXO à direita) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '16px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         <div className="search-box">
           <Search size={18} color="var(--text-muted)" />
           <input
@@ -639,13 +639,14 @@ export const Colaboradores: React.FC = () => {
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Grupo do Botão Colunas Travado à Direita sem Mover */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
           {/* Seletor Dropdown de Colunas Visíveis */}
-          <div className="dropdown-container" style={{ position: 'relative' }}>
+          <div className="dropdown-container" style={{ position: 'relative', flexShrink: 0 }}>
             <button
               onClick={() => setColumnsDropdownOpen(!columnsDropdownOpen)}
               className="btn-secondary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '0.88rem' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 16px', fontSize: '0.88rem', flexShrink: 0 }}
             >
               <Columns size={16} /> Colunas <ChevronDown size={14} />
             </button>
@@ -687,21 +688,21 @@ export const Colaboradores: React.FC = () => {
                   className="btn-secondary"
                   style={{ width: '100%', marginTop: '10px', padding: '6px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 >
-                  <RotateCw size={12} /> Resetar Tamanho das Colunas
+                  <RotateCw size={12} /> Resetar Tamanhos
                 </button>
               </div>
             )}
           </div>
 
-          <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
             Exibindo: <strong style={{ color: '#38bdf8' }}>{totalItems > 0 ? `${startIndex + 1}-${endIndex}` : '0'}</strong> de {totalItems}
           </div>
         </div>
       </div>
 
-      {/* Tabela de Colaboradores Fluida com Colunas Redimensionáveis por Arraste */}
-      <div className="glass-panel table-responsive-container" style={{ padding: '0' }}>
-        <table className="custom-table">
+      {/* Tabela de Colaboradores Fluida Travada em 100% sem Rolagem Horizontal */}
+      <div className="glass-panel table-responsive-container" style={{ padding: '0', width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
+        <table className="custom-table" style={{ width: '100%', tableLayout: 'fixed' }}>
           <thead>
             <tr>
               {visibleColumns.foto && (
@@ -816,7 +817,7 @@ export const Colaboradores: React.FC = () => {
 
                   {visibleColumns.cpf && (
                     <td style={{ width: `${columnWidths.cpf}px` }}>
-                      <code style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                      <code style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', whiteSpace: 'nowrap', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                         {c.cpf}
                       </code>
                     </td>
