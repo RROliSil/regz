@@ -519,6 +519,41 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
   }
 });
 
+// Middleware para verificação estrita de permissão de escrita
+const checkPermission = (aba: string) => {
+  return async (req: Request, res: Response, next: any) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next();
+    }
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      const query = `
+        SELECT u.id, u.ativo, p.is_admin, p.permissoes
+        FROM usuarios u
+        LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
+        WHERE u.id = $1
+      `;
+      const result = await pool.query(query, [decoded.id]);
+      if (result.rows.length === 0 || !result.rows[0].ativo) {
+        return res.status(401).json({ error: 'Sessão inválida ou usuário inativo' });
+      }
+      const user = result.rows[0];
+      if (user.is_admin) {
+        return next();
+      }
+      const permissoes = user.permissoes || {};
+      if (permissoes[aba] !== 'escrita') {
+        return res.status(403).json({ error: `Acesso negado: Seu perfil possui apenas permissão de leitura no módulo ${aba}.` });
+      }
+      next();
+    } catch (err) {
+      return res.status(401).json({ error: 'Token de autenticação inválido' });
+    }
+  };
+};
+
 // ==========================================
 // ROTAS DE GESTÃO DE PERFIS DE ACESSO (RBAC)
 // ==========================================
@@ -534,7 +569,7 @@ app.get('/api/perfis-acesso', async (req: Request, res: Response) => {
 });
 
 // Cadastrar novo perfil de acesso
-app.post('/api/perfis-acesso', async (req: Request, res: Response) => {
+app.post('/api/perfis-acesso', checkPermission('administracao'), async (req: Request, res: Response) => {
   const { nome, descricao, is_admin, permissoes } = req.body;
   if (!nome || !nome.trim()) {
     return res.status(400).json({ error: 'O nome do perfil é obrigatório' });
@@ -559,7 +594,7 @@ app.post('/api/perfis-acesso', async (req: Request, res: Response) => {
 });
 
 // Atualizar perfil de acesso
-app.put('/api/perfis-acesso/:id', async (req: Request, res: Response) => {
+app.put('/api/perfis-acesso/:id', checkPermission('administracao'), async (req: Request, res: Response) => {
   const { id } = req.params;
   const { nome, descricao, is_admin, permissoes } = req.body;
 
@@ -584,7 +619,7 @@ app.put('/api/perfis-acesso/:id', async (req: Request, res: Response) => {
 });
 
 // Excluir perfil de acesso
-app.delete('/api/perfis-acesso/:id', async (req: Request, res: Response) => {
+app.delete('/api/perfis-acesso/:id', checkPermission('administracao'), async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const checkAdmin = await pool.query('SELECT is_admin FROM perfis_acesso WHERE id = $1', [id]);
@@ -841,7 +876,7 @@ app.get('/api/campos-customizados', async (req: Request, res: Response) => {
 });
 
 // Cadastrar novo campo customizado
-app.post('/api/campos-customizados', async (req: Request, res: Response) => {
+app.post('/api/campos-customizados', checkPermission('campos'), async (req: Request, res: Response) => {
   const { nome, tipo, opcoes, obrigatorio } = req.body;
   if (!nome || !nome.trim()) {
     return res.status(400).json({ error: 'O nome do campo é obrigatório' });
@@ -866,7 +901,7 @@ app.post('/api/campos-customizados', async (req: Request, res: Response) => {
 });
 
 // Excluir um campo customizado
-app.delete('/api/campos-customizados/:id', async (req: Request, res: Response) => {
+app.delete('/api/campos-customizados/:id', checkPermission('campos'), async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM campos_customizados WHERE id = $1 RETURNING id', [id]);
@@ -1087,7 +1122,7 @@ app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
 });
 
 // Cadastrar novo colaborador
-app.post('/api/colaboradores', async (req: Request, res: Response) => {
+app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Request, res: Response) => {
   const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, valores_customizados } = req.body;
 
   if (!nome || !cpf) {
@@ -1138,7 +1173,7 @@ app.post('/api/colaboradores', async (req: Request, res: Response) => {
 });
 
 // Atualizar colaborador
-app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
+app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: Request, res: Response) => {
   const { id } = req.params;
   const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, valores_customizados } = req.body;
 
@@ -1200,7 +1235,7 @@ app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
 });
 
 // Inativar colaborador (Soft Delete)
-app.put('/api/colaboradores/:id/inativar', async (req: Request, res: Response) => {
+app.put('/api/colaboradores/:id/inativar', checkPermission('colaboradores'), async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const result = await pool.query('UPDATE colaboradores SET ativo = false WHERE id = $1 RETURNING *', [id]);
@@ -1214,7 +1249,7 @@ app.put('/api/colaboradores/:id/inativar', async (req: Request, res: Response) =
 });
 
 // Reativar colaborador
-app.put('/api/colaboradores/:id/reativar', async (req: Request, res: Response) => {
+app.put('/api/colaboradores/:id/reativar', checkPermission('colaboradores'), async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const result = await pool.query('UPDATE colaboradores SET ativo = true WHERE id = $1 RETURNING *', [id]);
@@ -1228,7 +1263,7 @@ app.put('/api/colaboradores/:id/reativar', async (req: Request, res: Response) =
 });
 
 // Excluir permanentemente
-app.delete('/api/colaboradores/:id', async (req: Request, res: Response) => {
+app.delete('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM colaboradores WHERE id = $1 RETURNING id', [id]);

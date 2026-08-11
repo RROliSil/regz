@@ -22,7 +22,12 @@ interface UserColumnWidths {
   acoes: number;
 }
 
+import { useAuth } from '../context/AuthContext';
+
 export const Administracao: React.FC = () => {
+  const { temPermissao } = useAuth();
+  const podeEditar = temPermissao('administracao', 'escrita');
+
   const [subTab, setSubTab] = useState<'usuarios' | 'perfis'>('usuarios');
 
   // Estados de Usuários
@@ -526,9 +531,11 @@ export const Administracao: React.FC = () => {
                 )}
               </div>
 
-              <button onClick={handleOpenNewUser} className="btn-primary" style={{ fontSize: '0.88rem' }}>
-                <Plus size={16} /> Novo Usuário
-              </button>
+              {podeEditar && (
+                <button onClick={handleOpenNewUser} className="btn-primary" style={{ fontSize: '0.88rem' }}>
+                  <Plus size={16} /> Novo Usuário
+                </button>
+              )}
             </div>
           </div>
 
@@ -639,30 +646,34 @@ export const Administracao: React.FC = () => {
                     )}
                     {userVisibleColumns.acoes && (
                       <td style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'center' }}>
-                          <button
-                            onClick={() => handleToggleUserStatus(u.id, u.ativo)}
-                            className="btn-action"
-                            style={{ background: u.ativo ? 'rgba(251, 113, 133, 0.15)' : 'rgba(52, 211, 153, 0.15)', color: u.ativo ? '#fb7185' : '#34d399' }}
-                            title={u.ativo ? 'Inativar Usuário' : 'Ativar Usuário'}
-                          >
-                            {u.ativo ? <UserX size={14} /> : <UserCheck size={14} />}
-                          </button>
-                          <button
-                            onClick={() => handleOpenEditUser(u)}
-                            className="btn-action map"
-                            title="Editar Usuário"
-                          >
-                            <Edit size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteUser(u.id, u.nome)}
-                            className="btn-action delete"
-                            title="Excluir Usuário"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
+                        {podeEditar ? (
+                          <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => handleToggleUserStatus(u.id, u.ativo)}
+                              className="btn-action"
+                              style={{ background: u.ativo ? 'rgba(251, 113, 133, 0.15)' : 'rgba(52, 211, 153, 0.15)', color: u.ativo ? '#fb7185' : '#34d399' }}
+                              title={u.ativo ? 'Inativar Usuário' : 'Ativar Usuário'}
+                            >
+                              {u.ativo ? <UserX size={14} /> : <UserCheck size={14} />}
+                            </button>
+                            <button
+                              onClick={() => handleOpenEditUser(u)}
+                              className="btn-action map"
+                              title="Editar Usuário"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u.id, u.nome)}
+                              className="btn-action delete"
+                              title="Excluir Usuário"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Somente Leitura</span>
+                        )}
                       </td>
                     )}
                   </tr>
@@ -683,9 +694,11 @@ export const Administracao: React.FC = () => {
               <Shield size={20} color="#a855f7" />
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Perfis de Acesso & Matriz de Permissões</h3>
             </div>
-            <button onClick={handleOpenNewPerfil} className="btn-primary" style={{ fontSize: '0.88rem' }}>
-              <Plus size={16} /> Novo Perfil de Acesso
-            </button>
+            {podeEditar && (
+              <button onClick={handleOpenNewPerfil} className="btn-primary" style={{ fontSize: '0.88rem' }}>
+                <Plus size={16} /> Novo Perfil de Acesso
+              </button>
+            )}
           </div>
 
           <div style={{ overflowX: 'auto' }}>
@@ -760,16 +773,18 @@ export const Administracao: React.FC = () => {
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '6px',
-                                  cursor: 'pointer',
+                                  cursor: podeEditar ? 'pointer' : 'not-allowed',
                                   color: isLeitura ? '#38bdf8' : 'var(--text-muted)',
                                   fontWeight: isLeitura ? 600 : 400,
-                                  whiteSpace: 'nowrap'
+                                  whiteSpace: 'nowrap',
+                                  opacity: podeEditar ? 1 : 0.6
                                 }}>
                                   <input
                                     type="checkbox"
                                     checked={isLeitura}
-                                    onChange={() => handleTogglePermissaoDirect(p, aba, 'leitura')}
-                                    style={{ cursor: 'pointer', accentColor: '#38bdf8' }}
+                                    onChange={() => podeEditar && handleTogglePermissaoDirect(p, aba, 'leitura')}
+                                    disabled={!podeEditar}
+                                    style={{ cursor: podeEditar ? 'pointer' : 'not-allowed', accentColor: '#38bdf8' }}
                                   />
                                   <span>Leitura</span>
                                 </label>
@@ -778,16 +793,18 @@ export const Administracao: React.FC = () => {
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: '6px',
-                                  cursor: 'pointer',
+                                  cursor: podeEditar ? 'pointer' : 'not-allowed',
                                   color: isEscrita ? '#34d399' : 'var(--text-muted)',
                                   fontWeight: isEscrita ? 600 : 400,
-                                  whiteSpace: 'nowrap'
+                                  whiteSpace: 'nowrap',
+                                  opacity: podeEditar ? 1 : 0.6
                                 }}>
                                   <input
                                     type="checkbox"
                                     checked={isEscrita}
-                                    onChange={() => handleTogglePermissaoDirect(p, aba, 'escrita')}
-                                    style={{ cursor: 'pointer', accentColor: '#34d399' }}
+                                    onChange={() => podeEditar && handleTogglePermissaoDirect(p, aba, 'escrita')}
+                                    disabled={!podeEditar}
+                                    style={{ cursor: podeEditar ? 'pointer' : 'not-allowed', accentColor: '#34d399' }}
                                   />
                                   <span>Escrita</span>
                                 </label>
@@ -800,15 +817,21 @@ export const Administracao: React.FC = () => {
                       {/* Coluna de Ações Centralizada (Texto Fixo ou Lixeira) */}
                       <td style={{ textAlign: 'center' }}>
                         {!isAdmin ? (
-                          <div style={{ display: 'inline-flex', justifyContent: 'center' }}>
-                            <button
-                              onClick={() => handleDeletePerfil(p.id, p.nome)}
-                              className="btn-action delete"
-                              title="Excluir Perfil de Acesso"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </div>
+                          podeEditar ? (
+                            <div style={{ display: 'inline-flex', justifyContent: 'center' }}>
+                              <button
+                                onClick={() => handleDeletePerfil(p.id, p.nome)}
+                                className="btn-action delete"
+                                title="Excluir Perfil de Acesso"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)', fontWeight: 600, display: 'inline-block', width: '100%', textAlign: 'center' }}>
+                              Somente Leitura
+                            </span>
+                          )
                         ) : (
                           <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)', fontWeight: 600, display: 'inline-block', width: '100%', textAlign: 'center' }}>
                             Fixo
