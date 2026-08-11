@@ -477,15 +477,16 @@ h1, h2, h3, h4, h5, h6 {
   color: #ffffff;
 }
 
-/* Contêiner com Rolagem Horizontal Responsiva */
+/* Contêiner com Rolagem Horizontal Responsiva na Base */
 .table-responsive-container {
   width: 100%;
+  max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
   border-radius: 20px;
 }
 
-/* Barra de Rolagem Horizontal Estilizada */
+/* Barra de Rolagem Horizontal Estilizada na Parte Inferior */
 .table-responsive-container::-webkit-scrollbar {
   height: 8px;
 }
@@ -504,10 +505,10 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(99, 102, 241, 0.7);
 }
 
-/* Custom Table com Largura Mínima Garantida */
+/* Custom Table Fluida (Sem Min-Width Forçado) com Suporte a Colunas Redimensionáveis */
 .custom-table {
   width: 100%;
-  min-width: 1050px;
+  table-layout: fixed;
   border-collapse: collapse;
   text-align: left;
   font-size: 0.92rem;
@@ -520,6 +521,26 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   border-bottom: 1px solid var(--card-border);
   white-space: nowrap;
+  position: relative;
+  user-select: none;
+}
+
+/* Alça de Redimensionar Coluna por Arraste */
+.custom-table th .resizer {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  cursor: col-resize;
+  user-select: none;
+  z-index: 10;
+}
+
+.custom-table th .resizer:hover,
+.custom-table th .resizer:active {
+  background: rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.8);
 }
 
 .custom-table td {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Colaborador, Cargo } from '../types/colaborador';
-import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink, Briefcase } from 'lucide-react';
+import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink, Briefcase, RotateCw } from 'lucide-react';
 
 interface ColumnConfig {
   foto: boolean;
@@ -11,6 +11,28 @@ interface ColumnConfig {
   cidade: boolean;
   criado_em: boolean;
 }
+
+interface ColumnWidths {
+  foto: number;
+  nome: number;
+  cpf: number;
+  cargo: number;
+  endereco: number;
+  cidade: number;
+  criado_em: number;
+  acoes: number;
+}
+
+const DEFAULT_COLUMN_WIDTHS: ColumnWidths = {
+  foto: 70,
+  nome: 220,
+  cpf: 160,
+  cargo: 200,
+  endereco: 260,
+  cidade: 180,
+  criado_em: 140,
+  acoes: 100
+};
 
 export const Colaboradores: React.FC = () => {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
@@ -35,6 +57,15 @@ export const Colaboradores: React.FC = () => {
       try { return JSON.parse(saved); } catch (e) { /* fallback */ }
     }
     return { foto: true, nome: true, cpf: true, cargo: true, endereco: true, cidade: true, criado_em: false };
+  });
+
+  // Larguras Redimensionáveis das Colunas com LocalStorage
+  const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
+    const saved = localStorage.getItem('regz_column_widths');
+    if (saved) {
+      try { return { ...DEFAULT_COLUMN_WIDTHS, ...JSON.parse(saved) }; } catch (e) { /* fallback */ }
+    }
+    return DEFAULT_COLUMN_WIDTHS;
   });
 
   // Formulário State
@@ -66,6 +97,37 @@ export const Colaboradores: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('regz_visible_columns', JSON.stringify(visibleColumns));
   }, [visibleColumns]);
+
+  // Salvar larguras de colunas no LocalStorage
+  useEffect(() => {
+    localStorage.setItem('regz_column_widths', JSON.stringify(columnWidths));
+  }, [columnWidths]);
+
+  // Função para Arrastar e Redimensionar Colunas
+  const handleResizeStart = (colKey: keyof ColumnWidths, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startWidth = columnWidths[colKey];
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      const newWidth = Math.max(50, startWidth + deltaX);
+      setColumnWidths(prev => ({ ...prev, [colKey]: newWidth }));
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
+
+  const resetColumnWidths = () => {
+    setColumnWidths(DEFAULT_COLUMN_WIDTHS);
+  };
 
   // Buscar lista completa de colaboradores e catálogo de cargos
   const fetchColaboradores = async () => {
@@ -565,7 +627,7 @@ export const Colaboradores: React.FC = () => {
             </button>
 
             {columnsDropdownOpen && (
-              <div className="dropdown-menu glass-panel" style={{ position: 'absolute', right: 0, top: '46px', width: '220px', padding: '12px', zIndex: 50 }}>
+              <div className="dropdown-menu glass-panel" style={{ position: 'absolute', right: 0, top: '46px', width: '230px', padding: '14px', zIndex: 50 }}>
                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px', textTransform: 'uppercase' }}>Exibir Colunas</div>
                 <label className="checkbox-label">
                   <input type="checkbox" checked={visibleColumns.foto} onChange={() => toggleColumn('foto')} />
@@ -595,6 +657,14 @@ export const Colaboradores: React.FC = () => {
                   <input type="checkbox" checked={visibleColumns.criado_em} onChange={() => toggleColumn('criado_em')} />
                   <span>Data de Cadastro</span>
                 </label>
+
+                <button
+                  onClick={resetColumnWidths}
+                  className="btn-secondary"
+                  style={{ width: '100%', marginTop: '10px', padding: '6px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                >
+                  <RotateCw size={12} /> Resetar Tamanho das Colunas
+                </button>
               </div>
             )}
           </div>
@@ -605,19 +675,57 @@ export const Colaboradores: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabela Responsiva de Colaboradores com Rolagem Horizontal e Células em 1 Linha */}
+      {/* Tabela de Colaboradores com Colunas Redimensionáveis via Arraste */}
       <div className="glass-panel table-responsive-container" style={{ padding: '0' }}>
         <table className="custom-table">
           <thead>
             <tr>
-              {visibleColumns.foto && <th style={{ width: '70px', whiteSpace: 'nowrap' }}>Foto</th>}
-              {visibleColumns.nome && <th style={{ whiteSpace: 'nowrap' }}>Nome</th>}
-              {visibleColumns.cpf && <th style={{ whiteSpace: 'nowrap' }}>CPF</th>}
-              {visibleColumns.cargo && <th style={{ whiteSpace: 'nowrap' }}>Cargo</th>}
-              {visibleColumns.endereco && <th style={{ whiteSpace: 'nowrap' }}>Endereço</th>}
-              {visibleColumns.cidade && <th style={{ whiteSpace: 'nowrap' }}>Cidade / UF</th>}
-              {visibleColumns.criado_em && <th style={{ whiteSpace: 'nowrap' }}>Data de Cadastro</th>}
-              <th style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Ações</th>
+              {visibleColumns.foto && (
+                <th style={{ width: `${columnWidths.foto}px` }}>
+                  Foto
+                  <div className="resizer" onMouseDown={(e) => handleResizeStart('foto', e)} />
+                </th>
+              )}
+              {visibleColumns.nome && (
+                <th style={{ width: `${columnWidths.nome}px` }}>
+                  Nome
+                  <div className="resizer" onMouseDown={(e) => handleResizeStart('nome', e)} />
+                </th>
+              )}
+              {visibleColumns.cpf && (
+                <th style={{ width: `${columnWidths.cpf}px` }}>
+                  CPF
+                  <div className="resizer" onMouseDown={(e) => handleResizeStart('cpf', e)} />
+                </th>
+              )}
+              {visibleColumns.cargo && (
+                <th style={{ width: `${columnWidths.cargo}px` }}>
+                  Cargo
+                  <div className="resizer" onMouseDown={(e) => handleResizeStart('cargo', e)} />
+                </th>
+              )}
+              {visibleColumns.endereco && (
+                <th style={{ width: `${columnWidths.endereco}px` }}>
+                  Endereço
+                  <div className="resizer" onMouseDown={(e) => handleResizeStart('endereco', e)} />
+                </th>
+              )}
+              {visibleColumns.cidade && (
+                <th style={{ width: `${columnWidths.cidade}px` }}>
+                  Cidade / UF
+                  <div className="resizer" onMouseDown={(e) => handleResizeStart('cidade', e)} />
+                </th>
+              )}
+              {visibleColumns.criado_em && (
+                <th style={{ width: `${columnWidths.criado_em}px` }}>
+                  Data de Cadastro
+                  <div className="resizer" onMouseDown={(e) => handleResizeStart('criado_em', e)} />
+                </th>
+              )}
+              <th style={{ textAlign: 'right', width: `${columnWidths.acoes}px` }}>
+                Ações
+                <div className="resizer" onMouseDown={(e) => handleResizeStart('acoes', e)} />
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -648,7 +756,7 @@ export const Colaboradores: React.FC = () => {
                   title="Clique para editar este colaborador"
                 >
                   {visibleColumns.foto && (
-                    <td style={{ width: '70px', whiteSpace: 'nowrap' }}>
+                    <td style={{ width: `${columnWidths.foto}px`, whiteSpace: 'nowrap' }}>
                       <div 
                         className="avatar-hover-container" 
                         onClick={(e) => {
@@ -672,8 +780,10 @@ export const Colaboradores: React.FC = () => {
                   )}
 
                   {visibleColumns.nome && (
-                    <td>
-                      <div style={{ fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap' }}>{c.nome}</div>
+                    <td style={{ width: `${columnWidths.nome}px` }}>
+                      <div style={{ fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.nome}>
+                        {c.nome}
+                      </div>
                       <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
                         ID: #{c.id} {c.ativo === false && <span className="badge-inactive">Inativo</span>}
                       </div>
@@ -681,7 +791,7 @@ export const Colaboradores: React.FC = () => {
                   )}
 
                   {visibleColumns.cpf && (
-                    <td>
+                    <td style={{ width: `${columnWidths.cpf}px` }}>
                       <code style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                         {c.cpf}
                       </code>
@@ -689,10 +799,13 @@ export const Colaboradores: React.FC = () => {
                   )}
 
                   {visibleColumns.cargo && (
-                    <td>
+                    <td style={{ width: `${columnWidths.cargo}px` }}>
                       {c.cargo ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#a5b4fc', background: 'rgba(99, 102, 241, 0.12)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.25)', whiteSpace: 'nowrap' }}>
-                          <Briefcase size={13} color="#818cf8" /> {c.cargo}
+                        <span 
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#a5b4fc', background: 'rgba(99, 102, 241, 0.12)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.25)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
+                          title={c.cargo}
+                        >
+                          <Briefcase size={13} color="#818cf8" style={{ flexShrink: 0 }} /> {c.cargo}
                         </span>
                       ) : (
                         <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Não definido</span>
@@ -701,10 +814,10 @@ export const Colaboradores: React.FC = () => {
                   )}
 
                   {visibleColumns.endereco && (
-                    <td>
+                    <td style={{ width: `${columnWidths.endereco}px` }}>
                       {c.logradouro ? (
                         <div 
-                          style={{ fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '260px' }}
+                          style={{ fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
                           title={`${c.logradouro}${c.numero ? `, nº ${c.numero}` : ''}${c.bairro ? ` - ${c.bairro}` : ''}`}
                         >
                           {c.logradouro}{c.numero ? `, nº ${c.numero}` : ''}
@@ -717,10 +830,13 @@ export const Colaboradores: React.FC = () => {
                   )}
 
                   {visibleColumns.cidade && (
-                    <td>
+                    <td style={{ width: `${columnWidths.cidade}px` }}>
                       {c.cidade ? (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', color: 'var(--text-main)', whiteSpace: 'nowrap' }}>
-                          <MapPin size={14} color="#38bdf8" /> {c.cidade}{c.estado ? `/${c.estado}` : ''}
+                        <span 
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
+                          title={`${c.cidade}${c.estado ? `/${c.estado}` : ''}`}
+                        >
+                          <MapPin size={14} color="#38bdf8" style={{ flexShrink: 0 }} /> {c.cidade}{c.estado ? `/${c.estado}` : ''}
                         </span>
                       ) : (
                         <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>-</span>
@@ -729,13 +845,13 @@ export const Colaboradores: React.FC = () => {
                   )}
 
                   {visibleColumns.criado_em && (
-                    <td style={{ fontSize: '0.85rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+                    <td style={{ width: `${columnWidths.criado_em}px`, fontSize: '0.85rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
                       {c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : '-'}
                     </td>
                   )}
 
                   {/* Coluna Ações */}
-                  <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <td style={{ textAlign: 'right', width: `${columnWidths.acoes}px`, whiteSpace: 'nowrap' }}>
                     <div style={{ display: 'inline-flex', gap: '8px' }}>
                       {(c.cidade || c.logradouro || c.cep) && (
                         <button
