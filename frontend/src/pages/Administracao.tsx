@@ -463,12 +463,12 @@ export const Administracao: React.FC = () => {
               <thead>
                 <tr>
                   <th style={{ width: '60px' }}>#ID</th>
-                  <th style={{ minWidth: '180px' }}>Nome do Perfil</th>
-                  <th style={{ textAlign: 'center', minWidth: '160px' }}>Home</th>
-                  <th style={{ textAlign: 'center', minWidth: '160px' }}>Colaboradores</th>
-                  <th style={{ textAlign: 'center', minWidth: '160px' }}>Campos</th>
-                  <th style={{ textAlign: 'center', minWidth: '160px' }}>Administração</th>
-                  <th style={{ textAlign: 'right', minWidth: '80px' }}>Ações</th>
+                  <th style={{ minWidth: '180px', borderRight: '1px solid rgba(255, 255, 255, 0.1)' }}>Nome do Perfil</th>
+                  <th style={{ minWidth: '150px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '16px' }}>Home</th>
+                  <th style={{ minWidth: '150px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '16px' }}>Colaboradores</th>
+                  <th style={{ minWidth: '150px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '16px' }}>Campos</th>
+                  <th style={{ minWidth: '150px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '16px' }}>Administração</th>
+                  <th style={{ textAlign: 'right', minWidth: '80px', paddingRight: '16px' }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -485,7 +485,7 @@ export const Administracao: React.FC = () => {
                   return (
                     <tr key={p.id}>
                       <td style={{ color: 'var(--text-dim)' }}>#{p.id}</td>
-                      <td>
+                      <td style={{ borderRight: '1px solid rgba(255, 255, 255, 0.1)' }}>
                         <div style={{ fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
                           {p.nome}
                           {isAdmin && (
@@ -502,26 +502,39 @@ export const Administracao: React.FC = () => {
                         {p.descricao && <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '2px' }}>{p.descricao}</div>}
                       </td>
 
-                      {/* Células da Matriz com Checkboxes para cada Aba */}
+                      {/* Células da Matriz com Checkboxes EMPILHADOS VERTICALMENTE e BORDAS DE DIVISÃO */}
                       {(['home', 'colaboradores', 'campos', 'administracao'] as Array<keyof PermissoesAba>).map((aba) => {
                         const nivel = permissoes[aba] || 'sem_acesso';
                         const isLeitura = isAdmin || nivel === 'leitura' || nivel === 'escrita';
                         const isEscrita = isAdmin || nivel === 'escrita';
 
                         return (
-                          <td key={aba} style={{ textAlign: 'center', padding: '12px 8px' }}>
+                          <td key={aba} style={{
+                            padding: '12px 16px',
+                            borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+                            verticalAlign: 'middle',
+                            background: 'rgba(255, 255, 255, 0.015)'
+                          }}>
                             {isAdmin ? (
-                              <div style={{ display: 'inline-flex', gap: '12px', opacity: 0.85, fontSize: '0.82rem', color: '#818cf8', fontWeight: 600 }}>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                  <input type="checkbox" checked disabled readOnly /> Leitura
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', opacity: 0.85, fontSize: '0.84rem', color: '#818cf8', fontWeight: 600 }}>
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                                  <input type="checkbox" checked disabled readOnly style={{ accentColor: '#818cf8' }} /> Leitura
                                 </span>
-                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                  <input type="checkbox" checked disabled readOnly /> Escrita
+                                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                                  <input type="checkbox" checked disabled readOnly style={{ accentColor: '#818cf8' }} /> Escrita
                                 </span>
                               </div>
                             ) : (
-                              <div style={{ display: 'inline-flex', gap: '14px', fontSize: '0.84rem' }}>
-                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer', color: isLeitura ? '#38bdf8' : 'var(--text-muted)' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.84rem' }}>
+                                <label style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  cursor: 'pointer',
+                                  color: isLeitura ? '#38bdf8' : 'var(--text-muted)',
+                                  fontWeight: isLeitura ? 600 : 400,
+                                  whiteSpace: 'nowrap'
+                                }}>
                                   <input
                                     type="checkbox"
                                     checked={isLeitura}
@@ -531,7 +544,15 @@ export const Administracao: React.FC = () => {
                                   <span>Leitura</span>
                                 </label>
 
-                                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer', color: isEscrita ? '#34d399' : 'var(--text-muted)' }}>
+                                <label style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  cursor: 'pointer',
+                                  color: isEscrita ? '#34d399' : 'var(--text-muted)',
+                                  fontWeight: isEscrita ? 600 : 400,
+                                  whiteSpace: 'nowrap'
+                                }}>
                                   <input
                                     type="checkbox"
                                     checked={isEscrita}
