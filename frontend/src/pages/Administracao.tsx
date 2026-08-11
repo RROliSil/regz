@@ -1,6 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { Usuario, PerfilAcesso, PermissoesAba, PermissaoNivel } from '../types/auth';
-import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX } from 'lucide-react';
+import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX, Columns } from 'lucide-react';
+
+interface UserColumnConfig {
+  id: boolean;
+  nome: boolean;
+  email: boolean;
+  perfil: boolean;
+  status: boolean;
+  criado_em: boolean;
+  acoes: boolean;
+}
+
+interface UserColumnWidths {
+  id: number;
+  nome: number;
+  email: number;
+  perfil: number;
+  status: number;
+  criado_em: number;
+  acoes: number;
+}
 
 export const Administracao: React.FC = () => {
   const [subTab, setSubTab] = useState<'usuarios' | 'perfis'>('usuarios');
@@ -10,6 +30,38 @@ export const Administracao: React.FC = () => {
   const [loadingUsuarios, setLoadingUsuarios] = useState(true);
   const [modalUserOpen, setModalUserOpen] = useState(false);
   const [editingUserId, setEditingUserId] = useState<number | null>(null);
+
+  // Estados para Colunas Visíveis e Popover na Tabela de Usuários
+  const [userVisibleColumns, setUserVisibleColumns] = useState<UserColumnConfig>(() => {
+    const saved = localStorage.getItem('regz_user_visible_columns');
+    return saved ? JSON.parse(saved) : {
+      id: true,
+      nome: true,
+      email: true,
+      perfil: true,
+      status: true,
+      criado_em: true,
+      acoes: true
+    };
+  });
+  const [columnMenuOpen, setColumnMenuOpen] = useState(false);
+
+  // Estados para Largura Arrastável de Colunas na Tabela de Usuários
+  const [userColumnWidths, setUserColumnWidths] = useState<UserColumnWidths>(() => {
+    const saved = localStorage.getItem('regz_user_column_widths');
+    return saved ? JSON.parse(saved) : {
+      id: 70,
+      nome: 220,
+      email: 220,
+      perfil: 160,
+      status: 110,
+      criado_em: 130,
+      acoes: 130
+    };
+  });
+  const [resizingCol, setResizingCol] = useState<keyof UserColumnWidths | null>(null);
+  const [startX, setStartX] = useState<number>(0);
+  const [startWidth, setStartWidth] = useState<number>(0);
 
   // Form de Usuário
   const [userNome, setUserNome] = useState('');
@@ -40,6 +92,52 @@ export const Administracao: React.FC = () => {
   const [perfilError, setPerfilError] = useState('');
   const [perfilSuccess, setPerfilSuccess] = useState('');
   const [submittingPerfil, setSubmittingPerfil] = useState(false);
+
+  // Alternar Coluna Visível
+  const toggleUserColumn = (key: keyof UserColumnConfig) => {
+    setUserVisibleColumns(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem('regz_user_visible_columns', JSON.stringify(next));
+      return next;
+    });
+  };
+
+  // Arraste de Redimensionamento de Colunas
+  const handleMouseDownResize = (e: React.MouseEvent, colKey: keyof UserColumnWidths) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingCol(colKey);
+    setStartX(e.clientX);
+    setStartWidth(userColumnWidths[colKey]);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizingCol) return;
+      const deltaX = e.clientX - startX;
+      const newWidth = Math.max(50, startWidth + deltaX);
+      setUserColumnWidths(prev => {
+        const next = { ...prev, [resizingCol]: newWidth };
+        localStorage.setItem('regz_user_column_widths', JSON.stringify(next));
+        return next;
+      });
+    };
+
+    const handleMouseUp = () => {
+      if (resizingCol) {
+        setResizingCol(null);
+      }
+    };
+
+    if (resizingCol) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [resizingCol, startX, startWidth]);
 
   // Carregar dados da API
   const fetchUsuarios = async () => {
@@ -254,7 +352,6 @@ export const Administracao: React.FC = () => {
       [aba]: novoNivel
     };
 
-    // Atualização otimista no estado local
     setPerfis(prev => prev.map(p => p.id === perfil.id ? { ...p, permissoes: novaspermissoes } : p));
 
     try {
@@ -273,7 +370,7 @@ export const Administracao: React.FC = () => {
         setSavedRowId(perfil.id);
         setTimeout(() => setSavedRowId(null), 2000);
       } else {
-        fetchPerfis(); // Reverter se falhar
+        fetchPerfis();
       }
     } catch (err) {
       fetchPerfis();
@@ -341,7 +438,7 @@ export const Administracao: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* CONTEÚDO DA ABA: USUÁRIOS */}
+      {/* CONTEÚDO DA ABA: USUÁRIOS (COM COLUNAS EXIBÍVEIS E ARRASTÁVEIS) */}
       {/* ======================================================== */}
       {subTab === 'usuarios' && (
         <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
@@ -350,22 +447,112 @@ export const Administracao: React.FC = () => {
               <Users size={20} color="#38bdf8" />
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Usuários Cadastrados</h3>
             </div>
-            <button onClick={handleOpenNewUser} className="btn-primary" style={{ fontSize: '0.88rem' }}>
-              <Plus size={16} /> Novo Usuário
-            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {/* Botão Popover de Seleção de Colunas */}
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setColumnMenuOpen(prev => !prev)}
+                  className="btn-secondary"
+                  style={{ fontSize: '0.88rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  title="Exibir / Ocultar Colunas"
+                >
+                  <Columns size={16} /> Colunas
+                </button>
+
+                {columnMenuOpen && (
+                  <div style={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 'calc(100% + 8px)',
+                    background: '#0f172a',
+                    border: '1px solid var(--card-border)',
+                    borderRadius: '12px',
+                    padding: '12px 16px',
+                    zIndex: 100,
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                    minWidth: '180px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px'
+                  }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                      Colunas Visíveis
+                    </div>
+                    {([
+                      { key: 'id', label: '#ID' },
+                      { key: 'nome', label: 'Nome do Usuário' },
+                      { key: 'email', label: 'E-mail' },
+                      { key: 'perfil', label: 'Perfil' },
+                      { key: 'status', label: 'Status' },
+                      { key: 'criado_em', label: 'Data de Cadastro' },
+                      { key: 'acoes', label: 'Ações' },
+                    ] as const).map(col => (
+                      <label key={col.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer', color: '#f8fafc' }}>
+                        <input
+                          type="checkbox"
+                          checked={userVisibleColumns[col.key]}
+                          onChange={() => toggleUserColumn(col.key)}
+                        />
+                        <span>{col.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button onClick={handleOpenNewUser} className="btn-primary" style={{ fontSize: '0.88rem' }}>
+                <Plus size={16} /> Novo Usuário
+              </button>
+            </div>
           </div>
 
           <div style={{ overflowX: 'auto' }}>
-            <table className="custom-table">
+            <table className="custom-table" style={{ tableLayout: 'fixed', width: '100%' }}>
               <thead>
                 <tr>
-                  <th style={{ width: '60px' }}>#ID</th>
-                  <th>Nome do Usuário</th>
-                  <th>E-mail de Acesso</th>
-                  <th>Perfil de Acesso</th>
-                  <th>Status</th>
-                  <th>Data de Cadastro</th>
-                  <th style={{ textAlign: 'right' }}>Ações</th>
+                  {userVisibleColumns.id && (
+                    <th style={{ width: `${userColumnWidths.id}px`, position: 'relative' }}>
+                      #ID
+                      <div className="col-resizer" onMouseDown={(e) => handleMouseDownResize(e, 'id')} />
+                    </th>
+                  )}
+                  {userVisibleColumns.nome && (
+                    <th style={{ width: `${userColumnWidths.nome}px`, position: 'relative' }}>
+                      Nome do Usuário
+                      <div className="col-resizer" onMouseDown={(e) => handleMouseDownResize(e, 'nome')} />
+                    </th>
+                  )}
+                  {userVisibleColumns.email && (
+                    <th style={{ width: `${userColumnWidths.email}px`, position: 'relative' }}>
+                      E-mail de Acesso
+                      <div className="col-resizer" onMouseDown={(e) => handleMouseDownResize(e, 'email')} />
+                    </th>
+                  )}
+                  {userVisibleColumns.perfil && (
+                    <th style={{ width: `${userColumnWidths.perfil}px`, position: 'relative' }}>
+                      Perfil de Acesso
+                      <div className="col-resizer" onMouseDown={(e) => handleMouseDownResize(e, 'perfil')} />
+                    </th>
+                  )}
+                  {userVisibleColumns.status && (
+                    <th style={{ width: `${userColumnWidths.status}px`, position: 'relative' }}>
+                      Status
+                      <div className="col-resizer" onMouseDown={(e) => handleMouseDownResize(e, 'status')} />
+                    </th>
+                  )}
+                  {userVisibleColumns.criado_em && (
+                    <th style={{ width: `${userColumnWidths.criado_em}px`, position: 'relative' }}>
+                      Data de Cadastro
+                      <div className="col-resizer" onMouseDown={(e) => handleMouseDownResize(e, 'criado_em')} />
+                    </th>
+                  )}
+                  {userVisibleColumns.acoes && (
+                    <th style={{ width: `${userColumnWidths.acoes}px`, textAlign: 'center', position: 'relative' }}>
+                      Ações
+                      <div className="col-resizer" onMouseDown={(e) => handleMouseDownResize(e, 'acoes')} />
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -377,64 +564,76 @@ export const Administracao: React.FC = () => {
                   </tr>
                 ) : usuarios.map((u) => (
                   <tr key={u.id}>
-                    <td style={{ color: 'var(--text-dim)' }}>#{u.id}</td>
-                    <td>
-                      <span style={{ fontWeight: 600, color: '#f8fafc' }}>{u.nome}</span>
-                    </td>
-                    <td>
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>{u.email}</span>
-                    </td>
-                    <td>
-                      {u.perfil?.is_admin ? (
-                        <span style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.4)', padding: '3px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <Shield size={12} /> Administrador Total
-                        </span>
-                      ) : (
-                        <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
-                          {u.perfil?.nome || 'Sem Perfil'}
-                        </span>
-                      )}
-                    </td>
-                    <td>
-                      {u.ativo ? (
-                        <span style={{ color: '#34d399', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <UserCheck size={14} /> Ativo
-                        </span>
-                      ) : (
-                        <span style={{ color: '#fb7185', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                          <UserX size={14} /> Inativo
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>
-                      {u.criado_em ? new Date(u.criado_em).toLocaleDateString('pt-BR') : '-'}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '6px' }}>
-                        <button
-                          onClick={() => handleToggleUserStatus(u.id, u.ativo)}
-                          className="btn-action"
-                          style={{ background: u.ativo ? 'rgba(251, 113, 133, 0.15)' : 'rgba(52, 211, 153, 0.15)', color: u.ativo ? '#fb7185' : '#34d399' }}
-                          title={u.ativo ? 'Inativar Usuário' : 'Ativar Usuário'}
-                        >
-                          {u.ativo ? <UserX size={14} /> : <UserCheck size={14} />}
-                        </button>
-                        <button
-                          onClick={() => handleOpenEditUser(u)}
-                          className="btn-action map"
-                          title="Editar Usuário"
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(u.id, u.nome)}
-                          className="btn-action delete"
-                          title="Excluir Usuário"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
+                    {userVisibleColumns.id && <td style={{ color: 'var(--text-dim)' }}>#{u.id}</td>}
+                    {userVisibleColumns.nome && (
+                      <td>
+                        <span style={{ fontWeight: 600, color: '#f8fafc', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{u.nome}</span>
+                      </td>
+                    )}
+                    {userVisibleColumns.email && (
+                      <td>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{u.email}</span>
+                      </td>
+                    )}
+                    {userVisibleColumns.perfil && (
+                      <td>
+                        {u.perfil?.is_admin ? (
+                          <span style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.4)', padding: '3px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Shield size={12} /> Administrador Total
+                          </span>
+                        ) : (
+                          <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
+                            {u.perfil?.nome || 'Sem Perfil'}
+                          </span>
+                        )}
+                      </td>
+                    )}
+                    {userVisibleColumns.status && (
+                      <td>
+                        {u.ativo ? (
+                          <span style={{ color: '#34d399', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <UserCheck size={14} /> Ativo
+                          </span>
+                        ) : (
+                          <span style={{ color: '#fb7185', fontSize: '0.8rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <UserX size={14} /> Inativo
+                          </span>
+                        )}
+                      </td>
+                    )}
+                    {userVisibleColumns.criado_em && (
+                      <td style={{ fontSize: '0.85rem', color: 'var(--text-dim)' }}>
+                        {u.criado_em ? new Date(u.criado_em).toLocaleDateString('pt-BR') : '-'}
+                      </td>
+                    )}
+                    {userVisibleColumns.acoes && (
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => handleToggleUserStatus(u.id, u.ativo)}
+                            className="btn-action"
+                            style={{ background: u.ativo ? 'rgba(251, 113, 133, 0.15)' : 'rgba(52, 211, 153, 0.15)', color: u.ativo ? '#fb7185' : '#34d399' }}
+                            title={u.ativo ? 'Inativar Usuário' : 'Ativar Usuário'}
+                          >
+                            {u.ativo ? <UserX size={14} /> : <UserCheck size={14} />}
+                          </button>
+                          <button
+                            onClick={() => handleOpenEditUser(u)}
+                            className="btn-action map"
+                            title="Editar Usuário"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(u.id, u.nome)}
+                            className="btn-action delete"
+                            title="Excluir Usuário"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -444,7 +643,7 @@ export const Administracao: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* CONTEÚDO DA ABA: PERFIS DE ACESSO (MATRIZ DIRETA COM CHECKBOXES) */}
+      {/* CONTEÚDO DA ABA: PERFIS DE ACESSO (MATRIZ DIRETA COM CHECKBOXES & AÇÕES CENTRALIZADAS) */}
       {/* ======================================================== */}
       {subTab === 'perfis' && (
         <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
@@ -468,7 +667,7 @@ export const Administracao: React.FC = () => {
                   <th style={{ minWidth: '150px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '16px' }}>Colaboradores</th>
                   <th style={{ minWidth: '150px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '16px' }}>Campos</th>
                   <th style={{ minWidth: '150px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '16px' }}>Administração</th>
-                  <th style={{ textAlign: 'right', minWidth: '80px', paddingRight: '16px' }}>Ações</th>
+                  <th style={{ textAlign: 'center', minWidth: '100px' }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -567,18 +766,22 @@ export const Administracao: React.FC = () => {
                         );
                       })}
 
-                      {/* Coluna de Ações (Apenas Botão de Excluir Perfil, Sem Lápis) */}
-                      <td style={{ textAlign: 'right' }}>
+                      {/* Coluna de Ações Centralizada (Texto Fixo ou Lixeira) */}
+                      <td style={{ textAlign: 'center' }}>
                         {!isAdmin ? (
-                          <button
-                            onClick={() => handleDeletePerfil(p.id, p.nome)}
-                            className="btn-action delete"
-                            title="Excluir Perfil de Acesso"
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          <div style={{ display: 'inline-flex', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => handleDeletePerfil(p.id, p.nome)}
+                              className="btn-action delete"
+                              title="Excluir Perfil de Acesso"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
                         ) : (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Fixo</span>
+                          <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)', fontWeight: 600, display: 'inline-block', width: '100%', textAlign: 'center' }}>
+                            Fixo
+                          </span>
                         )}
                       </td>
                     </tr>
