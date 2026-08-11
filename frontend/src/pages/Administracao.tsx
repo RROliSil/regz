@@ -646,34 +646,40 @@ export const Administracao: React.FC = () => {
                     )}
                     {userVisibleColumns.acoes && (
                       <td style={{ textAlign: 'center' }}>
-                        {podeEditar ? (
-                          <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'center' }}>
-                            <button
-                              onClick={() => handleToggleUserStatus(u.id, u.ativo)}
-                              className="btn-action"
-                              style={{ background: u.ativo ? 'rgba(251, 113, 133, 0.15)' : 'rgba(52, 211, 153, 0.15)', color: u.ativo ? '#fb7185' : '#34d399' }}
-                              title={u.ativo ? 'Inativar Usuário' : 'Ativar Usuário'}
-                            >
-                              {u.ativo ? <UserX size={14} /> : <UserCheck size={14} />}
-                            </button>
-                            <button
-                              onClick={() => handleOpenEditUser(u)}
-                              className="btn-action map"
-                              title="Editar Usuário"
-                            >
-                              <Edit size={14} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteUser(u.id, u.nome)}
-                              className="btn-action delete"
-                              title="Excluir Usuário"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        ) : (
-                          <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Somente Leitura</span>
-                        )}
+                        <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => podeEditar && handleToggleUserStatus(u.id, u.ativo)}
+                            className="btn-action"
+                            disabled={!podeEditar}
+                            style={{
+                              background: u.ativo ? 'rgba(251, 113, 133, 0.15)' : 'rgba(52, 211, 153, 0.15)',
+                              color: u.ativo ? '#fb7185' : '#34d399',
+                              opacity: podeEditar ? 1 : 0.4,
+                              cursor: podeEditar ? 'pointer' : 'not-allowed'
+                            }}
+                            title={podeEditar ? (u.ativo ? 'Inativar Usuário' : 'Ativar Usuário') : 'Ação desativada: Seu perfil permite apenas visualização'}
+                          >
+                            {u.ativo ? <UserX size={14} /> : <UserCheck size={14} />}
+                          </button>
+                          <button
+                            onClick={() => podeEditar && handleOpenEditUser(u)}
+                            className="btn-action map"
+                            disabled={!podeEditar}
+                            style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+                            title={podeEditar ? "Editar Usuário" : "Ação desativada: Seu perfil permite apenas visualização"}
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            onClick={() => podeEditar && handleDeleteUser(u.id, u.nome)}
+                            className="btn-action delete"
+                            disabled={!podeEditar}
+                            style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+                            title={podeEditar ? "Excluir Usuário" : "Ação desativada: Seu perfil permite apenas visualização"}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     )}
                   </tr>
@@ -694,11 +700,15 @@ export const Administracao: React.FC = () => {
               <Shield size={20} color="#a855f7" />
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Perfis de Acesso & Matriz de Permissões</h3>
             </div>
-            {podeEditar && (
-              <button onClick={handleOpenNewPerfil} className="btn-primary" style={{ fontSize: '0.88rem' }}>
-                <Plus size={16} /> Novo Perfil de Acesso
-              </button>
-            )}
+            <button
+              onClick={handleOpenNewPerfil}
+              className="btn-primary"
+              disabled={!podeEditar}
+              style={{ fontSize: '0.88rem', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+              title={podeEditar ? 'Novo Perfil de Acesso' : 'Ação desativada: Seu perfil permite apenas visualização'}
+            >
+              <Plus size={16} /> Novo Perfil de Acesso
+            </button>
           </div>
 
           <div style={{ overflowX: 'auto' }}>
@@ -817,21 +827,17 @@ export const Administracao: React.FC = () => {
                       {/* Coluna de Ações Centralizada (Texto Fixo ou Lixeira) */}
                       <td style={{ textAlign: 'center' }}>
                         {!isAdmin ? (
-                          podeEditar ? (
-                            <div style={{ display: 'inline-flex', justifyContent: 'center' }}>
-                              <button
-                                onClick={() => handleDeletePerfil(p.id, p.nome)}
-                                className="btn-action delete"
-                                title="Excluir Perfil de Acesso"
-                              >
-                                <Trash2 size={15} />
-                              </button>
-                            </div>
-                          ) : (
-                            <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)', fontWeight: 600, display: 'inline-block', width: '100%', textAlign: 'center' }}>
-                              Somente Leitura
-                            </span>
-                          )
+                          <div style={{ display: 'inline-flex', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => podeEditar && handleDeletePerfil(p.id, p.nome)}
+                              className="btn-action delete"
+                              disabled={!podeEditar}
+                              style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+                              title={podeEditar ? "Excluir Perfil de Acesso" : "Ação desativada: Seu perfil permite apenas visualização"}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
                         ) : (
                           <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)', fontWeight: 600, display: 'inline-block', width: '100%', textAlign: 'center' }}>
                             Fixo

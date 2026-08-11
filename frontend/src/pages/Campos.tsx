@@ -316,17 +316,15 @@ export const Campos: React.FC = () => {
                         )}
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        {podeEditar ? (
-                          <button
-                            onClick={() => campo.id && handleDeleteCampo(campo.id, campo.nome)}
-                            className="btn-action delete"
-                            title="Remover este campo personalizado"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        ) : (
-                          <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Somente Leitura</span>
-                        )}
+                        <button
+                          onClick={() => podeEditar && campo.id && handleDeleteCampo(campo.id, campo.nome)}
+                          className="btn-action delete"
+                          disabled={!podeEditar}
+                          style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+                          title={podeEditar ? "Remover este campo personalizado" : "Ação desativada: Seu perfil permite apenas visualização"}
+                        >
+                          <Trash2 size={15} />
+                        </button>
                       </td>
                     </tr>
                   ))

@@ -655,26 +655,27 @@ export const Colaboradores: React.FC = () => {
         </div>
 
         {/* Botões de Ação no canto direito */}
-        {podeEditar && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button
-              onClick={openNewModal}
-              className="btn-icon-primary"
-              title="Novo Colaborador"
-            >
-              <UserPlus size={18} />
-            </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button
+            onClick={openNewModal}
+            className="btn-icon-primary"
+            disabled={!podeEditar}
+            style={{ opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+            title={podeEditar ? "Novo Colaborador" : "Ação desativada: Seu perfil permite apenas visualização"}
+          >
+            <UserPlus size={18} />
+          </button>
 
-            <button
-              onClick={handleRobotButtonClick}
-              className="btn-robot"
-              title="Gerar Colaborador de Teste (4Devs) | Segure Shift para cadastrar direto"
-              disabled={gerandoPessoa}
-            >
-              <Bot size={20} className={gerandoPessoa ? 'spin' : ''} />
-            </button>
-          </div>
-        )}
+          <button
+            onClick={handleRobotButtonClick}
+            className="btn-robot"
+            title={podeEditar ? "Gerar Colaborador de Teste (4Devs)" : "Ação desativada: Seu perfil permite apenas visualização"}
+            disabled={!podeEditar || gerandoPessoa}
+            style={{ opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+          >
+            <Bot size={20} className={gerandoPessoa ? 'spin' : ''} />
+          </button>
+        </div>
       </div>
 
       {/* Control Bar (Busca e Botão Colunas RIGOROSAMENTE FIXO à direita) */}
@@ -827,18 +828,18 @@ export const Colaboradores: React.FC = () => {
                 paginatedColaboradores.map((c) => (
                   <tr
                     key={c.id}
-                    className={`${podeEditar ? 'clickable-row' : ''} ${c.ativo === false ? 'row-inactive' : ''}`}
-                    onClick={podeEditar ? () => openEditModal(c) : undefined}
-                    title={podeEditar ? "Clique para editar este colaborador" : ""}
+                    className={`clickable-row ${c.ativo === false ? 'row-inactive' : ''}`}
+                    onClick={() => openEditModal(c)}
+                    title={podeEditar ? "Clique para editar este colaborador" : "Clique para visualizar este colaborador (Modo Somente Leitura)"}
                   >
                     {visibleColumns.foto && (
                       <td style={{ width: `${columnWidths.foto}px`, whiteSpace: 'nowrap' }}>
                         <div 
                           className={podeEditar ? "avatar-hover-container" : "avatar-preview-wrapper"} 
-                          onClick={podeEditar ? (e) => {
+                          onClick={(e) => {
                             e.stopPropagation();
                             openQuickPhotoModal(c);
-                          } : undefined}
+                          }}
                           title={podeEditar ? "Clique para alterar ou remover a foto" : ""}
                         >
                           <div className="avatar-preview">
@@ -944,30 +945,32 @@ export const Colaboradores: React.FC = () => {
                           </button>
                         )}
 
-                        {podeEditar && (
-                          c.ativo !== false ? (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                c.id && handleInativar(c.id, c.nome);
-                              }}
-                              className="btn-action delete"
-                              title="Inativar Colaborador (Soft Delete)"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          ) : (
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                c.id && handleReativar(c.id, c.nome);
-                              }}
-                              className="btn-action reactivate"
-                              title="Reativar Colaborador"
-                            >
-                              <RotateCcw size={15} /> Reativar
-                            </button>
-                          )
+                        {c.ativo !== false ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (podeEditar && c.id) handleInativar(c.id, c.nome);
+                            }}
+                            className="btn-action delete"
+                            disabled={!podeEditar}
+                            style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+                            title={podeEditar ? "Inativar Colaborador (Soft Delete)" : "Ação desativada: Seu perfil permite apenas visualização"}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (podeEditar && c.id) handleReativar(c.id, c.nome);
+                            }}
+                            className="btn-action reactivate"
+                            disabled={!podeEditar}
+                            style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+                            title={podeEditar ? "Reativar Colaborador" : "Ação desativada: Seu perfil permite apenas visualização"}
+                          >
+                            <RotateCcw size={15} /> Reativar
+                          </button>
                         )}
                       </div>
                     </td>
@@ -1457,7 +1460,9 @@ export const Colaboradores: React.FC = () => {
                 <button
                   type="submit"
                   className="btn-primary"
-                  disabled={submitting}
+                  disabled={!podeEditar || submitting}
+                  style={{ opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+                  title={podeEditar ? 'Salvar Alterações' : 'Ação desativada: Seu perfil permite apenas visualização'}
                 >
                   {submitting ? (
                     <>
