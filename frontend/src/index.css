@@ -473,8 +473,14 @@ h1, h2, h3, h4, h5, h6 {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.custom-table tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+/* Linha da Tabela Clicável para Edição */
+.custom-table tbody tr.clickable-row {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.custom-table tbody tr.clickable-row:hover td {
+  background: rgba(99, 102, 241, 0.08);
 }
 
 .row-inactive td {
@@ -589,16 +595,6 @@ h1, h2, h3, h4, h5, h6 {
   background: rgba(129, 140, 248, 0.3);
   color: #ffffff;
   transform: translateY(-1px);
-}
-
-.btn-action.edit {
-  background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.3);
-}
-
-.btn-action.edit:hover {
-  background: rgba(56, 189, 248, 0.3);
 }
 
 .btn-action.delete {

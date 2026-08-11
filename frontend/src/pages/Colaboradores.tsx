@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Colaborador } from '../types/colaborador';
-import { UserPlus, Search, Edit2, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink } from 'lucide-react';
+import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink } from 'lucide-react';
 
 interface ColumnConfig {
   foto: boolean;
@@ -580,7 +580,7 @@ export const Colaboradores: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabela de Colaboradores */}
+      {/* Tabela de Colaboradores (Linha inteira clicável para editar) */}
       <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
         <div style={{ overflowX: 'auto' }}>
           <table className="custom-table">
@@ -616,12 +616,20 @@ export const Colaboradores: React.FC = () => {
                 </tr>
               ) : (
                 filteredColaboradores.map((c) => (
-                  <tr key={c.id} className={c.ativo === false ? 'row-inactive' : ''}>
+                  <tr
+                    key={c.id}
+                    className={`clickable-row ${c.ativo === false ? 'row-inactive' : ''}`}
+                    onClick={() => openEditModal(c)}
+                    title="Clique para editar este colaborador"
+                  >
                     {visibleColumns.foto && (
                       <td>
                         <div 
                           className="avatar-hover-container" 
-                          onClick={() => openQuickPhotoModal(c)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openQuickPhotoModal(c);
+                          }}
                           title="Clique para alterar ou remover a foto"
                         >
                           <div className="avatar-preview">
@@ -687,13 +695,16 @@ export const Colaboradores: React.FC = () => {
                       </td>
                     )}
 
-                    {/* Coluna Ações com Botão Quadrado de Mapa (Google Maps) */}
+                    {/* Coluna Ações (Sem o lápis; linha inteira é clicável para editar) */}
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '8px' }}>
                         {/* Botão de Mapa Quadrado nas Ações */}
                         {(c.cidade || c.logradouro || c.cep) && (
                           <button
-                            onClick={() => openGoogleMaps(c)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openGoogleMaps(c);
+                            }}
                             className="btn-action map"
                             title="Abrir localização no Google Maps"
                           >
@@ -702,25 +713,22 @@ export const Colaboradores: React.FC = () => {
                         )}
 
                         {c.ativo !== false ? (
-                          <>
-                            <button
-                              onClick={() => openEditModal(c)}
-                              className="btn-action edit"
-                              title="Editar Colaborador"
-                            >
-                              <Edit2 size={15} />
-                            </button>
-                            <button
-                              onClick={() => c.id && handleInativar(c.id, c.nome)}
-                              className="btn-action delete"
-                              title="Inativar Colaborador (Soft Delete)"
-                            >
-                              <Trash2 size={15} />
-                            </button>
-                          </>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              c.id && handleInativar(c.id, c.nome);
+                            }}
+                            className="btn-action delete"
+                            title="Inativar Colaborador (Soft Delete)"
+                          >
+                            <Trash2 size={15} />
+                          </button>
                         ) : (
                           <button
-                            onClick={() => c.id && handleReativar(c.id, c.nome)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              c.id && handleReativar(c.id, c.nome);
+                            }}
                             className="btn-action reactivate"
                             title="Reativar Colaborador"
                           >
