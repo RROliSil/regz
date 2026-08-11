@@ -700,229 +700,231 @@ export const Colaboradores: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabela de Colaboradores Fluida Travada em 100% sem Rolagem Horizontal */}
-      <div className="glass-panel table-responsive-container" style={{ padding: '0', width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
-        <table className="custom-table" style={{ width: '100%', tableLayout: 'fixed' }}>
-          <thead>
-            <tr>
-              {visibleColumns.foto && (
-                <th style={{ width: `${columnWidths.foto}px` }}>
-                  Foto
-                  <div className="resizer" onMouseDown={(e) => handleResizeStart('foto', e)} />
-                </th>
-              )}
-              {visibleColumns.nome && (
-                <th style={{ width: `${columnWidths.nome}px` }}>
-                  Nome
-                  <div className="resizer" onMouseDown={(e) => handleResizeStart('nome', e)} />
-                </th>
-              )}
-              {visibleColumns.cpf && (
-                <th style={{ width: `${columnWidths.cpf}px` }}>
-                  CPF
-                  <div className="resizer" onMouseDown={(e) => handleResizeStart('cpf', e)} />
-                </th>
-              )}
-              {visibleColumns.cargo && (
-                <th style={{ width: `${columnWidths.cargo}px` }}>
-                  Cargo
-                  <div className="resizer" onMouseDown={(e) => handleResizeStart('cargo', e)} />
-                </th>
-              )}
-              {visibleColumns.endereco && (
-                <th style={{ width: `${columnWidths.endereco}px` }}>
-                  Endereço
-                  <div className="resizer" onMouseDown={(e) => handleResizeStart('endereco', e)} />
-                </th>
-              )}
-              {visibleColumns.cidade && (
-                <th style={{ width: `${columnWidths.cidade}px` }}>
-                  Cidade / UF
-                  <div className="resizer" onMouseDown={(e) => handleResizeStart('cidade', e)} />
-                </th>
-              )}
-              {visibleColumns.criado_em && (
-                <th style={{ width: `${columnWidths.criado_em}px` }}>
-                  Data de Cadastro
-                  <div className="resizer" onMouseDown={(e) => handleResizeStart('criado_em', e)} />
-                </th>
-              )}
-              <th style={{ textAlign: 'right', width: `${columnWidths.acoes}px` }}>
-                Ações
-                <div className="resizer" onMouseDown={(e) => handleResizeStart('acoes', e)} />
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+      {/* Tabela de Colaboradores com Altura Total Fixa de 5 Linhas */}
+      <div className="glass-panel table-responsive-container">
+        <div className="table-flex-wrapper">
+          <table className="custom-table">
+            <thead>
               <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)' }}>
-                    <Loader2 className="spin" size={20} /> Carregando lista...
-                  </div>
-                </td>
+                {visibleColumns.foto && (
+                  <th style={{ width: `${columnWidths.foto}px` }}>
+                    Foto
+                    <div className="resizer" onMouseDown={(e) => handleResizeStart('foto', e)} />
+                  </th>
+                )}
+                {visibleColumns.nome && (
+                  <th style={{ width: `${columnWidths.nome}px` }}>
+                    Nome
+                    <div className="resizer" onMouseDown={(e) => handleResizeStart('nome', e)} />
+                  </th>
+                )}
+                {visibleColumns.cpf && (
+                  <th style={{ width: `${columnWidths.cpf}px` }}>
+                    CPF
+                    <div className="resizer" onMouseDown={(e) => handleResizeStart('cpf', e)} />
+                  </th>
+                )}
+                {visibleColumns.cargo && (
+                  <th style={{ width: `${columnWidths.cargo}px` }}>
+                    Cargo
+                    <div className="resizer" onMouseDown={(e) => handleResizeStart('cargo', e)} />
+                  </th>
+                )}
+                {visibleColumns.endereco && (
+                  <th style={{ width: `${columnWidths.endereco}px` }}>
+                    Endereço
+                    <div className="resizer" onMouseDown={(e) => handleResizeStart('endereco', e)} />
+                  </th>
+                )}
+                {visibleColumns.cidade && (
+                  <th style={{ width: `${columnWidths.cidade}px` }}>
+                    Cidade / UF
+                    <div className="resizer" onMouseDown={(e) => handleResizeStart('cidade', e)} />
+                  </th>
+                )}
+                {visibleColumns.criado_em && (
+                  <th style={{ width: `${columnWidths.criado_em}px` }}>
+                    Data de Cadastro
+                    <div className="resizer" onMouseDown={(e) => handleResizeStart('criado_em', e)} />
+                  </th>
+                )}
+                <th style={{ textAlign: 'right', width: `${columnWidths.acoes}px` }}>
+                  Ações
+                  <div className="resizer" onMouseDown={(e) => handleResizeStart('acoes', e)} />
+                </th>
               </tr>
-            ) : paginatedColaboradores.length === 0 ? (
-              <tr>
-                <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
-                  {searchTerm 
-                    ? 'Nenhum resultado encontrado para a busca.' 
-                    : activeSubTab === 'ativos'
-                      ? 'Nenhum colaborador ativo no momento.'
-                      : 'Nenhum colaborador inativado.'}
-                </td>
-              </tr>
-            ) : (
-              paginatedColaboradores.map((c) => (
-                <tr
-                  key={c.id}
-                  className={`clickable-row ${c.ativo === false ? 'row-inactive' : ''}`}
-                  onClick={() => openEditModal(c)}
-                  title="Clique para editar este colaborador"
-                >
-                  {visibleColumns.foto && (
-                    <td style={{ width: `${columnWidths.foto}px`, whiteSpace: 'nowrap' }}>
-                      <div 
-                        className="avatar-hover-container" 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openQuickPhotoModal(c);
-                        }}
-                        title="Clique para alterar ou remover a foto"
-                      >
-                        <div className="avatar-preview">
-                          {c.foto_url ? (
-                            <img src={c.foto_url} alt={c.nome} />
-                          ) : (
-                            <div className="avatar-placeholder">{c.nome.charAt(0).toUpperCase()}</div>
-                          )}
-                        </div>
-                        <div className="avatar-hover-overlay">
-                          <Camera size={14} color="#ffffff" />
-                        </div>
-                      </div>
-                    </td>
-                  )}
-
-                  {visibleColumns.nome && (
-                    <td style={{ width: `${columnWidths.nome}px` }}>
-                      <div style={{ fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.nome}>
-                        {c.nome}
-                      </div>
-                      <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
-                        ID: #{c.id} {c.ativo === false && <span className="badge-inactive">Inativo</span>}
-                      </div>
-                    </td>
-                  )}
-
-                  {visibleColumns.cpf && (
-                    <td style={{ width: `${columnWidths.cpf}px` }}>
-                      <code style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', whiteSpace: 'nowrap', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
-                        {c.cpf}
-                      </code>
-                    </td>
-                  )}
-
-                  {visibleColumns.cargo && (
-                    <td style={{ width: `${columnWidths.cargo}px` }}>
-                      {c.cargo ? (
-                        <span 
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#a5b4fc', background: 'rgba(99, 102, 241, 0.12)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.25)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
-                          title={c.cargo}
-                        >
-                          <Briefcase size={13} color="#818cf8" style={{ flexShrink: 0 }} /> {c.cargo}
-                        </span>
-                      ) : (
-                        <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Não definido</span>
-                      )}
-                    </td>
-                  )}
-
-                  {visibleColumns.endereco && (
-                    <td style={{ width: `${columnWidths.endereco}px` }}>
-                      {c.logradouro ? (
-                        <div 
-                          style={{ fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
-                          title={`${c.logradouro}${c.numero ? `, nº ${c.numero}` : ''}${c.bairro ? ` - ${c.bairro}` : ''}`}
-                        >
-                          {c.logradouro}{c.numero ? `, nº ${c.numero}` : ''}
-                          {c.bairro ? ` - ${c.bairro}` : ''}
-                        </div>
-                      ) : (
-                        <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Não informado</span>
-                      )}
-                    </td>
-                  )}
-
-                  {visibleColumns.cidade && (
-                    <td style={{ width: `${columnWidths.cidade}px` }}>
-                      {c.cidade ? (
-                        <span 
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
-                          title={`${c.cidade}${c.estado ? `/${c.estado}` : ''}`}
-                        >
-                          <MapPin size={14} color="#38bdf8" style={{ flexShrink: 0 }} /> {c.cidade}{c.estado ? `/${c.estado}` : ''}
-                        </span>
-                      ) : (
-                        <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>-</span>
-                      )}
-                    </td>
-                  )}
-
-                  {visibleColumns.criado_em && (
-                    <td style={{ width: `${columnWidths.criado_em}px`, fontSize: '0.85rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
-                      {c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : '-'}
-                    </td>
-                  )}
-
-                  {/* Coluna Ações */}
-                  <td style={{ textAlign: 'right', width: `${columnWidths.acoes}px`, whiteSpace: 'nowrap' }}>
-                    <div style={{ display: 'inline-flex', gap: '8px' }}>
-                      {(c.cidade || c.logradouro || c.cep) && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openGoogleMaps(c);
-                          }}
-                          className="btn-action map"
-                          title="Abrir localização no Google Maps"
-                        >
-                          <Map size={15} />
-                        </button>
-                      )}
-
-                      {c.ativo !== false ? (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            c.id && handleInativar(c.id, c.nome);
-                          }}
-                          className="btn-action delete"
-                          title="Inativar Colaborador (Soft Delete)"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            c.id && handleReativar(c.id, c.nome);
-                          }}
-                          className="btn-action reactivate"
-                          title="Reativar Colaborador"
-                        >
-                          <RotateCcw size={15} /> Reativar
-                        </button>
-                      )}
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)' }}>
+                      <Loader2 className="spin" size={20} /> Carregando lista...
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : paginatedColaboradores.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
+                    {searchTerm 
+                      ? 'Nenhum resultado encontrado para a busca.' 
+                      : activeSubTab === 'ativos'
+                        ? 'Nenhum colaborador ativo no momento.'
+                        : 'Nenhum colaborador inativado.'}
+                  </td>
+                </tr>
+              ) : (
+                paginatedColaboradores.map((c) => (
+                  <tr
+                    key={c.id}
+                    className={`clickable-row ${c.ativo === false ? 'row-inactive' : ''}`}
+                    onClick={() => openEditModal(c)}
+                    title="Clique para editar este colaborador"
+                  >
+                    {visibleColumns.foto && (
+                      <td style={{ width: `${columnWidths.foto}px`, whiteSpace: 'nowrap' }}>
+                        <div 
+                          className="avatar-hover-container" 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openQuickPhotoModal(c);
+                          }}
+                          title="Clique para alterar ou remover a foto"
+                        >
+                          <div className="avatar-preview">
+                            {c.foto_url ? (
+                              <img src={c.foto_url} alt={c.nome} />
+                            ) : (
+                              <div className="avatar-placeholder">{c.nome.charAt(0).toUpperCase()}</div>
+                            )}
+                          </div>
+                          <div className="avatar-hover-overlay">
+                            <Camera size={14} color="#ffffff" />
+                          </div>
+                        </div>
+                      </td>
+                    )}
 
-        {/* Rodapé de Paginação no Canto Inferior Direito */}
+                    {visibleColumns.nome && (
+                      <td style={{ width: `${columnWidths.nome}px` }}>
+                        <div style={{ fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.nome}>
+                          {c.nome}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+                          ID: #{c.id} {c.ativo === false && <span className="badge-inactive">Inativo</span>}
+                        </div>
+                      </td>
+                    )}
+
+                    {visibleColumns.cpf && (
+                      <td style={{ width: `${columnWidths.cpf}px` }}>
+                        <code style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', whiteSpace: 'nowrap', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                          {c.cpf}
+                        </code>
+                      </td>
+                    )}
+
+                    {visibleColumns.cargo && (
+                      <td style={{ width: `${columnWidths.cargo}px` }}>
+                        {c.cargo ? (
+                          <span 
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#a5b4fc', background: 'rgba(99, 102, 241, 0.12)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.25)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
+                            title={c.cargo}
+                          >
+                            <Briefcase size={13} color="#818cf8" style={{ flexShrink: 0 }} /> {c.cargo}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Não definido</span>
+                        )}
+                      </td>
+                    )}
+
+                    {visibleColumns.endereco && (
+                      <td style={{ width: `${columnWidths.endereco}px` }}>
+                        {c.logradouro ? (
+                          <div 
+                            style={{ fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
+                            title={`${c.logradouro}${c.numero ? `, nº ${c.numero}` : ''}${c.bairro ? ` - ${c.bairro}` : ''}`}
+                          >
+                            {c.logradouro}{c.numero ? `, nº ${c.numero}` : ''}
+                            {c.bairro ? ` - ${c.bairro}` : ''}
+                          </div>
+                        ) : (
+                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Não informado</span>
+                        )}
+                      </td>
+                    )}
+
+                    {visibleColumns.cidade && (
+                      <td style={{ width: `${columnWidths.cidade}px` }}>
+                        {c.cidade ? (
+                          <span 
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
+                            title={`${c.cidade}${c.estado ? `/${c.estado}` : ''}`}
+                          >
+                            <MapPin size={14} color="#38bdf8" style={{ flexShrink: 0 }} /> {c.cidade}{c.estado ? `/${c.estado}` : ''}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>-</span>
+                        )}
+                      </td>
+                    )}
+
+                    {visibleColumns.criado_em && (
+                      <td style={{ width: `${columnWidths.criado_em}px`, fontSize: '0.85rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
+                        {c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : '-'}
+                      </td>
+                    )}
+
+                    {/* Coluna Ações */}
+                    <td style={{ textAlign: 'right', width: `${columnWidths.acoes}px`, whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', gap: '8px' }}>
+                        {(c.cidade || c.logradouro || c.cep) && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openGoogleMaps(c);
+                            }}
+                            className="btn-action map"
+                            title="Abrir localização no Google Maps"
+                          >
+                            <Map size={15} />
+                          </button>
+                        )}
+
+                        {c.ativo !== false ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              c.id && handleInativar(c.id, c.nome);
+                            }}
+                            className="btn-action delete"
+                            title="Inativar Colaborador (Soft Delete)"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              c.id && handleReativar(c.id, c.nome);
+                            }}
+                            className="btn-action reactivate"
+                            title="Reativar Colaborador"
+                          >
+                            <RotateCcw size={15} /> Reativar
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Rodapé de Paginação Sempre Ancorado na Base */}
         <div className="table-pagination-footer">
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
             {totalItems > 0 ? (

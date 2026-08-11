@@ -443,7 +443,7 @@ h1, h2, h3, h4, h5, h6 {
   color: #ffffff;
 }
 
-/* Contêiner de Tabela (Sem Barra de Rolagem Horizontal e Fixo) */
+/* Contêiner de Tabela (Com Altura Mínima Fixa de 5 Linhas & Flexbox) */
 .table-responsive-container {
   width: 100%;
   max-width: 100%;
@@ -451,6 +451,18 @@ h1, h2, h3, h4, h5, h6 {
   overflow-x: hidden;
   overflow-y: hidden;
   border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 480px;
+}
+
+/* Table Wrapper Flexível */
+.table-flex-wrapper {
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Custom Table Fluida (Sem Min-Width) com Suporte a Colunas Redimensionáveis */
@@ -502,7 +514,7 @@ h1, h2, h3, h4, h5, h6 {
   overflow: hidden;
 }
 
-/* Rodapé de Paginação no Canto Inferior Direito */
+/* Rodapé de Paginação Sempre na Base do Contêiner */
 .table-pagination-footer {
   display: flex;
   justify-content: space-between;
@@ -516,6 +528,8 @@ h1, h2, h3, h4, h5, h6 {
   gap: 12px;
   width: 100%;
   box-sizing: border-box;
+  margin-top: auto;
+  flex-shrink: 0;
 }
 
 .custom-select-small {
