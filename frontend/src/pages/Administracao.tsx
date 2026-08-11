@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Usuario, PerfilAcesso, PermissoesAba, PermissaoNivel } from '../types/auth';
 import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX, Columns } from 'lucide-react';
 
@@ -45,6 +45,22 @@ export const Administracao: React.FC = () => {
     };
   });
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
+  const columnMenuRef = useRef<HTMLDivElement>(null);
+
+  // Listener para fechar o menu ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (columnMenuRef.current && !columnMenuRef.current.contains(event.target as Node)) {
+        setColumnMenuOpen(false);
+      }
+    };
+    if (columnMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [columnMenuOpen]);
 
   // Estados para Largura Arrastável de Colunas na Tabela de Usuários
   const [userColumnWidths, setUserColumnWidths] = useState<UserColumnWidths>(() => {
@@ -441,8 +457,8 @@ export const Administracao: React.FC = () => {
       {/* CONTEÚDO DA ABA: USUÁRIOS (COM COLUNAS EXIBÍVEIS E ARRASTÁVEIS) */}
       {/* ======================================================== */}
       {subTab === 'usuarios' && (
-        <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="glass-panel" style={{ padding: '0', overflow: 'visible', position: 'relative' }}>
+          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 100 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Users size={20} color="#38bdf8" />
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Usuários Cadastrados</h3>
@@ -450,7 +466,7 @@ export const Administracao: React.FC = () => {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               {/* Botão Popover de Seleção de Colunas */}
-              <div style={{ position: 'relative' }}>
+              <div ref={columnMenuRef} style={{ position: 'relative' }}>
                 <button
                   onClick={() => setColumnMenuOpen(prev => !prev)}
                   className="btn-secondary"
@@ -466,17 +482,17 @@ export const Administracao: React.FC = () => {
                     right: 0,
                     top: 'calc(100% + 8px)',
                     background: '#0f172a',
-                    border: '1px solid var(--card-border)',
+                    border: '1px solid rgba(255, 255, 255, 0.2)',
                     borderRadius: '12px',
-                    padding: '12px 16px',
-                    zIndex: 100,
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                    minWidth: '180px',
+                    padding: '14px 18px',
+                    zIndex: 99999,
+                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8)',
+                    minWidth: '200px',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px'
+                    gap: '10px'
                   }}>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       Colunas Visíveis
                     </div>
                     {([
@@ -488,11 +504,12 @@ export const Administracao: React.FC = () => {
                       { key: 'criado_em', label: 'Data de Cadastro' },
                       { key: 'acoes', label: 'Ações' },
                     ] as const).map(col => (
-                      <label key={col.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', cursor: 'pointer', color: '#f8fafc' }}>
+                      <label key={col.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.88rem', cursor: 'pointer', color: '#f8fafc', userSelect: 'none' }}>
                         <input
                           type="checkbox"
                           checked={userVisibleColumns[col.key]}
                           onChange={() => toggleUserColumn(col.key)}
+                          style={{ cursor: 'pointer', accentColor: '#38bdf8' }}
                         />
                         <span>{col.label}</span>
                       </label>
