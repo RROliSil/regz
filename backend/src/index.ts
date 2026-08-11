@@ -2,11 +2,14 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { Pool } from 'pg';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+const JWT_SECRET = process.env.JWT_SECRET || 'regz_jwt_super_secret_key_2026';
 
 // Configurar limites de payload para requisições Express
 app.use(cors());
@@ -124,7 +127,59 @@ const CBO_DATASET = [
 // Inicialização e migrations do banco de dados
 const initDb = async () => {
   try {
-    // 1. Tabela de Cargos CBO
+    // 1. Tabela de Perfis de Acesso (RBAC)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS perfis_acesso (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL UNIQUE,
+        descricao TEXT,
+        is_admin BOOLEAN DEFAULT false,
+        permissoes JSONB NOT NULL DEFAULT '{}'::jsonb,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Inserir perfis padrão se a tabela estiver vazia
+    const countPerfis = await pool.query('SELECT COUNT(*) FROM perfis_acesso');
+    if (parseInt(countPerfis.rows[0].count, 10) === 0) {
+      await pool.query(`
+        INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes) VALUES
+        ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita"}'::jsonb),
+        ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso"}'::jsonb),
+        ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb),
+        ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb);
+      `);
+      console.log('✅ Perfis de acesso padrão inicializados!');
+    }
+
+    // 2. Tabela de Usuários do Sistema
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        senha_hash VARCHAR(255) NOT NULL,
+        perfil_id INT REFERENCES perfis_acesso(id) ON DELETE SET NULL,
+        ativo BOOLEAN DEFAULT true,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Inserir usuário administrador inicial se não houver usuários
+    const countUsuarios = await pool.query('SELECT COUNT(*) FROM usuarios');
+    if (parseInt(countUsuarios.rows[0].count, 10) === 0) {
+      const adminPerfil = await pool.query("SELECT id FROM perfis_acesso WHERE is_admin = true LIMIT 1");
+      const perfilId = adminPerfil.rows[0]?.id || 1;
+      const senhaHash = await bcrypt.hash('admin123', 10);
+
+      await pool.query(
+        `INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo) VALUES ($1, $2, $3, $4, true)`,
+        ['Administrador Regz', 'admin@regz.app', senhaHash, perfilId]
+      );
+      console.log('✅ Usuário administrador inicial (admin@regz.app / admin123) criado com sucesso!');
+    }
+
+    // 3. Tabela de Cargos CBO
     await pool.query(`
       CREATE TABLE IF NOT EXISTS cargos (
         id SERIAL PRIMARY KEY,
@@ -146,7 +201,7 @@ const initDb = async () => {
       );
     }
 
-    // 2. Tabela de Colaboradores
+    // 4. Tabela de Colaboradores
     await pool.query(`
       CREATE TABLE IF NOT EXISTS colaboradores (
         id SERIAL PRIMARY KEY,
@@ -175,7 +230,7 @@ const initDb = async () => {
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8);
     `);
 
-    // 3. Tabela de Campos Customizados / Dinâmicos (Setor, Nome do Pai, Nome da Mãe, etc.)
+    // 5. Tabela de Campos Customizados / Dinâmicos
     await pool.query(`
       CREATE TABLE IF NOT EXISTS campos_customizados (
         id SERIAL PRIMARY KEY,
@@ -187,7 +242,7 @@ const initDb = async () => {
       );
     `);
 
-    // 4. Tabela de Valores dos Campos Customizados por Colaborador
+    // 6. Tabela de Valores dos Campos Customizados por Colaborador
     await pool.query(`
       CREATE TABLE IF NOT EXISTS colaboradores_valores_customizados (
         id SERIAL PRIMARY KEY,
@@ -342,6 +397,328 @@ app.get('/api/db-status', async (req: Request, res: Response) => {
 });
 
 // ==========================================
+// ROTAS DE AUTENTICAÇÃO E LOGIN (JWT / BCRYPT)
+// ==========================================
+
+// Login de Usuário (Sem Auto-Registro)
+app.post('/api/auth/login', async (req: Request, res: Response) => {
+  const { email, senha } = req.body;
+
+  if (!email || !senha) {
+    return res.status(400).json({ error: 'E-mail e senha são obrigatórios' });
+  }
+
+  try {
+    const query = `
+      SELECT u.id, u.nome, u.email, u.senha_hash, u.ativo, u.perfil_id,
+             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes
+      FROM usuarios u
+      LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
+      WHERE LOWER(u.email) = LOWER($1)
+    `;
+    const result = await pool.query(query, [email.trim()]);
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'E-mail ou senha incorretos' });
+    }
+
+    const usuario = result.rows[0];
+
+    if (!usuario.ativo) {
+      return res.status(403).json({ error: 'Esta conta de usuário está inativa. Contate o Administrador.' });
+    }
+
+    const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
+    if (!senhaValida) {
+      return res.status(401).json({ error: 'E-mail ou senha incorretos' });
+    }
+
+    const perfil = {
+      id: usuario.perfil_id,
+      nome: usuario.perfil_nome || 'Usuário Sem Perfil',
+      descricao: usuario.perfil_descricao,
+      is_admin: !!usuario.is_admin,
+      permissoes: usuario.permissoes || { home: 'escrita', colaboradores: 'escrita', campos: 'escrita', administracao: 'escrita' }
+    };
+
+    const token = jwt.sign(
+      { id: usuario.id, email: usuario.email, perfil_id: usuario.perfil_id },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        ativo: usuario.ativo,
+        perfil
+      }
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao realizar login' });
+  }
+});
+
+// Checar sessão do Usuário Logado
+app.get('/api/auth/me', async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Token não fornecido' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded: any = jwt.verify(token, JWT_SECRET);
+    const query = `
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id,
+             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes
+      FROM usuarios u
+      LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
+      WHERE u.id = $1
+    `;
+    const result = await pool.query(query, [decoded.id]);
+
+    if (result.rows.length === 0 || !result.rows[0].ativo) {
+      return res.status(401).json({ error: 'Sessão inválida ou usuário inativo' });
+    }
+
+    const usuario = result.rows[0];
+    const perfil = {
+      id: usuario.perfil_id,
+      nome: usuario.perfil_nome || 'Usuário Sem Perfil',
+      descricao: usuario.perfil_descricao,
+      is_admin: !!usuario.is_admin,
+      permissoes: usuario.permissoes || { home: 'escrita', colaboradores: 'escrita', campos: 'escrita', administracao: 'escrita' }
+    };
+
+    res.json({
+      usuario: {
+        id: usuario.id,
+        nome: usuario.nome,
+        email: usuario.email,
+        ativo: usuario.ativo,
+        perfil
+      }
+    });
+  } catch (error: any) {
+    res.status(401).json({ error: 'Token inválido ou expirado' });
+  }
+});
+
+// ==========================================
+// ROTAS DE GESTÃO DE PERFIS DE ACESSO (RBAC)
+// ==========================================
+
+// Listar todos os perfis de acesso
+app.get('/api/perfis-acesso', async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query('SELECT * FROM perfis_acesso ORDER BY id ASC');
+    res.json(result.rows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar perfis de acesso' });
+  }
+});
+
+// Cadastrar novo perfil de acesso
+app.post('/api/perfis-acesso', async (req: Request, res: Response) => {
+  const { nome, descricao, is_admin, permissoes } = req.body;
+  if (!nome || !nome.trim()) {
+    return res.status(400).json({ error: 'O nome do perfil é obrigatório' });
+  }
+
+  try {
+    const nomeTrimmed = nome.trim();
+    const existing = await pool.query('SELECT id FROM perfis_acesso WHERE LOWER(nome) = LOWER($1)', [nomeTrimmed]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Já existe um perfil com este nome' });
+    }
+
+    const result = await pool.query(
+      'INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes) VALUES ($1, $2, $3, $4) RETURNING *',
+      [nomeTrimmed, descricao || null, !!is_admin, JSON.stringify(permissoes || {})]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao criar perfil de acesso' });
+  }
+});
+
+// Atualizar perfil de acesso
+app.put('/api/perfis-acesso/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { nome, descricao, is_admin, permissoes } = req.body;
+
+  if (!nome || !nome.trim()) {
+    return res.status(400).json({ error: 'O nome do perfil é obrigatório' });
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE perfis_acesso SET nome = $1, descricao = $2, is_admin = $3, permissoes = $4 WHERE id = $5 RETURNING *',
+      [nome.trim(), descricao || null, !!is_admin, JSON.stringify(permissoes || {}), id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Perfil de acesso não encontrado' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao atualizar perfil' });
+  }
+});
+
+// Excluir perfil de acesso
+app.delete('/api/perfis-acesso/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const checkAdmin = await pool.query('SELECT is_admin FROM perfis_acesso WHERE id = $1', [id]);
+    if (checkAdmin.rows.length > 0 && checkAdmin.rows[0].is_admin) {
+      return res.status(400).json({ error: 'O perfil de Administrador padrão não pode ser excluído' });
+    }
+
+    const result = await pool.query('DELETE FROM perfis_acesso WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Perfil não encontrado' });
+    }
+    res.json({ success: true, message: 'Perfil removido com sucesso' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao remover perfil' });
+  }
+});
+
+// ==========================================
+// ROTAS DE GESTÃO DE USUÁRIOS (ADMIN PAINEL)
+// ==========================================
+
+// Listar todos os usuários com dados do perfil
+app.get('/api/usuarios', async (req: Request, res: Response) => {
+  try {
+    const query = `
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em,
+             p.nome as perfil_nome, p.is_admin, p.permissoes
+      FROM usuarios u
+      LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
+      ORDER BY u.id ASC
+    `;
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar usuários' });
+  }
+});
+
+// Cadastrar novo usuário (Apenas via Painel Admin)
+app.post('/api/usuarios', async (req: Request, res: Response) => {
+  const { nome, email, senha, perfil_id, ativo } = req.body;
+
+  if (!nome || !email || !senha) {
+    return res.status(400).json({ error: 'Nome, E-mail e Senha são obrigatórios' });
+  }
+
+  if (senha.length < 6) {
+    return res.status(400).json({ error: 'A senha deve ter no mínimo 6 caracteres' });
+  }
+
+  try {
+    const emailTrimmed = email.trim().toLowerCase();
+    const existing = await pool.query('SELECT id FROM usuarios WHERE LOWER(email) = $1', [emailTrimmed]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Este e-mail já está cadastrado' });
+    }
+
+    const senhaHash = await bcrypt.hash(senha, 10);
+    const result = await pool.query(
+      'INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo) VALUES ($1, $2, $3, $4, $5) RETURNING id, nome, email, perfil_id, ativo, criado_em',
+      [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao cadastrar usuário' });
+  }
+});
+
+// Atualizar usuário
+app.put('/api/usuarios/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { nome, email, senha, perfil_id, ativo } = req.body;
+
+  if (!nome || !email) {
+    return res.status(400).json({ error: 'Nome e E-mail são obrigatórios' });
+  }
+
+  try {
+    const emailTrimmed = email.trim().toLowerCase();
+    const existing = await pool.query('SELECT id FROM usuarios WHERE LOWER(email) = $1 AND id != $2', [emailTrimmed, id]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Este e-mail pertence a outro usuário' });
+    }
+
+    if (senha && senha.trim()) {
+      const senhaHash = await bcrypt.hash(senha, 10);
+      await pool.query(
+        'UPDATE usuarios SET nome = $1, email = $2, senha_hash = $3, perfil_id = $4, ativo = $5 WHERE id = $6',
+        [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false, id]
+      );
+    } else {
+      await pool.query(
+        'UPDATE usuarios SET nome = $1, email = $2, perfil_id = $3, ativo = $4 WHERE id = $5',
+        [nome.trim(), emailTrimmed, perfil_id || null, ativo !== false, id]
+      );
+    }
+
+    const resUser = await pool.query(
+      'SELECT id, nome, email, perfil_id, ativo, criado_em FROM usuarios WHERE id = $1',
+      [id]
+    );
+
+    res.json(resUser.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao atualizar usuário' });
+  }
+});
+
+// Alternar status do usuário (Ativo / Inativo)
+app.put('/api/usuarios/:id/status', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { ativo } = req.body;
+
+  try {
+    const result = await pool.query(
+      'UPDATE usuarios SET ativo = $1 WHERE id = $2 RETURNING id, nome, email, ativo',
+      [!!ativo, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao alterar status do usuário' });
+  }
+});
+
+// Excluir usuário
+app.delete('/api/usuarios/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM usuarios WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    res.json({ success: true, message: 'Usuário removido com sucesso' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao remover usuário' });
+  }
+});
+
+// ==========================================
 // ROTA DA API CBO BRASIL (CONSULTA INTERNA DE CARGOS)
 // ==========================================
 app.get('/api/cbo/search', (req: Request, res: Response) => {
@@ -380,7 +757,7 @@ app.get('/api/cargos', async (req: Request, res: Response) => {
 });
 
 // ==========================================
-// ROTAS CRUD DE CAMPOS CUSTOMIZADOS (NOVO)
+// ROTAS CRUD DE CAMPOS CUSTOMIZADOS
 // ==========================================
 
 // Listar todos os campos customizados definidos
@@ -444,7 +821,6 @@ app.get('/api/colaboradores/:id/valores-customizados', async (req: Request, res:
       [id]
     );
     
-    // Retornar no formato de dicionário { [campo_id]: valor }
     const mapaValores: Record<number, string> = {};
     result.rows.forEach((row: any) => {
       mapaValores[row.campo_id] = row.valor;
@@ -459,7 +835,7 @@ app.get('/api/colaboradores/:id/valores-customizados', async (req: Request, res:
 // Salvar/Atualizar valores dos campos customizados de um colaborador
 app.put('/api/colaboradores/:id/valores-customizados', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { valores } = req.body; // { [campo_id]: string }
+  const { valores } = req.body;
 
   if (!valores || typeof valores !== 'object') {
     return res.status(400).json({ error: 'Valores customizados devem ser fornecidos como um objeto' });
@@ -512,7 +888,6 @@ app.get('/api/geocode', async (req: Request, res: Response) => {
 app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
   let pessoaGerada: any = null;
 
-  // Buscar cargos disponíveis no banco de dados para sortear um
   let cargoSorteado = 'Analista de desenvolvimento de sistemas';
   try {
     const cargosRes = await pool.query('SELECT nome FROM cargos');
@@ -673,7 +1048,6 @@ app.post('/api/colaboradores', async (req: Request, res: Response) => {
 
     const novoColaborador = result.rows[0];
 
-    // Salvar valores customizados se fornecidos
     if (valores_customizados && typeof valores_customizados === 'object') {
       for (const [campoIdStr, val] of Object.entries(valores_customizados)) {
         const campoId = parseInt(campoIdStr, 10);
@@ -728,7 +1102,6 @@ app.put('/api/colaboradores/:id', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
 
-    // Salvar valores customizados se fornecidos
     if (valores_customizados && typeof valores_customizados === 'object') {
       for (const [campoIdStr, val] of Object.entries(valores_customizados)) {
         const campoId = parseInt(campoIdStr, 10);
@@ -801,16 +1174,18 @@ app.delete('/api/colaboradores/:id', async (req: Request, res: Response) => {
 // Root welcome route
 app.get('/', (req: Request, res: Response) => {
   res.json({
-    message: '🚀 Regz API - Gestão de Colaboradores e Campos Customizados',
+    message: '🚀 Regz API - Gestão de Colaboradores, Autenticação JWT e RBAC',
     endpoints: {
       health: '/api/health',
       dbStatus: '/api/db-status',
+      authLogin: '/api/auth/login',
+      authMe: '/api/auth/me',
+      usuarios: '/api/usuarios',
+      perfisAcesso: '/api/perfis-acesso',
       colaboradores: '/api/colaboradores',
       cargos: '/api/cargos',
       camposCustomizados: '/api/campos-customizados',
-      cboSearch: '/api/cbo/search',
-      gerarPessoa: '/api/gerar-pessoa',
-      geocode: '/api/geocode'
+      cboSearch: '/api/cbo/search'
     }
   });
 });

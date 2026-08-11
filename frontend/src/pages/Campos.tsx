@@ -2,7 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { CampoCustomizado } from '../types/colaborador';
 import { Sliders, Plus, Trash2, Loader2, Check, AlertCircle, Type, Calendar, Hash, ListFilter, HelpCircle } from 'lucide-react';
 
+import { useAuth } from '../context/AuthContext';
+
 export const Campos: React.FC = () => {
+  const { temPermissao } = useAuth();
+  const podeEditar = temPermissao('campos', 'escrita');
+
   const [campos, setCampos] = useState<CampoCustomizado[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -229,8 +234,9 @@ export const Campos: React.FC = () => {
             <button
               type="submit"
               className="btn-primary"
-              disabled={submitting}
-              style={{ justifyContent: 'center', marginTop: '8px' }}
+              disabled={submitting || !podeEditar}
+              style={{ justifyContent: 'center', marginTop: '8px', opacity: podeEditar ? 1 : 0.5 }}
+              title={podeEditar ? 'Criar campo' : 'Sem permissão de escrita'}
             >
               {submitting ? (
                 <>
@@ -310,13 +316,17 @@ export const Campos: React.FC = () => {
                         )}
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <button
-                          onClick={() => campo.id && handleDeleteCampo(campo.id, campo.nome)}
-                          className="btn-action delete"
-                          title="Remover este campo personalizado"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        {podeEditar ? (
+                          <button
+                            onClick={() => campo.id && handleDeleteCampo(campo.id, campo.nome)}
+                            className="btn-action delete"
+                            title="Remover este campo personalizado"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Somente Leitura</span>
+                        )}
                       </td>
                     </tr>
                   ))

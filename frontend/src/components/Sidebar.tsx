@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Sliders, Briefcase, FileBarChart, Settings, Container, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Home, Users, Sliders, ShieldCheck, Briefcase, FileBarChart, Settings, Container, ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -8,6 +9,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
+  const { usuario, logout, temPermissao } = useAuth();
+
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       {/* Botão Flutuante de Encolher / Expandir Menu na Divisa Vertical Superior */}
@@ -34,32 +37,50 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       <nav className="sidebar-nav">
         <div className="nav-section-label">Navegação Principal</div>
         
-        <NavLink
-          to="/home"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-          title="Home"
-        >
-          <Home size={20} style={{ flexShrink: 0 }} />
-          <span>Home</span>
-        </NavLink>
+        {temPermissao('home') && (
+          <NavLink
+            to="/home"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            title="Home"
+          >
+            <Home size={20} style={{ flexShrink: 0 }} />
+            <span>Home</span>
+          </NavLink>
+        )}
 
-        <NavLink
-          to="/colaboradores"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-          title="Colaboradores"
-        >
-          <Users size={20} style={{ flexShrink: 0 }} />
-          <span>Colaboradores</span>
-        </NavLink>
+        {temPermissao('colaboradores') && (
+          <NavLink
+            to="/colaboradores"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            title="Colaboradores"
+          >
+            <Users size={20} style={{ flexShrink: 0 }} />
+            <span>Colaboradores</span>
+          </NavLink>
+        )}
 
-        <NavLink
-          to="/campos"
-          className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-          title="Campos"
-        >
-          <Sliders size={20} style={{ flexShrink: 0 }} />
-          <span>Campos</span>
-        </NavLink>
+        {temPermissao('campos') && (
+          <NavLink
+            to="/campos"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            title="Campos"
+          >
+            <Sliders size={20} style={{ flexShrink: 0 }} />
+            <span>Campos</span>
+          </NavLink>
+        )}
+
+        {/* Nova Aba de Administração Abaixo de Campos */}
+        {temPermissao('administracao') && (
+          <NavLink
+            to="/administracao"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            title="Administração"
+          >
+            <ShieldCheck size={20} style={{ flexShrink: 0 }} />
+            <span>Administração</span>
+          </NavLink>
+        )}
 
         {/* Espaços para Futuras Abas */}
         <div className="nav-section-label" style={{ marginTop: '24px' }}>Módulos Futuros</div>
@@ -83,12 +104,45 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         </div>
       </nav>
 
-      {/* Placeholder para Nova Aba */}
+      {/* Footer com Perfil do Usuário e Botão de Logout */}
       <div className="sidebar-footer">
-        <div className="add-tab-placeholder" title="Adicionar Nova Aba">
-          <Plus size={16} style={{ flexShrink: 0 }} />
-          <span>+ Nova Aba</span>
-        </div>
+        {usuario && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: collapsed ? 'center' : 'space-between',
+            width: '100%',
+            padding: '8px 10px',
+            background: 'rgba(15, 23, 42, 0.6)',
+            borderRadius: '12px',
+            border: '1px solid var(--card-border)'
+          }}>
+            {!collapsed && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                <div style={{ background: 'rgba(99, 102, 241, 0.2)', padding: '6px', borderRadius: '50%', color: '#818cf8' }}>
+                  <User size={16} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {usuario.nome}
+                  </span>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {usuario.perfil?.nome || 'Usuário'}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={logout}
+              className="btn-action delete"
+              style={{ padding: '6px 8px', borderRadius: '8px' }}
+              title="Sair do Sistema"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+        )}
       </div>
     </aside>
   );

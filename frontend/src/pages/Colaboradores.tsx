@@ -34,7 +34,12 @@ const DEFAULT_COLUMN_WIDTHS: ColumnWidths = {
   acoes: 90
 };
 
+import { useAuth } from '../context/AuthContext';
+
 export const Colaboradores: React.FC = () => {
+  const { temPermissao } = useAuth();
+  const podeEditar = temPermissao('colaboradores', 'escrita');
+
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [cargosList, setCargosList] = useState<Cargo[]>([]);
   const [camposCustomizadosList, setCamposCustomizadosList] = useState<CampoCustomizado[]>([]);
@@ -650,24 +655,26 @@ export const Colaboradores: React.FC = () => {
         </div>
 
         {/* Botões de Ação no canto direito */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button
-            onClick={openNewModal}
-            className="btn-icon-primary"
-            title="Novo Colaborador"
-          >
-            <UserPlus size={18} />
-          </button>
+        {podeEditar && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              onClick={openNewModal}
+              className="btn-icon-primary"
+              title="Novo Colaborador"
+            >
+              <UserPlus size={18} />
+            </button>
 
-          <button
-            onClick={handleRobotButtonClick}
-            className="btn-robot"
-            title="Gerar Colaborador de Teste (4Devs) | Segure Shift para cadastrar direto"
-            disabled={gerandoPessoa}
-          >
-            <Bot size={20} className={gerandoPessoa ? 'spin' : ''} />
-          </button>
-        </div>
+            <button
+              onClick={handleRobotButtonClick}
+              className="btn-robot"
+              title="Gerar Colaborador de Teste (4Devs) | Segure Shift para cadastrar direto"
+              disabled={gerandoPessoa}
+            >
+              <Bot size={20} className={gerandoPessoa ? 'spin' : ''} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Control Bar (Busca e Botão Colunas RIGOROSAMENTE FIXO à direita) */}
