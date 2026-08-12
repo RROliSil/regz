@@ -100,7 +100,7 @@ export const Home: React.FC = () => {
             {/* Botão de Ícone Novo Colaborador para abrir diretamente a janela de cadastro */}
             <button
               onClick={() => navigate('/colaboradores', { state: { openNewModal: true, returnToHome: true } })}
-              className="btn-icon-primary"
+              className="btn-icon-primary btn-add-colab-home"
               title="Cadastrar Novo Colaborador"
               style={{ width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0 }}
             >
