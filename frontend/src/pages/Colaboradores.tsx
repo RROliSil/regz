@@ -876,7 +876,7 @@ export const Colaboradores: React.FC = () => {
                     <div className="resizer" onMouseDown={(e) => handleResizeStart('criado_em', e)} />
                   </th>
                 )}
-                <th style={{ textAlign: 'right', width: `${columnWidths.acoes}px` }}>
+                <th style={{ textAlign: 'center', width: `${columnWidths.acoes}px` }}>
                   Ações
                   <div className="resizer" onMouseDown={(e) => handleResizeStart('acoes', e)} />
                 </th>
@@ -1006,9 +1006,9 @@ export const Colaboradores: React.FC = () => {
                       </td>
                     )}
 
-                    {/* Coluna Ações */}
-                    <td style={{ textAlign: 'right', width: `${columnWidths.acoes}px`, whiteSpace: 'nowrap' }}>
-                      <div style={{ display: 'inline-flex', gap: '8px' }}>
+                    {/* Coluna Ações Centralizada */}
+                    <td style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'center' }}>
                         {(c.cidade || c.logradouro || c.cep) && (
                           <button
                             onClick={(e) => {
