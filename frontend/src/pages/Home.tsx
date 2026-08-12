@@ -137,8 +137,8 @@ export const Home: React.FC = () => {
           </div>
           <button
             onClick={() => navigate('/colaboradores')}
-            className="btn-secondary"
-            style={{ fontSize: '0.82rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            className="btn-secondary btn-ver-todos"
+            style={{ fontSize: '0.82rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#141416' }}
           >
             Ver todos <ChevronRight size={14} />
           </button>
@@ -277,8 +277,9 @@ export const Home: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '18px', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
               <button
                 onClick={() => setExpandedCargos(!expandedCargos)}
+                className="btn-ver-todos"
                 style={{
-                  background: 'rgba(168, 85, 247, 0.12)',
+                  background: '#141416',
                   color: '#c084fc',
                   border: '1px solid rgba(168, 85, 247, 0.25)',
                   borderRadius: '8px',
@@ -381,8 +382,9 @@ export const Home: React.FC = () => {
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '18px', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
               <button
                 onClick={() => setExpandedGeo(!expandedGeo)}
+                className="btn-ver-todos"
                 style={{
-                  background: 'rgba(56, 189, 248, 0.12)',
+                  background: '#141416',
                   color: '#38bdf8',
                   border: '1px solid rgba(56, 189, 248, 0.25)',
                   borderRadius: '8px',
