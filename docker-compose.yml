@@ -19,7 +19,7 @@ services:
       timeout: 5s
       retries: 5
 
-  app:
+  frontend:
     build:
       context: .
       dockerfile: Dockerfile
