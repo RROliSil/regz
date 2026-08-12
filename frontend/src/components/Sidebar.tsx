@@ -146,7 +146,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           }}>
             {!collapsed && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                <div className="sidebar-user-avatar" style={{ padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ background: 'rgba(99, 102, 241, 0.2)', padding: '6px', borderRadius: '50%', color: '#818cf8' }}>
                   <User size={16} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

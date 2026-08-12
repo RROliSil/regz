@@ -382,10 +382,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .text-gradient {
-  background: none;
-  color: #ffffff;
-  -webkit-background-clip: unset;
-  -webkit-text-fill-color: #ffffff;
+  background: linear-gradient(135deg, #a5b4fc 0%, #38bdf8 50%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 /* Buttons */
@@ -1119,30 +1118,6 @@ h1, h2, h3, h4, h5, h6 {
   background: #1e1e24 !important;
   border-color: rgba(255, 255, 255, 0.3);
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
-}
-
-/* Botão de Adicionar Colaborador na Home (Fundo #141416 com brilho branco) */
-.btn-add-colab-home {
-  background: #141416 !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.25) !important;
-  transition: all 0.2s ease !important;
-}
-
-.btn-add-colab-home:hover {
-  background: #1e1e24 !important;
-  border-color: rgba(255, 255, 255, 0.6) !important;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.4) !important;
-  transform: translateY(-2px) scale(1.05) !important;
-}
-
-/* Avatar de Usuário no Rodapé da Sidebar (Fundo #141416 com silhueta branca e brilho) */
-.sidebar-user-avatar {
-  background: #141416 !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2) !important;
 }
 
 .status-dot-active {
