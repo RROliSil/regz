@@ -1090,34 +1090,26 @@ h1, h2, h3, h4, h5, h6 {
   to { transform: rotate(360deg); }
 }
 
-/* Badge Sutil e Elegante Novo e Bolinha de Status Ativo */
+/* Badge Sutil e Elegante Novo e Bolinha de Status Ativo (Modo Padrão) */
 .badge-novo {
-  background: #141416 !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  background: rgba(99, 102, 241, 0.16);
+  color: #a5b4fc;
+  border: 1px solid rgba(129, 140, 248, 0.35);
   font-size: 0.65rem;
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 6px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 0 6px rgba(99, 102, 241, 0.15);
   display: inline-flex;
   align-items: center;
   user-select: none;
 }
 
-/* Botão Ver Todos */
+/* Botão Ver Todos (Modo Padrão) */
 .btn-ver-todos {
-  background: #141416 !important;
-  border: 1px solid rgba(255, 255, 255, 0.15);
   transition: all 0.2s ease;
-}
-
-.btn-ver-todos:hover {
-  background: #1e1e24 !important;
-  border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
 }
 
 .status-dot-active {
@@ -1382,5 +1374,64 @@ h1, h2, h3, h4, h5, h6 {
 
 [data-theme="cloud"] .modal-title {
   color: #f4f4f5 !important;
+}
+
+/* Customizações exclusivas do MODO ESCURO (Lua) */
+[data-theme="cloud"] .badge-novo {
+  background: #141416 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.25) !important;
+}
+
+[data-theme="cloud"] .btn-ver-todos {
+  background: #141416 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="cloud"] .btn-ver-todos:hover {
+  background: #1e1e24 !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="cloud"] .btn-add-colab-home {
+  background: #141416 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.25) !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="cloud"] .btn-add-colab-home:hover {
+  background: #1e1e24 !important;
+  border-color: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.4) !important;
+  transform: translateY(-2px) scale(1.05) !important;
+}
+
+[data-theme="cloud"] .sidebar-user-avatar {
+  background: #141416 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="cloud"] .text-gradient {
+  background: none !important;
+  color: #ffffff !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+[data-theme="cloud"] .nav-item {
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="cloud"] .nav-item:hover,
+[data-theme="cloud"] .nav-item.active {
+  border-color: rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.3) !important;
 }
 

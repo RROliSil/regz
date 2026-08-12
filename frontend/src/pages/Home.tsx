@@ -138,7 +138,7 @@ export const Home: React.FC = () => {
           <button
             onClick={() => navigate('/colaboradores')}
             className="btn-secondary btn-ver-todos"
-            style={{ fontSize: '0.82rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#141416' }}
+            style={{ fontSize: '0.82rem', padding: '6px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
           >
             Ver todos <ChevronRight size={14} />
           </button>
@@ -279,7 +279,7 @@ export const Home: React.FC = () => {
                 onClick={() => setExpandedCargos(!expandedCargos)}
                 className="btn-ver-todos"
                 style={{
-                  background: '#141416',
+                  background: 'rgba(168, 85, 247, 0.12)',
                   color: '#c084fc',
                   border: '1px solid rgba(168, 85, 247, 0.25)',
                   borderRadius: '8px',
@@ -384,7 +384,7 @@ export const Home: React.FC = () => {
                 onClick={() => setExpandedGeo(!expandedGeo)}
                 className="btn-ver-todos"
                 style={{
-                  background: '#141416',
+                  background: 'rgba(56, 189, 248, 0.12)',
                   color: '#38bdf8',
                   border: '1px solid rgba(56, 189, 248, 0.25)',
                   borderRadius: '8px',
