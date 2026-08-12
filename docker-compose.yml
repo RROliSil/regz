@@ -19,11 +19,11 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
+  app:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
-    container_name: regz-backend
+    container_name: regz-app
     restart: always
     environment:
       PORT: 4000
@@ -35,21 +35,11 @@ services:
       DB_PASSWORD: regz_password
       DB_NAME: regz_db
     ports:
+      - "${FRONTEND_PORT:-8180}:4000"
       - "${BACKEND_PORT:-4001}:4000"
     depends_on:
       postgres:
         condition: service_healthy
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: regz-frontend
-    restart: always
-    ports:
-      - "${FRONTEND_PORT:-8180}:80"
-    depends_on:
-      - backend
 
 volumes:
   regz_postgres_data:

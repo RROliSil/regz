@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import path from 'path';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -391,7 +393,7 @@ const fetchGeocodingHighPrecision = async (logradouro?: string, numeroStr?: stri
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({
     status: 'ok',
-    service: 'regz-backend',
+    service: 'regz-app',
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
@@ -1286,24 +1288,38 @@ app.delete('/api/colaboradores/:id', checkPermission('colaboradores'), async (re
   }
 });
 
-// Root welcome route
-app.get('/', (req: Request, res: Response) => {
-  res.json({
-    message: '🚀 Regz API - Gestão de Colaboradores, Autenticação JWT e RBAC',
-    endpoints: {
-      health: '/api/health',
-      dbStatus: '/api/db-status',
-      authLogin: '/api/auth/login',
-      authMe: '/api/auth/me',
-      usuarios: '/api/usuarios',
-      perfisAcesso: '/api/perfis-acesso',
-      colaboradores: '/api/colaboradores',
-      cargos: '/api/cargos',
-      camposCustomizados: '/api/campos-customizados',
-      cboSearch: '/api/cbo/search'
+// Servir arquivos estáticos do Frontend React e Roteamento SPA em Produção
+const publicPath = path.join(__dirname, '../public');
+if (fs.existsSync(publicPath)) {
+  console.log(`📦 Servindo arquivos estáticos do frontend a partir de: ${publicPath}`);
+  app.use(express.static(publicPath));
+
+  app.get('*', (req: Request, res: Response, next) => {
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ error: 'Rota de API não encontrada' });
     }
+    res.sendFile(path.join(publicPath, 'index.html'));
   });
-});
+} else {
+  // Rota de recepção padrão para desenvolvimento isolado do backend
+  app.get('/', (req: Request, res: Response) => {
+    res.json({
+      message: '🚀 Regz API - Gestão de Colaboradores, Autenticação JWT e RBAC',
+      endpoints: {
+        health: '/api/health',
+        dbStatus: '/api/db-status',
+        authLogin: '/api/auth/login',
+        authMe: '/api/auth/me',
+        usuarios: '/api/usuarios',
+        perfisAcesso: '/api/perfis-acesso',
+        colaboradores: '/api/colaboradores',
+        cargos: '/api/cargos',
+        camposCustomizados: '/api/campos-customizados',
+        cboSearch: '/api/cbo/search'
+      }
+    });
+  });
+}
 
 app.listen(PORT, () => {
   console.log(`========================================`);
