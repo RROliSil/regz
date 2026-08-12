@@ -1245,15 +1245,18 @@ h1, h2, h3, h4, h5, h6 {
 /* ======================================================== */
 /* MODO NUBLADO (MONOCHROME CLOUD THEME) */
 /* ======================================================== */
+/* ======================================================== */
+/* MODO NUBLADO (MONOCHROME CLOUD THEME) */
+/* ======================================================== */
 [data-theme="cloud"] {
-  --bg-gradient: radial-gradient(circle at 50% 0%, #27272a 0%, #18181b 60%, #09090b 100%);
+  --bg-gradient: radial-gradient(circle at 50% 0%, #18181b 0%, #121214 60%, #09090b 100%);
   --accent-purple: #a1a1aa;
   --accent-cyan: #71717a;
   --accent-emerald: #22c55e; /* Destaque verde ativo */
   --accent-rose: #ef4444;    /* Destaque vermelho inativo */
 
-  --card-bg: rgba(39, 39, 42, 0.65);
-  --card-border: rgba(255, 255, 255, 0.1);
+  --card-bg: #1b1b1f;
+  --card-border: rgba(255, 255, 255, 0.08);
   --card-hover-border: rgba(161, 161, 170, 0.5);
 
   --text-main: #f4f4f5;
@@ -1262,13 +1265,13 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 [data-theme="cloud"] body {
-  background: var(--bg-gradient);
-  color: #f4f4f5;
+  background: var(--bg-gradient) !important;
+  color: #f4f4f5 !important;
 }
 
 [data-theme="cloud"] .sidebar {
-  background: rgba(24, 24, 27, 0.92);
-  border-right-color: rgba(255, 255, 255, 0.1);
+  background: #1b1b1f !important;
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 [data-theme="cloud"] .brand-title {
@@ -1297,16 +1300,33 @@ h1, h2, h3, h4, h5, h6 {
 [data-theme="cloud"] .glass-panel,
 [data-theme="cloud"] .stat-card,
 [data-theme="cloud"] .custom-table-container,
-[data-theme="cloud"] .form-card {
-  background: rgba(39, 39, 42, 0.65) !important;
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+[data-theme="cloud"] .form-card,
+[data-theme="cloud"] .sidebar-footer > div {
+  background: #1b1b1f !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Forçar fundos de sub-elementos com cores azuladas antigas para #1b1b1f no modo Nublado */
+[data-theme="cloud"] *[style*="background: rgba(15, 23, 42"],
+[data-theme="cloud"] *[style*="background: 'rgba(15, 23, 42"],
+[data-theme="cloud"] *[style*="background:rgba(15, 23, 42"],
+[data-theme="cloud"] *[style*="background:#0f172a"],
+[data-theme="cloud"] *[style*="background: #0f172a"],
+[data-theme="cloud"] *[style*="background:#1b1e28"],
+[data-theme="cloud"] *[style*="background: #1b1e28"],
+[data-theme="cloud"] *[style*="background:#171b26"],
+[data-theme="cloud"] *[style*="background: #171b26"],
+[data-theme="cloud"] *[style*="background:#1d2233"],
+[data-theme="cloud"] *[style*="background: #1d2233"] {
+  background: #1b1b1f !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 [data-theme="cloud"] input,
 [data-theme="cloud"] select,
 [data-theme="cloud"] textarea {
-  background: rgba(24, 24, 27, 0.8) !important;
+  background: #141416 !important;
   color: #f4f4f5 !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
 }
@@ -1318,7 +1338,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 [data-theme="cloud"] .custom-table th {
-  background: rgba(24, 24, 27, 0.85) !important;
+  background: #141416 !important;
   color: #a1a1aa !important;
   border-bottom-color: rgba(255, 255, 255, 0.1) !important;
 }
@@ -1329,18 +1349,18 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 [data-theme="cloud"] .custom-table tr:hover {
-  background: rgba(63, 63, 70, 0.4) !important;
+  background: #242429 !important;
 }
 
 [data-theme="cloud"] .modal-content {
-  background: rgba(24, 24, 27, 0.98) !important;
+  background: #1b1b1f !important;
   color: #f4f4f5 !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6) !important;
 }
 
 [data-theme="cloud"] .modal-header {
-  background: rgba(18, 18, 20, 0.95) !important;
+  background: #141416 !important;
   border-bottom-color: rgba(255, 255, 255, 0.1) !important;
 }
 
