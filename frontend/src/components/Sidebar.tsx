@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Sliders, ShieldCheck, Briefcase, FileBarChart, Settings, Container, ChevronLeft, ChevronRight, LogOut, User } from 'lucide-react';
+import { Home, Users, Sliders, ShieldCheck, Briefcase, FileBarChart, Settings, Container, ChevronLeft, ChevronRight, LogOut, User, Sun, Moon, Cloud } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -10,6 +11,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
   const { usuario, logout, temPermissao } = useAuth();
+  const { theme, cycleTheme } = useTheme();
 
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
@@ -24,13 +26,32 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
       {/* App Logo & Header */}
       <div className="sidebar-brand">
-        <div className="brand-logo" title="Regz Gestão de Pessoas">
-          <Container size={24} color="#ffffff" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+          <div className="brand-logo" title="Regz Gestão de Pessoas">
+            <Container size={24} color="#ffffff" />
+          </div>
+          {!collapsed && (
+            <div className="brand-info">
+              <span className="brand-title">Regz</span>
+              <span className="brand-subtitle">Gestão de Pessoas</span>
+            </div>
+          )}
         </div>
-        <div className="brand-info">
-          <span className="brand-title">Regz</span>
-          <span className="brand-subtitle">Gestão de Pessoas</span>
-        </div>
+
+        {/* Botão de Tema (Sol / Lua / Nuvem) sem texto */}
+        <button
+          onClick={cycleTheme}
+          className="theme-toggle-btn"
+          title={
+            theme === 'dark' ? 'Modo Noturno (Clique para alternar para Modo Claro)' :
+            theme === 'light' ? 'Modo Claro (Clique para alternar para Modo Nublado)' :
+            'Modo Nublado (Clique para alternar para Modo Noturno)'
+          }
+        >
+          {theme === 'dark' && <Moon size={18} />}
+          {theme === 'light' && <Sun size={18} />}
+          {theme === 'cloud' && <Cloud size={18} />}
+        </button>
       </div>
 
       {/* Main Navigation */}
