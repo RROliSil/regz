@@ -574,9 +574,10 @@ export const Campos: React.FC = () => {
                   onChange={(e) => setSelOpcoes(e.target.value)}
                   disabled={submittingType === 'selecao'}
                 />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
-                  Separe cada opção por vírgula.
-                </span>
+              </div>
+
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', background: 'rgba(15, 23, 42, 0.4)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                ℹ️ Separe cada opção por vírgula.
               </div>
             </div>
 
