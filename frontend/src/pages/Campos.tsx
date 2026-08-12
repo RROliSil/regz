@@ -4,7 +4,6 @@ import { Plus, Trash2, Loader2, Check, AlertCircle, Type, Hash, ListFilter, Eye,
 import { useAuth } from '../context/AuthContext';
 
 interface CampoColumnWidths {
-  id: number;
   nome: number;
   tipo: number;
   regras: number;
@@ -45,11 +44,10 @@ export const Campos: React.FC = () => {
 
   // Larguras das colunas na tabela do popup modal (salvas por usuário)
   const [colWidths, setColWidths] = useState<CampoColumnWidths>({
-    id: 70,
-    nome: 200,
-    tipo: 150,
-    regras: 240,
-    obrigatorio: 110,
+    nome: 220,
+    tipo: 160,
+    regras: 280,
+    obrigatorio: 120,
     acoes: 90
   });
 
@@ -598,16 +596,19 @@ export const Campos: React.FC = () => {
             className="modal-content glass-panel animate-fadeIn"
             style={{ width: '900px', maxWidth: '95vw', padding: '0', overflow: 'hidden' }}
           >
-            {/* Modal Header */}
-            <div className="modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Eye size={20} color="#38bdf8" />
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Campos Personalizados Cadastrados ({campos.length})</h3>
+            {/* Modal Header com Posição Relativa e Margem 0 (Impede corte do título e do X) */}
+            <div style={{ position: 'relative', top: 0, margin: 0, padding: '22px 28px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.95)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <Eye size={22} color="#38bdf8" />
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: '#f8fafc' }}>
+                  Campos Personalizados Cadastrados ({campos.length})
+                </h3>
               </div>
               <button
                 onClick={() => setViewModalOpen(false)}
                 className="btn-close"
                 title="Fechar (ESC)"
+                style={{ flexShrink: 0 }}
               >
                 <X size={18} />
               </button>
@@ -619,10 +620,6 @@ export const Campos: React.FC = () => {
                 <table className="custom-table" style={{ tableLayout: 'fixed', width: '100%' }}>
                   <thead>
                     <tr>
-                      <th style={{ width: `${colWidths.id}px`, position: 'relative' }}>
-                        #ID
-                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'id')} />
-                      </th>
                       <th style={{ width: `${colWidths.nome}px`, position: 'relative' }}>
                         Nome do Campo
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'nome')} />
@@ -648,20 +645,19 @@ export const Campos: React.FC = () => {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '40px' }}>
                           <Loader2 className="spin" size={20} /> Carregando campos...
                         </td>
                       </tr>
                     ) : campos.length === 0 ? (
                       <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
                           Nenhum campo personalizado cadastrado no momento.
                         </td>
                       </tr>
                     ) : (
                       campos.map((c) => (
                         <tr key={c.id}>
-                          <td style={{ color: 'var(--text-dim)' }}>#{c.id}</td>
                           <td>
                             <span style={{ fontWeight: 600, color: '#f8fafc', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
                               {c.nome}
