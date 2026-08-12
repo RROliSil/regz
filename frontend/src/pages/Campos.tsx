@@ -318,7 +318,7 @@ export const Campos: React.FC = () => {
             }}
             style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
               <div className="form-group">
                 <label>Nome do Campo *</label>
                 <input
@@ -428,7 +428,7 @@ export const Campos: React.FC = () => {
             }}
             style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
               <div className="form-group">
                 <label>Nome do Campo *</label>
                 <input
@@ -541,7 +541,7 @@ export const Campos: React.FC = () => {
             }}
             style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
               <div className="form-group">
                 <label>Nome do Campo *</label>
                 <input
@@ -635,7 +635,7 @@ export const Campos: React.FC = () => {
             }}
             style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
               <div className="form-group">
                 <label>Nome do Campo *</label>
                 <input
