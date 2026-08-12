@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-export type ThemeMode = 'dark' | 'light' | 'cloud';
+export type ThemeMode = 'padrao' | 'light' | 'dark';
 
 interface ThemeContextType {
   theme: ThemeMode;
@@ -13,10 +13,11 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
     const saved = localStorage.getItem('regz_theme');
-    if (saved === 'light' || saved === 'cloud' || saved === 'dark') {
-      return saved;
+    if (saved === 'cloud') return 'dark';
+    if (saved === 'light' || saved === 'dark' || saved === 'padrao') {
+      return saved as ThemeMode;
     }
-    return 'dark'; // Modo Padrão é o tema inicial padrão (dark glassmorphism)
+    return 'padrao'; // Modo Padrão (Dark Indigo Glassmorphism original)
   });
 
   const setTheme = (newTheme: ThemeMode) => {
@@ -26,9 +27,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const cycleTheme = () => {
-    if (theme === 'dark') setTheme('light');
-    else if (theme === 'light') setTheme('cloud');
-    else setTheme('dark');
+    if (theme === 'padrao') setTheme('light');
+    else if (theme === 'light') setTheme('dark');
+    else setTheme('padrao');
   };
 
   useEffect(() => {

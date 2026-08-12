@@ -43,14 +43,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           onClick={cycleTheme}
           className="theme-toggle-btn"
           title={
-            theme === 'dark' ? 'Modo Padrão (Clique para alternar para Modo Claro)' :
+            theme === 'padrao' ? 'Modo Padrão (Clique para alternar para Modo Claro)' :
             theme === 'light' ? 'Modo Claro (Clique para alternar para Modo Escuro)' :
             'Modo Escuro (Clique para alternar para Modo Padrão)'
           }
         >
-          {theme === 'dark' && <Container size={18} />}
+          {theme === 'padrao' && <Container size={18} />}
           {theme === 'light' && <Sun size={18} />}
-          {theme === 'cloud' && <Moon size={18} />}
+          {theme === 'dark' && <Moon size={18} />}
         </button>
       </div>
 
