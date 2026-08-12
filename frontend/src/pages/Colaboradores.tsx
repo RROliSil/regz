@@ -803,7 +803,7 @@ export const Colaboradores: React.FC = () => {
 
             {columnsDropdownOpen && (
               <div className="dropdown-menu glass-panel" style={{ position: 'absolute', right: 0, top: '46px', width: '230px', padding: '14px', zIndex: 50 }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px', textTransform: 'uppercase' }}>Exibir Colunas</div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#3a379d', marginBottom: '8px', textTransform: 'uppercase' }}>Exibir Colunas</div>
                 <label className="checkbox-label">
                   <input type="checkbox" checked={visibleColumns.foto} onChange={() => toggleColumn('foto')} />
                   <span>Foto de Perfil</span>
@@ -845,7 +845,7 @@ export const Colaboradores: React.FC = () => {
           </div>
 
           <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            Exibindo: <strong style={{ color: '#38bdf8' }}>{totalItems > 0 ? `${startIndex + 1}-${endIndex}` : '0'}</strong> de {totalItems}
+            Exibindo: <strong style={{ color: '#3a379d' }}>{totalItems > 0 ? `${startIndex + 1}-${endIndex}` : '0'}</strong> de {totalItems}
           </div>
         </div>
       </div>
@@ -1014,7 +1014,7 @@ export const Colaboradores: React.FC = () => {
                             style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.88rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
                             title={`${c.cidade}${c.estado ? `/${c.estado}` : ''}`}
                           >
-                            <MapPin size={14} color="#38bdf8" style={{ flexShrink: 0 }} /> {c.cidade}{c.estado ? `/${c.estado}` : ''}
+                            <MapPin size={14} color="#3a379d" style={{ flexShrink: 0 }} /> {c.cidade}{c.estado ? `/${c.estado}` : ''}
                           </span>
                         ) : (
                           <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>-</span>
@@ -1084,7 +1084,7 @@ export const Colaboradores: React.FC = () => {
         <div className="table-pagination-footer">
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
             {totalItems > 0 ? (
-              <>Mostrando <strong style={{ color: '#38bdf8' }}>{startIndex + 1}</strong> a <strong style={{ color: '#38bdf8' }}>{endIndex}</strong> de <strong style={{ color: '#38bdf8' }}>{totalItems}</strong> colaboradores</>
+              <>Mostrando <strong style={{ color: '#3a379d' }}>{startIndex + 1}</strong> a <strong style={{ color: '#3a379d' }}>{endIndex}</strong> de <strong style={{ color: '#3a379d' }}>{totalItems}</strong> colaboradores</>
             ) : (
               'Nenhum colaborador na lista'
             )}
@@ -1361,7 +1361,7 @@ export const Colaboradores: React.FC = () => {
                             >
                               <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.88rem' }}>{cg.nome}</span>
                               {cg.codigo_cbo && (
-                                <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 600 }}>
+                                <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#3a379d', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem', fontFamily: 'monospace', fontWeight: 600 }}>
                                   CBO {cg.codigo_cbo}
                                 </span>
                               )}

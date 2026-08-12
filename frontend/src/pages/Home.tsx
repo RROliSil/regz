@@ -259,7 +259,7 @@ export const Home: React.FC = () => {
                           style={{
                             width: `${pct}%`,
                             height: '100%',
-                            background: 'linear-gradient(90deg, #a855f7 0%, #38bdf8 100%)',
+                            background: 'linear-gradient(90deg, #a855f7 0%, #3a379d 100%)',
                             borderRadius: '6px',
                             transition: 'width 0.6s ease'
                           }}
@@ -306,7 +306,7 @@ export const Home: React.FC = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <MapPin size={20} color="#38bdf8" />
+                <MapPin size={20} color="#3a379d" />
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>
                   {geoMode === 'cidades' ? 'Colaboradores por Cidade' : 'Colaboradores por Estado'}
                 </h3>
@@ -317,7 +317,7 @@ export const Home: React.FC = () => {
                 onClick={() => setGeoMode(prev => prev === 'cidades' ? 'estados' : 'cidades')}
                 style={{
                   background: 'rgba(56, 189, 248, 0.15)',
-                  color: '#38bdf8',
+                  color: '#3a379d',
                   border: '1px solid rgba(56, 189, 248, 0.3)',
                   borderRadius: '8px',
                   padding: '5px 12px',
@@ -362,12 +362,12 @@ export const Home: React.FC = () => {
                       title={`Filtrar colaboradores em ${itemLabel}`}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '6px', borderRadius: '8px' }}>
+                        <div style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#3a379d', padding: '6px', borderRadius: '8px' }}>
                           <MapPin size={16} />
                         </div>
                         <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.9rem' }}>{itemLabel}</span>
                       </div>
-                      <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
+                      <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#3a379d', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
                         {count}
                       </span>
                     </div>
@@ -385,7 +385,7 @@ export const Home: React.FC = () => {
                 className="btn-ver-todos"
                 style={{
                   background: 'rgba(56, 189, 248, 0.12)',
-                  color: '#38bdf8',
+                  color: '#3a379d',
                   border: '1px solid rgba(56, 189, 248, 0.25)',
                   borderRadius: '8px',
                   padding: '5px 12px',

@@ -230,7 +230,7 @@ export const Campos: React.FC = () => {
         );
       case 'texto':
         return (
-          <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
+          <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#3a379d', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
             <Type size={12} /> Texto
           </span>
         );
@@ -398,7 +398,7 @@ export const Campos: React.FC = () => {
         <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.15)', color: '#3a379d' }}>
                 <Type size={20} />
               </div>
               <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Campo de Texto</h3>
@@ -698,7 +698,7 @@ export const Campos: React.FC = () => {
             {/* Modal Header com Posição Relativa e Margem 0 (Impede corte do título e do X) */}
             <div style={{ position: 'relative', top: 0, margin: 0, padding: '22px 28px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.95)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Eye size={22} color="#38bdf8" />
+                <Eye size={22} color="#3a379d" />
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: '#f8fafc' }}>
                   Campos Personalizados Cadastrados ({campos.length})
                 </h3>
