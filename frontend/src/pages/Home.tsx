@@ -198,16 +198,14 @@ export const Home: React.FC = () => {
                         {c.cidade ? `${c.cidade} - ${c.estado || ''}` : '-'}
                       </span>
                     </td>
-                    <td style={{ textAlign: 'center' }}>
-                      {c.ativo !== false ? (
-                        <span style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
-                          Ativo
-                        </span>
-                      ) : (
-                        <span style={{ background: 'rgba(251, 113, 133, 0.15)', color: '#fb7185', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
-                          Inativo
-                        </span>
-                      )}
+                    <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                        <span className="badge-novo">Novo</span>
+                        <span
+                          className={c.ativo !== false ? "status-dot-active" : "status-dot-inactive"}
+                          title={c.ativo !== false ? "Status: Ativo" : "Status: Inativo"}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))
