@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           </NavLink>
         )}
 
-        {/* Nova Aba de Administração Abaixo de Campos */}
+        {/* Aba de Administração */}
         {temPermissao('administracao') && (
           <NavLink
             to="/administracao"
@@ -79,6 +79,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           >
             <ShieldCheck size={20} style={{ flexShrink: 0 }} />
             <span>Administração</span>
+          </NavLink>
+        )}
+
+        {/* Aba Configurações (Exclusiva para Perfil Administrador) */}
+        {usuario?.perfil?.is_admin && (
+          <NavLink
+            to="/configuracoes"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            title="Configurações"
+          >
+            <Settings size={20} style={{ flexShrink: 0 }} />
+            <span>Configurações</span>
           </NavLink>
         )}
 
@@ -94,12 +106,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         <div className="nav-item disabled" title="Relatórios (Em breve)">
           <FileBarChart size={20} style={{ flexShrink: 0 }} />
           <span>Relatórios</span>
-          <span className="badge-soon">Em breve</span>
-        </div>
-
-        <div className="nav-item disabled" title="Configurações (Em breve)">
-          <Settings size={20} style={{ flexShrink: 0 }} />
-          <span>Configurações</span>
           <span className="badge-soon">Em breve</span>
         </div>
       </nav>

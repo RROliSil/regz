@@ -6,6 +6,7 @@ import { Home } from './pages/Home';
 import { Colaboradores } from './pages/Colaboradores';
 import { Campos } from './pages/Campos';
 import { Administracao } from './pages/Administracao';
+import { Configuracoes } from './pages/Configuracoes';
 import { Login } from './pages/Login';
 import { PermissoesAba } from './types/auth';
 import { Loader2, Eye } from 'lucide-react';
@@ -109,12 +110,23 @@ const ProtectedLayout: React.FC = () => {
             <Route path="/colaboradores" element={<RequireAuth aba="colaboradores"><Colaboradores /></RequireAuth>} />
             <Route path="/campos" element={<RequireAuth aba="campos"><Campos /></RequireAuth>} />
             <Route path="/administracao" element={<RequireAuth aba="administracao"><Administracao /></RequireAuth>} />
+            <Route path="/configuracoes" element={<RequireAdmin><Configuracoes /></RequireAdmin>} />
             <Route path="*" element={<Navigate to="/colaboradores" replace />} />
           </Routes>
         </div>
       </main>
     </div>
   );
+};
+
+const RequireAdmin: React.FC<{ children: JSX.Element }> = ({ children }) => {
+  const { usuario } = useAuth();
+  
+  if (!usuario?.perfil?.is_admin) {
+    return <Navigate to="/colaboradores" replace />;
+  }
+
+  return children;
 };
 
 const RequireAuth: React.FC<{ aba: keyof PermissoesAba; children: JSX.Element }> = ({ aba, children }) => {
