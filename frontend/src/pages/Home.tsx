@@ -99,7 +99,7 @@ export const Home: React.FC = () => {
 
             {/* Botão de Ícone Novo Colaborador para abrir diretamente a janela de cadastro */}
             <button
-              onClick={() => navigate('/colaboradores', { state: { openNewModal: true } })}
+              onClick={() => navigate('/colaboradores', { state: { openNewModal: true, returnToHome: true } })}
               className="btn-icon-primary"
               title="Cadastrar Novo Colaborador"
               style={{ width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0 }}
@@ -172,7 +172,7 @@ export const Home: React.FC = () => {
                   <tr
                     key={c.id}
                     className="clickable-row"
-                    onClick={() => navigate('/colaboradores', { state: { editColaborador: c } })}
+                    onClick={() => navigate('/colaboradores', { state: { editColaborador: c, returnToHome: true } })}
                     title="Clique para abrir e editar o cadastro deste colaborador"
                     style={{ cursor: 'pointer' }}
                   >

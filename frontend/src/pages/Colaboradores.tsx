@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Colaborador, Cargo, CampoCustomizado } from '../types/colaborador';
 import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink, Briefcase, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -41,6 +41,7 @@ export const Colaboradores: React.FC = () => {
   const { usuario, temPermissao } = useAuth();
   const podeEditar = temPermissao('colaboradores', 'escrita');
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [cargosList, setCargosList] = useState<Cargo[]>([]);
@@ -49,6 +50,7 @@ export const Colaboradores: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeSubTab, setActiveSubTab] = useState<'ativos' | 'inativos'>('ativos');
+  const [returnToHome, setReturnToHome] = useState(false);
 
   // Paginação State (5 por padrão)
   const [currentPage, setCurrentPage] = useState(1);
@@ -64,9 +66,20 @@ export const Colaboradores: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
+  const closeMainModal = () => {
+    setModalOpen(false);
+    if (returnToHome) {
+      setReturnToHome(false);
+      navigate('/home');
+    }
+  };
+
   // Auto-abrir modal ou aplicar filtros se redirecionado com estado de rota
   useEffect(() => {
     if (location.state) {
+      if (location.state.returnToHome) {
+        setReturnToHome(true);
+      }
       if (location.state.subTab) {
         setActiveSubTab(location.state.subTab);
       }
@@ -254,12 +267,12 @@ export const Colaboradores: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && modalOpen) {
-        setModalOpen(false);
+        closeMainModal();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modalOpen]);
+  }, [modalOpen, returnToHome]);
 
   // Abrir o endereço do colaborador no Google Maps com ALTA PRECISÃO
   const openGoogleMaps = (c: Colaborador) => {
@@ -636,7 +649,7 @@ export const Colaboradores: React.FC = () => {
       if (!res.ok) {
         setFormError(data.error || 'Erro ao salvar colaborador');
       } else {
-        setModalOpen(false);
+        closeMainModal();
         resetForm();
         fetchColaboradores();
       }
@@ -1192,7 +1205,7 @@ export const Colaboradores: React.FC = () => {
                   </button>
                 )}
               </div>
-              <button onClick={() => setModalOpen(false)} className="btn-close">
+              <button onClick={closeMainModal} className="btn-close">
                 <X size={20} />
               </button>
             </div>
@@ -1573,7 +1586,7 @@ export const Colaboradores: React.FC = () => {
               <div className="modal-footer">
                 <button
                   type="button"
-                  onClick={() => setModalOpen(false)}
+                  onClick={closeMainModal}
                   className="btn-secondary"
                   disabled={submitting}
                 >
