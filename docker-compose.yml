@@ -36,7 +36,6 @@ services:
       DB_NAME: regz_db
     ports:
       - "${FRONTEND_PORT:-8180}:4000"
-      - "${BACKEND_PORT:-4001}:4000"
     depends_on:
       postgres:
         condition: service_healthy
