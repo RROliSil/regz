@@ -1262,10 +1262,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ======================================================== */
-/* MODO NUBLADO (MONOCHROME CLOUD THEME) */
-/* ======================================================== */
-/* ======================================================== */
-/* MODO NUBLADO (MONOCHROME CLOUD THEME) */
+/* MODO ESCURO (MONOCHROME DARK THEME) */
 /* ======================================================== */
 [data-theme="cloud"] {
   --bg-gradient: radial-gradient(circle at 50% 0%, #18181b 0%, #121214 60%, #09090b 100%);
@@ -1326,7 +1323,7 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Forçar fundos de sub-elementos com cores azuladas antigas para #1b1b1f no modo Nublado */
+/* Forçar fundos de sub-elementos para #1b1b1f no Modo Escuro */
 [data-theme="cloud"] *[style*="background: rgba(15, 23, 42"],
 [data-theme="cloud"] *[style*="background: 'rgba(15, 23, 42"],
 [data-theme="cloud"] *[style*="background:rgba(15, 23, 42"],
