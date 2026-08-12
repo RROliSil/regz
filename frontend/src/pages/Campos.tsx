@@ -279,46 +279,46 @@ export const Campos: React.FC = () => {
         </div>
       )}
 
-      {/* Grid com 3 Cards Específicos para Criar Campo */}
+      {/* Grid com 4 Cards Específicos para Criar Campo */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
         
         {/* ======================================================== */}
         {/* CARD 1: CRIAR CAMPO NUMÉRICO */}
         {/* ======================================================== */}
-        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
-                  <Hash size={20} />
-                </div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Campo Numérico</h3>
+        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
+                <Hash size={20} />
               </div>
-
-              {/* Botão Olho no Cabeçalho */}
-              <button
-                onClick={() => setViewModalOpen(true)}
-                className="btn-action map"
-                title="Visualizar campos já criados"
-                style={{ borderRadius: '8px', padding: '6px' }}
-              >
-                <Eye size={16} />
-              </button>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Campo Numérico</h3>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleCreateCampo({
-                  nome: numNome,
-                  tipo: 'numero',
-                  obrigatorio: numObrigatorio,
-                  min_caracteres: numMin ? Number(numMin) : null,
-                  max_caracteres: numMax ? Number(numMax) : null
-                });
-              }}
-              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+            {/* Botão Olho no Cabeçalho */}
+            <button
+              onClick={() => setViewModalOpen(true)}
+              className="btn-action map"
+              title="Visualizar campos já criados"
+              style={{ borderRadius: '8px', padding: '6px' }}
             >
+              <Eye size={16} />
+            </button>
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreateCampo({
+                nome: numNome,
+                tipo: 'numero',
+                obrigatorio: numObrigatorio,
+                min_caracteres: numMin ? Number(numMin) : null,
+                max_caracteres: numMax ? Number(numMax) : null
+              });
+            }}
+            style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div className="form-group">
                 <label>Nome do Campo *</label>
                 <input
@@ -370,65 +370,65 @@ export const Campos: React.FC = () => {
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', background: 'rgba(15, 23, 42, 0.4)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                 ℹ️ Aceita pontuações e símbolos, porém valida <strong>somente a quantidade de dígitos numéricos</strong>.
               </div>
+            </div>
 
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={submittingType === 'numero' || !podeEditar}
-                style={{ justifyContent: 'center', marginTop: '10px', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed', background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' }}
-                title={podeEditar ? 'Criar campo numérico' : 'Ação desativada: Seu perfil permite apenas visualização'}
-              >
-                {submittingType === 'numero' ? (
-                  <>
-                    <Loader2 size={16} className="spin" /> Criando...
-                  </>
-                ) : (
-                  <>
-                    <Plus size={18} /> Criar Campo Numérico
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={submittingType === 'numero' || !podeEditar}
+              style={{ justifyContent: 'center', marginTop: 'auto', paddingTop: '12px', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed', background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' }}
+              title={podeEditar ? 'Criar campo numérico' : 'Ação desativada: Seu perfil permite apenas visualização'}
+            >
+              {submittingType === 'numero' ? (
+                <>
+                  <Loader2 size={16} className="spin" /> Criando...
+                </>
+              ) : (
+                <>
+                  <Plus size={18} /> Criar Campo Numérico
+                </>
+              )}
+            </button>
+          </form>
         </div>
 
         {/* ======================================================== */}
         {/* CARD 2: CRIAR CAMPO DE TEXTO */}
         {/* ======================================================== */}
-        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
-                  <Type size={20} />
-                </div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Campo de Texto</h3>
+        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>
+                <Type size={20} />
               </div>
-
-              {/* Botão Olho no Cabeçalho */}
-              <button
-                onClick={() => setViewModalOpen(true)}
-                className="btn-action map"
-                title="Visualizar campos já criados"
-                style={{ borderRadius: '8px', padding: '6px' }}
-              >
-                <Eye size={16} />
-              </button>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Campo de Texto</h3>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleCreateCampo({
-                  nome: txtNome,
-                  tipo: 'texto',
-                  obrigatorio: txtObrigatorio,
-                  min_caracteres: txtMin ? Number(txtMin) : null,
-                  max_caracteres: txtMax ? Number(txtMax) : null
-                });
-              }}
-              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+            {/* Botão Olho no Cabeçalho */}
+            <button
+              onClick={() => setViewModalOpen(true)}
+              className="btn-action map"
+              title="Visualizar campos já criados"
+              style={{ borderRadius: '8px', padding: '6px' }}
             >
+              <Eye size={16} />
+            </button>
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreateCampo({
+                nome: txtNome,
+                tipo: 'texto',
+                obrigatorio: txtObrigatorio,
+                min_caracteres: txtMin ? Number(txtMin) : null,
+                max_caracteres: txtMax ? Number(txtMax) : null
+              });
+            }}
+            style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div className="form-group">
                 <label>Nome do Campo *</label>
                 <input
@@ -480,68 +480,68 @@ export const Campos: React.FC = () => {
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', background: 'rgba(15, 23, 42, 0.4)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                 ℹ️ Aceita alfanuméricos completos (textos, números e caracteres especiais).
               </div>
+            </div>
 
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={submittingType === 'texto' || !podeEditar}
-                style={{ justifyContent: 'center', marginTop: '10px', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' }}
-                title={podeEditar ? 'Criar campo de texto' : 'Ação desativada: Seu perfil permite apenas visualização'}
-              >
-                {submittingType === 'texto' ? (
-                  <>
-                    <Loader2 size={16} className="spin" /> Criando...
-                  </>
-                ) : (
-                  <>
-                    <Plus size={18} /> Criar Campo de Texto
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={submittingType === 'texto' || !podeEditar}
+              style={{ justifyContent: 'center', marginTop: 'auto', paddingTop: '12px', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+              title={podeEditar ? 'Criar campo de texto' : 'Ação desativada: Seu perfil permite apenas visualização'}
+            >
+              {submittingType === 'texto' ? (
+                <>
+                  <Loader2 size={16} className="spin" /> Criando...
+                </>
+              ) : (
+                <>
+                  <Plus size={18} /> Criar Campo de Texto
+                </>
+              )}
+            </button>
+          </form>
         </div>
 
         {/* ======================================================== */}
         {/* CARD 3: CRIAR CAMPO SELEÇÃO DROPDOWN */}
         {/* ======================================================== */}
-        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(251, 146, 60, 0.15)', color: '#fb923c' }}>
-                  <ListFilter size={20} />
-                </div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Seleção Dropdown</h3>
+        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(251, 146, 60, 0.15)', color: '#fb923c' }}>
+                <ListFilter size={20} />
               </div>
-
-              {/* Botão Olho no Cabeçalho */}
-              <button
-                onClick={() => setViewModalOpen(true)}
-                className="btn-action map"
-                title="Visualizar campos já criados"
-                style={{ borderRadius: '8px', padding: '6px' }}
-              >
-                <Eye size={16} />
-              </button>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Seleção Dropdown</h3>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!selOpcoes.trim()) {
-                  setErrorMsg('Informe ao menos 2 opções para a seleção dropdown.');
-                  return;
-                }
-                handleCreateCampo({
-                  nome: selNome,
-                  tipo: 'selecao',
-                  opcoes: selOpcoes.trim(),
-                  obrigatorio: selObrigatorio
-                });
-              }}
-              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+            {/* Botão Olho no Cabeçalho */}
+            <button
+              onClick={() => setViewModalOpen(true)}
+              className="btn-action map"
+              title="Visualizar campos já criados"
+              style={{ borderRadius: '8px', padding: '6px' }}
             >
+              <Eye size={16} />
+            </button>
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!selOpcoes.trim()) {
+                setErrorMsg('Informe ao menos 2 opções para a seleção dropdown.');
+                return;
+              }
+              handleCreateCampo({
+                nome: selNome,
+                tipo: 'selecao',
+                opcoes: selOpcoes.trim(),
+                obrigatorio: selObrigatorio
+              });
+            }}
+            style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div className="form-group">
                 <label>Nome do Campo *</label>
                 <input
@@ -578,63 +578,63 @@ export const Campos: React.FC = () => {
                   Separe cada opção por vírgula.
                 </span>
               </div>
+            </div>
 
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={submittingType === 'selecao' || !podeEditar}
-                style={{ justifyContent: 'center', marginTop: '10px', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed', background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)' }}
-                title={podeEditar ? 'Criar campo de seleção' : 'Ação desativada: Seu perfil permite apenas visualização'}
-              >
-                {submittingType === 'selecao' ? (
-                  <>
-                    <Loader2 size={16} className="spin" /> Criando...
-                  </>
-                ) : (
-                  <>
-                    <Plus size={18} /> Criar Campo Seleção
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={submittingType === 'selecao' || !podeEditar}
+              style={{ justifyContent: 'center', marginTop: 'auto', paddingTop: '12px', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed', background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)' }}
+              title={podeEditar ? 'Criar campo de seleção' : 'Ação desativada: Seu perfil permite apenas visualização'}
+            >
+              {submittingType === 'selecao' ? (
+                <>
+                  <Loader2 size={16} className="spin" /> Criando...
+                </>
+              ) : (
+                <>
+                  <Plus size={18} /> Criar Campo Seleção
+                </>
+              )}
+            </button>
+          </form>
         </div>
 
         {/* ======================================================== */}
         {/* CARD 4: CRIAR CAMPO DE ALTERNATIVA (SIM / NÃO) */}
         {/* ======================================================== */}
-        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(52, 211, 153, 0.15)', color: '#34d399' }}>
-                  <CheckSquare size={20} />
-                </div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Campo de Alternativa</h3>
+        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', height: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(52, 211, 153, 0.15)', color: '#34d399' }}>
+                <CheckSquare size={20} />
               </div>
-
-              {/* Botão Olho no Cabeçalho */}
-              <button
-                onClick={() => setViewModalOpen(true)}
-                className="btn-action map"
-                title="Visualizar campos já criados"
-                style={{ borderRadius: '8px', padding: '6px' }}
-              >
-                <Eye size={16} />
-              </button>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Campo de Alternativa</h3>
             </div>
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleCreateCampo({
-                  nome: altNome,
-                  tipo: 'alternativa',
-                  obrigatorio: altObrigatorio
-                });
-              }}
-              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+            {/* Botão Olho no Cabeçalho */}
+            <button
+              onClick={() => setViewModalOpen(true)}
+              className="btn-action map"
+              title="Visualizar campos já criados"
+              style={{ borderRadius: '8px', padding: '6px' }}
             >
+              <Eye size={16} />
+            </button>
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleCreateCampo({
+                nome: altNome,
+                tipo: 'alternativa',
+                obrigatorio: altObrigatorio
+              });
+            }}
+            style={{ display: 'flex', flexDirection: 'column', flex: 1 }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div className="form-group">
                 <label>Nome do Campo *</label>
                 <input
@@ -661,26 +661,26 @@ export const Campos: React.FC = () => {
               <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', background: 'rgba(15, 23, 42, 0.4)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                 ℹ️ Gera duas caixas de seleção (Sim / Não), permitindo escolher apenas uma por vez.
               </div>
+            </div>
 
-              <button
-                type="submit"
-                className="btn-primary"
-                disabled={submittingType === 'alternativa' || !podeEditar}
-                style={{ justifyContent: 'center', marginTop: '10px', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}
-                title={podeEditar ? 'Criar campo de alternativa' : 'Ação desativada: Seu perfil permite apenas visualização'}
-              >
-                {submittingType === 'alternativa' ? (
-                  <>
-                    <Loader2 size={16} className="spin" /> Criando...
-                  </>
-                ) : (
-                  <>
-                    <Plus size={18} /> Criar Campo Alternativa
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={submittingType === 'alternativa' || !podeEditar}
+              style={{ justifyContent: 'center', marginTop: 'auto', paddingTop: '12px', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}
+              title={podeEditar ? 'Criar campo de alternativa' : 'Ação desativada: Seu perfil permite apenas visualização'}
+            >
+              {submittingType === 'alternativa' ? (
+                <>
+                  <Loader2 size={16} className="spin" /> Criando...
+                </>
+              ) : (
+                <>
+                  <Plus size={18} /> Criar Campo Alternativa
+                </>
+              )}
+            </button>
+          </form>
         </div>
 
       </div>
