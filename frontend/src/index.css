@@ -1435,3 +1435,42 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 12px rgba(255, 255, 255, 0.3) !important;
 }
 
+/* Card de Anexar Foto na janela Editar Colaborador em #141416 (Apenas no Modo Dark) */
+[data-theme="dark"] .photo-upload-section {
+  background: #141416 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Fundo do botão Cancelar na janela de Editar Colaborador em #141416 (Apenas no Modo Dark) */
+[data-theme="dark"] .modal-footer .btn-secondary {
+  background: #141416 !important;
+  color: #f4f4f5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="dark"] .modal-footer .btn-secondary:hover:not(:disabled) {
+  background: #1e1e24 !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Cor da Barra de Rolagem (Scrollbar Thumb) em #d1d1d1 (Apenas no Modo Dark) */
+[data-theme="dark"] * {
+  scrollbar-color: #d1d1d1 #141416;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb,
+[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  background-color: #d1d1d1 !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track,
+[data-theme="dark"] *::-webkit-scrollbar-track {
+  background: #141416 !important;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
