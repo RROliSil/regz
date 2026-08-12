@@ -211,16 +211,16 @@ export const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid Inferior: Distribuição de Cargos & Cidades/Estados */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+      {/* Grid Inferior: Distribuição de Cargos & Cidades/Estados (alignItems: 'start' para isolar a altura ao expandir) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px', alignItems: 'start' }}>
         
-        {/* Card 3: Principais Cargos na Equipe */}
+        {/* Card 3: Cargos na Equipe */}
         <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Briefcase size={20} color="#c084fc" />
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Principais Cargos na Equipe</h3>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Cargos na Equipe</h3>
               </div>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Qtd. Pessoas</span>
             </div>
@@ -289,7 +289,7 @@ export const Home: React.FC = () => {
                 }}
                 title={expandedCargos ? "Recolher e mostrar principais cargos" : "Expandir e ver todos os cargos"}
               >
-                {expandedCargos ? 'Recolher' : 'Ver todos os cargos'}
+                {expandedCargos ? 'Recolher' : `Ver todos (${sortedCargos.length})`}
                 {expandedCargos ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
             </div>
