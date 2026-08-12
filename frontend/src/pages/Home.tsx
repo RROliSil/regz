@@ -1,40 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Briefcase, Sliders, Shield, UserPlus, MapPin, Loader2, User, ChevronRight } from 'lucide-react';
+import { Users, Briefcase, UserPlus, MapPin, Loader2, User, ChevronRight } from 'lucide-react';
 import { Colaborador } from '../types/colaborador';
-import { CampoCustomizado } from '../types/auth';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
 
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
-  const [campos, setCampos] = useState<CampoCustomizado[]>([]);
-  const [usuariosCount, setUsuariosCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const [colabRes, camposRes, userRes] = await Promise.all([
-          fetch('/api/colaboradores'),
-          fetch('/api/campos-customizados'),
-          fetch('/api/usuarios')
-        ]);
-
+        const colabRes = await fetch('/api/colaboradores');
         if (colabRes.ok) {
           const colabData = await colabRes.json();
           setColaboradores(colabData);
-        }
-
-        if (camposRes.ok) {
-          const camposData = await camposRes.json();
-          setCampos(camposData);
-        }
-
-        if (userRes.ok) {
-          const userData = await userRes.json();
-          setUsuariosCount(userData.length || 0);
         }
       } catch (err) {
         console.error('Erro ao carregar dados do dashboard:', err);
@@ -91,24 +73,11 @@ export const Home: React.FC = () => {
             Visão geral executiva em tempo real do quadro de colaboradores, distribuição de cargos e dados organizacionais.
           </p>
         </div>
-
-        {/* Atalhos Rápidos */}
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={() => navigate('/colaboradores')}
-            className="btn-primary"
-            style={{ fontSize: '0.88rem' }}
-          >
-            <UserPlus size={16} /> Novo Colaborador
-          </button>
-        </div>
       </header>
 
-      {/* Grid de KPIs / Indicadores Chave */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '28px' }}>
-        
-        {/* KPI 1: Colaboradores */}
-        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+      {/* Grid de KPIs / Indicadores Chave (Card Único de Colaboradores com Botão de Ícone de Ação) */}
+      <div style={{ marginBottom: '28px' }}>
+        <div className="glass-panel" style={{ padding: '20px', maxWidth: '360px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Colaboradores</span>
@@ -116,70 +85,22 @@ export const Home: React.FC = () => {
                 {loading ? <Loader2 className="spin" size={20} /> : totalColaboradores}
               </h2>
             </div>
-            <div style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '10px', borderRadius: '12px' }}>
-              <Users size={24} />
-            </div>
+
+            {/* Botão de Ícone Novo Colaborador para abrir diretamente a janela de cadastro */}
+            <button
+              onClick={() => navigate('/colaboradores', { state: { openNewModal: true } })}
+              className="btn-icon-primary"
+              title="Cadastrar Novo Colaborador"
+              style={{ width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0 }}
+            >
+              <UserPlus size={20} />
+            </button>
           </div>
           <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '12px', display: 'flex', gap: '12px' }}>
             <span style={{ color: '#34d399', fontWeight: 600 }}>● {colaboradoresAtivos} Ativos</span>
             {colaboradoresInativos > 0 && <span style={{ color: '#fb7185', fontWeight: 600 }}>● {colaboradoresInativos} Inativos</span>}
           </div>
         </div>
-
-        {/* KPI 2: Cargos */}
-        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Cargos Registrados</span>
-              <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#f8fafc', marginTop: '6px', marginBottom: '2px' }}>
-                {loading ? <Loader2 className="spin" size={20} /> : Object.keys(cargosMap).length}
-              </h2>
-            </div>
-            <div style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', padding: '10px', borderRadius: '12px' }}>
-              <Briefcase size={24} />
-            </div>
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '12px' }}>
-            Funções e CBOs em uso na equipe
-          </div>
-        </div>
-
-        {/* KPI 3: Campos Customizados */}
-        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Campos Dinâmicos</span>
-              <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#f8fafc', marginTop: '6px', marginBottom: '2px' }}>
-                {loading ? <Loader2 className="spin" size={20} /> : campos.length}
-              </h2>
-            </div>
-            <div style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', padding: '10px', borderRadius: '12px' }}>
-              <Sliders size={24} />
-            </div>
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '12px' }}>
-            Campos ativos no formulário
-          </div>
-        </div>
-
-        {/* KPI 4: Usuários do Sistema */}
-        <div className="glass-panel" style={{ padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Usuários de Acesso</span>
-              <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#f8fafc', marginTop: '6px', marginBottom: '2px' }}>
-                {loading ? <Loader2 className="spin" size={20} /> : usuariosCount}
-              </h2>
-            </div>
-            <div style={{ background: 'rgba(251, 146, 60, 0.15)', color: '#fb923c', padding: '10px', borderRadius: '12px' }}>
-              <Shield size={24} />
-            </div>
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '12px' }}>
-            Contas de acesso cadastradas
-          </div>
-        </div>
-
       </div>
 
       {/* Grid Médio: Distribuição de Cargos & Cidades */}

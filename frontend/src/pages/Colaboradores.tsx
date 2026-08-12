@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Colaborador, Cargo, CampoCustomizado } from '../types/colaborador';
 import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink, Briefcase, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -39,6 +40,7 @@ import { useAuth } from '../context/AuthContext';
 export const Colaboradores: React.FC = () => {
   const { usuario, temPermissao } = useAuth();
   const podeEditar = temPermissao('colaboradores', 'escrita');
+  const location = useLocation();
 
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [cargosList, setCargosList] = useState<Cargo[]>([]);
@@ -61,6 +63,30 @@ export const Colaboradores: React.FC = () => {
   // Modal Principal de Cadastro / Edição
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  // Auto-abrir modal se redirecionado da Home com flag openNewModal
+  useEffect(() => {
+    if (location.state?.openNewModal) {
+      setEditingId(null);
+      setNome('');
+      setCpf('');
+      setCargo('');
+      setCep('');
+      setLogradouro('');
+      setNumero('');
+      setComplemento('');
+      setBairro('');
+      setCidade('');
+      setEstado('');
+      setLatitude(null);
+      setLongitude(null);
+      setFotoUrl('');
+      setValoresCustomizados({});
+      setFormError('');
+      setModalOpen(true);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Modal Quick Photo (Alteração Rápida de Foto)
   const [quickPhotoModalOpen, setQuickPhotoModalOpen] = useState(false);
