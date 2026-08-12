@@ -169,7 +169,13 @@ export const Home: React.FC = () => {
                 </tr>
               ) : (
                 ultimosColaboradores.map((c) => (
-                  <tr key={c.id}>
+                  <tr
+                    key={c.id}
+                    className="clickable-row"
+                    onClick={() => navigate('/colaboradores', { state: { editColaborador: c } })}
+                    title="Clique para abrir e editar o cadastro deste colaborador"
+                    style={{ cursor: 'pointer' }}
+                  >
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>

@@ -78,6 +78,15 @@ export const Colaboradores: React.FC = () => {
         resetForm();
         setModalOpen(true);
       }
+      if (location.state.editColaborador) {
+        const c = location.state.editColaborador;
+        if (c.ativo === false) {
+          setActiveSubTab('inativos');
+        } else {
+          setActiveSubTab('ativos');
+        }
+        openEditModal(c);
+      }
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
