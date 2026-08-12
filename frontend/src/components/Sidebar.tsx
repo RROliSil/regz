@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Sliders, ShieldCheck, Briefcase, FileBarChart, Settings, Container, ChevronLeft, ChevronRight, LogOut, User, Sun, Moon, Cloud } from 'lucide-react';
+import { Home, Users, Sliders, ShieldCheck, Briefcase, FileBarChart, Settings, Container, ChevronLeft, ChevronRight, LogOut, User, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -38,7 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           )}
         </div>
 
-        {/* Botão de Tema (Sol / Lua / Nuvem) sem texto */}
+        {/* Botão de Tema (Regz / Sol / Lua) sem texto */}
         <button
           onClick={cycleTheme}
           className="theme-toggle-btn"
@@ -48,9 +48,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             'Modo Nublado (Clique para alternar para Modo Noturno)'
           }
         >
-          {theme === 'dark' && <Moon size={18} />}
+          {theme === 'dark' && <Container size={18} />}
           {theme === 'light' && <Sun size={18} />}
-          {theme === 'cloud' && <Cloud size={18} />}
+          {theme === 'cloud' && <Moon size={18} />}
         </button>
       </div>
 
