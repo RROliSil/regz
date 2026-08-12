@@ -53,7 +53,7 @@ export const Login: React.FC = () => {
             width: '64px',
             height: '64px',
             borderRadius: '20px',
-            background: 'linear-gradient(135deg, #6366f1 0%, #3a379d 100%)',
+            background: 'linear-gradient(135deg, #6366f1 0%, #5e5eee 100%)',
             boxShadow: '0 10px 25px rgba(99, 102, 241, 0.4)',
             marginBottom: '16px'
           }}>

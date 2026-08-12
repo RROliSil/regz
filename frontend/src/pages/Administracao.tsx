@@ -436,7 +436,7 @@ export const Administracao: React.FC = () => {
         <div className="glass-panel" style={{ padding: '0', overflow: 'visible', position: 'relative' }}>
           <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 100 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Users size={20} color="#3a379d" />
+              <Users size={20} color="#5e5eee" />
               <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Usuários Cadastrados ({usuarios.length})</h3>
             </div>
 
@@ -499,7 +499,7 @@ export const Administracao: React.FC = () => {
                           );
                         }
                         return (
-                          <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#3a379d', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
+                          <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#5e5eee', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
                             {pObj?.nome || 'Sem Perfil'}
                           </span>
                         );
@@ -643,7 +643,7 @@ export const Administracao: React.FC = () => {
                                   alignItems: 'center',
                                   gap: '6px',
                                   cursor: podeEditar ? 'pointer' : 'not-allowed',
-                                  color: isLeitura ? '#3a379d' : 'var(--text-muted)',
+                                  color: isLeitura ? '#5e5eee' : 'var(--text-muted)',
                                   fontWeight: isLeitura ? 600 : 400,
                                   whiteSpace: 'nowrap',
                                   opacity: podeEditar ? 1 : 0.6
@@ -653,7 +653,7 @@ export const Administracao: React.FC = () => {
                                     checked={isLeitura}
                                     onChange={() => podeEditar && handleTogglePermissaoDirect(p, aba, 'leitura')}
                                     disabled={!podeEditar}
-                                    style={{ cursor: podeEditar ? 'pointer' : 'not-allowed', accentColor: '#3a379d' }}
+                                    style={{ cursor: podeEditar ? 'pointer' : 'not-allowed', accentColor: '#5e5eee' }}
                                   />
                                   <span>Leitura</span>
                                 </label>
@@ -855,7 +855,7 @@ export const Administracao: React.FC = () => {
               </div>
 
               <div style={{ marginTop: '16px', borderTop: '1px solid var(--card-border)', paddingTop: '16px' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '12px', color: '#3a379d' }}>Permissões Iniciais do Perfil</h4>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '12px', color: '#5e5eee' }}>Permissões Iniciais do Perfil</h4>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {(['home', 'colaboradores', 'campos', 'administracao'] as Array<keyof PermissoesAba>).map((aba) => (

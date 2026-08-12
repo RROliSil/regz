@@ -4,7 +4,7 @@
 
   --bg-gradient: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #0f172a 60%, #020617 100%);
   --accent-purple: #818cf8;
-  --accent-cyan: #3a379d;
+  --accent-cyan: #5e5eee;
   --accent-emerald: #34d399;
   --accent-rose: #fb7185;
 
@@ -75,7 +75,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 50%;
   background: #0f172a;
   border: 1px solid rgba(56, 189, 248, 0.4);
-  color: #3a379d;
+  color: #5e5eee;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -154,7 +154,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .brand-logo {
-  background: linear-gradient(135deg, #6366f1, #3a379d);
+  background: linear-gradient(135deg, #6366f1, #5e5eee);
   padding: 10px;
   border-radius: 12px;
   display: flex;
@@ -351,7 +351,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .sub-tab.active {
   background: rgba(56, 189, 248, 0.15);
-  color: #3a379d;
+  color: #5e5eee;
   border-color: rgba(56, 189, 248, 0.3);
 }
 
@@ -382,7 +382,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .text-gradient {
-  background: linear-gradient(135deg, #a5b4fc 0%, #3a379d 50%, #818cf8 100%);
+  background: linear-gradient(135deg, #a5b4fc 0%, #5e5eee 50%, #818cf8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -453,7 +453,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(129, 140, 248, 0.15));
   border: 1px solid rgba(56, 189, 248, 0.4);
-  color: #3a379d;
+  color: #5e5eee;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -602,7 +602,7 @@ h1, h2, h3, h4, h5, h6 {
 .custom-table th .resizer:active,
 .custom-table th .col-resizer:hover,
 .custom-table th .col-resizer:active {
-  background: #3a379d;
+  background: #5e5eee;
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.9);
 }
 
@@ -819,7 +819,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Badge Sutil de Coordenadas GPS */
 .geo-badge {
   background: rgba(56, 189, 248, 0.12);
-  color: #3a379d;
+  color: #5e5eee;
   border: 1px solid rgba(56, 189, 248, 0.25);
   padding: 3px 8px;
   border-radius: 6px;
@@ -930,7 +930,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #3a379d;
+  color: #5e5eee;
   border-bottom: 1px solid var(--card-border);
   padding-bottom: 6px;
   margin-top: 8px;

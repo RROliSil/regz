@@ -90,7 +90,7 @@ export const Configuracoes: React.FC = () => {
       {/* Painel de Informações do Ambiente e Sessão */}
       <div className="glass-panel" style={{ padding: '28px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', borderBottom: '1px solid var(--card-border)', paddingBottom: '16px' }}>
-          <Info size={22} color="#3a379d" />
+          <Info size={22} color="#5e5eee" />
           <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>Informações Gerais do Ambiente</h3>
         </div>
 
@@ -102,7 +102,7 @@ export const Configuracoes: React.FC = () => {
 
           <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Ambiente de Implantação</span>
-            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#3a379d' }}>Docker / Portainer.io</span>
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#5e5eee' }}>Docker / Portainer.io</span>
           </div>
 
           <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
