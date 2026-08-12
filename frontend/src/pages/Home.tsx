@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Briefcase, UserPlus, MapPin, Loader2, User, ChevronRight } from 'lucide-react';
+import { Users, Briefcase, UserPlus, MapPin, Loader2, User, ChevronRight, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { Colaborador } from '../types/colaborador';
 
 export const Home: React.FC = () => {
@@ -8,6 +8,11 @@ export const Home: React.FC = () => {
 
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Estados de controle de alternância e expansão
+  const [geoMode, setGeoMode] = useState<'cidades' | 'estados'>('cidades');
+  const [expandedCargos, setExpandedCargos] = useState(false);
+  const [expandedGeo, setExpandedGeo] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -40,26 +45,32 @@ export const Home: React.FC = () => {
     cargosMap[cargoNome] = (cargosMap[cargoNome] || 0) + 1;
   });
 
-  const topCargos = Object.entries(cargosMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+  const sortedCargos = Object.entries(cargosMap).sort((a, b) => b[1] - a[1]);
+  const visibleCargos = expandedCargos ? sortedCargos : sortedCargos.slice(0, 5);
 
-  // Distribuição por Cidade
+  // Distribuição por Cidade e por Estado
   const cidadesMap: Record<string, number> = {};
+  const estadosMap: Record<string, number> = {};
+
   colaboradores.forEach(c => {
     if (c.cidade) {
       const citState = `${c.cidade} - ${c.estado || 'UF'}`;
       cidadesMap[citState] = (cidadesMap[citState] || 0) + 1;
     }
+    if (c.estado) {
+      const ufName = c.estado.toUpperCase();
+      estadosMap[ufName] = (estadosMap[ufName] || 0) + 1;
+    }
   });
 
-  const topCidades = Object.entries(cidadesMap)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4);
+  const sortedCidades = Object.entries(cidadesMap).sort((a, b) => b[1] - a[1]);
+  const sortedEstados = Object.entries(estadosMap).sort((a, b) => b[1] - a[1]);
 
-  // Últimos 5 colaboradores
-  const ultimosColaboradores = [...colaboradores]
-    .slice(0, 5);
+  const geoList = geoMode === 'cidades' ? sortedCidades : sortedEstados;
+  const visibleGeoList = expandedGeo ? geoList : geoList.slice(0, 4);
+
+  // Últimos 5 colaboradores cadastrados
+  const ultimosColaboradores = [...colaboradores].slice(0, 5);
 
   return (
     <div className="page-content">
@@ -75,7 +86,7 @@ export const Home: React.FC = () => {
         </div>
       </header>
 
-      {/* Grid de KPIs / Indicadores Chave (Card Único de Colaboradores com Botão de Ícone de Ação) */}
+      {/* Card 1: Total Colaboradores (com atalho para criar colaborador) */}
       <div style={{ marginBottom: '28px' }}>
         <div className="glass-panel" style={{ padding: '20px', maxWidth: '360px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -117,111 +128,8 @@ export const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Grid Médio: Distribuição de Cargos & Cidades */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px', marginBottom: '28px' }}>
-        
-        {/* Painel Top Cargos */}
-        <div className="glass-panel" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Briefcase size={20} color="#c084fc" />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Principais Cargos na Equipe</h3>
-            </div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Qtd. Pessoas</span>
-          </div>
-
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
-              <Loader2 className="spin" size={20} /> Carregando estatísticas...
-            </div>
-          ) : topCargos.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-dim)', fontSize: '0.88rem' }}>
-              Nenhum colaborador cadastrado ainda.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {topCargos.map(([cargoNome, count], idx) => {
-                const pct = totalColaboradores > 0 ? Math.round((count / totalColaboradores) * 100) : 0;
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => navigate('/colaboradores', { state: { subTab: 'ativos', searchTerm: cargoNome } })}
-                    style={{ cursor: 'pointer' }}
-                    title={`Filtrar colaboradores no cargo ${cargoNome}`}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '6px' }}>
-                      <span style={{ fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}>
-                        {cargoNome}
-                      </span>
-                      <span style={{ color: '#c084fc', fontWeight: 700 }}>{count} ({pct}%)</span>
-                    </div>
-                    <div style={{ background: 'rgba(15, 23, 42, 0.6)', borderRadius: '6px', height: '8px', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                      <div
-                        style={{
-                          width: `${pct}%`,
-                          height: '100%',
-                          background: 'linear-gradient(90deg, #a855f7 0%, #38bdf8 100%)',
-                          borderRadius: '6px',
-                          transition: 'width 0.6s ease'
-                        }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Painel Distribuição Geográfica */}
-        <div className="glass-panel" style={{ padding: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <MapPin size={20} color="#38bdf8" />
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Concentração por Cidade</h3>
-            </div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Cidades</span>
-          </div>
-
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
-              <Loader2 className="spin" size={20} /> Carregando cidades...
-            </div>
-          ) : topCidades.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-dim)', fontSize: '0.88rem' }}>
-              Nenhum endereço de colaborador informado.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {topCidades.map(([cidadeEstado, count], idx) => {
-                const cityOnly = cidadeEstado.split(' - ')[0];
-                return (
-                  <div
-                    key={idx}
-                    onClick={() => navigate('/colaboradores', { state: { subTab: 'ativos', searchTerm: cityOnly } })}
-                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 23, 42, 0.5)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer' }}
-                    title={`Filtrar colaboradores em ${cidadeEstado}`}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '6px', borderRadius: '8px' }}>
-                        <MapPin size={16} />
-                      </div>
-                      <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.9rem' }}>{cidadeEstado}</span>
-                    </div>
-                    <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
-                      {count}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-      </div>
-
-      {/* Painel Inferior: Últimas Adições */}
-      <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
+      {/* Card 2: Meio - Últimos Colaboradores Cadastrados */}
+      <div className="glass-panel" style={{ padding: '0', overflow: 'hidden', marginBottom: '28px' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Users size={18} color="#34d399" />
@@ -301,6 +209,197 @@ export const Home: React.FC = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* Grid Inferior: Distribuição de Cargos & Cidades/Estados */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px' }}>
+        
+        {/* Card 3: Principais Cargos na Equipe */}
+        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Briefcase size={20} color="#c084fc" />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Principais Cargos na Equipe</h3>
+              </div>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Qtd. Pessoas</span>
+            </div>
+
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                <Loader2 className="spin" size={20} /> Carregando estatísticas...
+              </div>
+            ) : sortedCargos.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-dim)', fontSize: '0.88rem' }}>
+                Nenhum colaborador cadastrado ainda.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {visibleCargos.map(([cargoNome, count], idx) => {
+                  const pct = totalColaboradores > 0 ? Math.round((count / totalColaboradores) * 100) : 0;
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => navigate('/colaboradores', { state: { subTab: 'ativos', searchTerm: cargoNome } })}
+                      style={{ cursor: 'pointer' }}
+                      title={`Filtrar colaboradores no cargo ${cargoNome}`}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '6px' }}>
+                        <span style={{ fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}>
+                          {cargoNome}
+                        </span>
+                        <span style={{ color: '#c084fc', fontWeight: 700 }}>{count} ({pct}%)</span>
+                      </div>
+                      <div style={{ background: 'rgba(15, 23, 42, 0.6)', borderRadius: '6px', height: '8px', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                        <div
+                          style={{
+                            width: `${pct}%`,
+                            height: '100%',
+                            background: 'linear-gradient(90deg, #a855f7 0%, #38bdf8 100%)',
+                            borderRadius: '6px',
+                            transition: 'width 0.6s ease'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Botão de Expansão / Recolhimento no canto inferior direito do card */}
+          {sortedCargos.length > 5 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '18px', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <button
+                onClick={() => setExpandedCargos(!expandedCargos)}
+                style={{
+                  background: 'rgba(168, 85, 247, 0.12)',
+                  color: '#c084fc',
+                  border: '1px solid rgba(168, 85, 247, 0.25)',
+                  borderRadius: '8px',
+                  padding: '5px 12px',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+                title={expandedCargos ? "Recolher e mostrar principais cargos" : "Expandir e ver todos os cargos"}
+              >
+                {expandedCargos ? 'Recolher' : 'Ver todos os cargos'}
+                {expandedCargos ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Card 4: Concentração Geográfica (Cidades / Estados) */}
+        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <MapPin size={20} color="#38bdf8" />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>
+                  {geoMode === 'cidades' ? 'Colaboradores por Cidade' : 'Colaboradores por Estado'}
+                </h3>
+              </div>
+
+              {/* Botão Clicável Cidades <-> Estados com Setinha Dupla Rotacionável */}
+              <button
+                onClick={() => setGeoMode(prev => prev === 'cidades' ? 'estados' : 'cidades')}
+                style={{
+                  background: 'rgba(56, 189, 248, 0.15)',
+                  color: '#38bdf8',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  borderRadius: '8px',
+                  padding: '5px 12px',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+                title={`Clique para alternar para ${geoMode === 'cidades' ? 'Estados' : 'Cidades'}`}
+              >
+                {geoMode === 'cidades' ? 'Cidades' : 'Estados'}
+                <ArrowUpDown
+                  size={14}
+                  style={{
+                    transition: 'transform 0.3s ease',
+                    transform: geoMode === 'estados' ? 'rotate(180deg)' : 'none'
+                  }}
+                />
+              </button>
+            </div>
+
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                <Loader2 className="spin" size={20} /> Carregando dados geográficos...
+              </div>
+            ) : geoList.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-dim)', fontSize: '0.88rem' }}>
+                Nenhum endereço de colaborador informado.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {visibleGeoList.map(([itemLabel, count], idx) => {
+                  const searchTermToApply = geoMode === 'cidades' ? itemLabel.split(' - ')[0] : itemLabel;
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => navigate('/colaboradores', { state: { subTab: 'ativos', searchTerm: searchTermToApply } })}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 23, 42, 0.5)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer' }}
+                      title={`Filtrar colaboradores em ${itemLabel}`}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '6px', borderRadius: '8px' }}>
+                          <MapPin size={16} />
+                        </div>
+                        <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.9rem' }}>{itemLabel}</span>
+                      </div>
+                      <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
+                        {count}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Botão de Expansão / Recolhimento no canto inferior direito do card */}
+          {geoList.length > 4 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '18px', paddingTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <button
+                onClick={() => setExpandedGeo(!expandedGeo)}
+                style={{
+                  background: 'rgba(56, 189, 248, 0.12)',
+                  color: '#38bdf8',
+                  border: '1px solid rgba(56, 189, 248, 0.25)',
+                  borderRadius: '8px',
+                  padding: '5px 12px',
+                  fontSize: '0.78rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s ease'
+                }}
+                title={expandedGeo ? "Recolher lista" : "Expandir e ver todos os locais"}
+              >
+                {expandedGeo ? 'Recolher' : `Ver todos (${geoList.length})`}
+                {expandedGeo ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </button>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );
