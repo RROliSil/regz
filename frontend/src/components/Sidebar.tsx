@@ -44,8 +44,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           className="theme-toggle-btn"
           title={
             theme === 'dark' ? 'Modo Noturno (Clique para alternar para Modo Claro)' :
-            theme === 'light' ? 'Modo Claro (Clique para alternar para Modo Nublado)' :
-            'Modo Nublado (Clique para alternar para Modo Noturno)'
+              theme === 'light' ? 'Modo Claro (Clique para alternar para Modo Nublado)' :
+                'Modo Nublado (Clique para alternar para Modo Noturno)'
           }
         >
           {theme === 'dark' && <Container size={18} />}
@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       {/* Main Navigation */}
       <nav className="sidebar-nav">
         <div className="nav-section-label">Navegação Principal</div>
-        
+
         {temPermissao('home') && (
           <NavLink
             to="/home"
@@ -117,7 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
 
         {/* Espaços para Futuras Abas */}
         <div className="nav-section-label" style={{ marginTop: '24px' }}>Módulos Futuros</div>
-        
+
         <div className="nav-item disabled" title="Departamentos (Em breve)">
           <Briefcase size={20} style={{ flexShrink: 0 }} />
           <span>Departamentos</span>

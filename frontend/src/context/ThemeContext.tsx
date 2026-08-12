@@ -16,7 +16,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (saved === 'light' || saved === 'cloud' || saved === 'dark') {
       return saved;
     }
-    return 'dark'; // Modo Noturno é o tema atual padrão
+    return 'dark'; // Modo Padrão é o tema inicial padrão (dark glassmorphism)
   });
 
   const setTheme = (newTheme: ThemeMode) => {
