@@ -97,8 +97,22 @@ export const Home: React.FC = () => {
             </button>
           </div>
           <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '12px', display: 'flex', gap: '12px' }}>
-            <span style={{ color: '#34d399', fontWeight: 600 }}>● {colaboradoresAtivos} Ativos</span>
-            {colaboradoresInativos > 0 && <span style={{ color: '#fb7185', fontWeight: 600 }}>● {colaboradoresInativos} Inativos</span>}
+            <span
+              onClick={() => navigate('/colaboradores', { state: { subTab: 'ativos', searchTerm: '' } })}
+              style={{ color: '#34d399', fontWeight: 600, cursor: 'pointer' }}
+              title="Ver colaboradores ativos"
+            >
+              ● {colaboradoresAtivos} Ativos
+            </span>
+            {colaboradoresInativos > 0 && (
+              <span
+                onClick={() => navigate('/colaboradores', { state: { subTab: 'inativos', searchTerm: '' } })}
+                style={{ color: '#fb7185', fontWeight: 600, cursor: 'pointer' }}
+                title="Ver colaboradores inativos"
+              >
+                ● {colaboradoresInativos} Inativos
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -129,7 +143,12 @@ export const Home: React.FC = () => {
               {topCargos.map(([cargoNome, count], idx) => {
                 const pct = totalColaboradores > 0 ? Math.round((count / totalColaboradores) * 100) : 0;
                 return (
-                  <div key={idx}>
+                  <div
+                    key={idx}
+                    onClick={() => navigate('/colaboradores', { state: { subTab: 'ativos', searchTerm: cargoNome } })}
+                    style={{ cursor: 'pointer' }}
+                    title={`Filtrar colaboradores no cargo ${cargoNome}`}
+                  >
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '6px' }}>
                       <span style={{ fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}>
                         {cargoNome}
@@ -174,19 +193,27 @@ export const Home: React.FC = () => {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {topCidades.map(([cidadeEstado, count], idx) => (
-                <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 23, 42, 0.5)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '6px', borderRadius: '8px' }}>
-                      <MapPin size={16} />
+              {topCidades.map(([cidadeEstado, count], idx) => {
+                const cityOnly = cidadeEstado.split(' - ')[0];
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => navigate('/colaboradores', { state: { subTab: 'ativos', searchTerm: cityOnly } })}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 23, 42, 0.5)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer' }}
+                    title={`Filtrar colaboradores em ${cidadeEstado}`}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '6px', borderRadius: '8px' }}>
+                        <MapPin size={16} />
+                      </div>
+                      <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.9rem' }}>{cidadeEstado}</span>
                     </div>
-                    <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.9rem' }}>{cidadeEstado}</span>
+                    <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
+                      {count}
+                    </span>
                   </div>
-                  <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#38bdf8', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
-                    {count} {count === 1 ? 'pessoa' : 'pessoas'}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

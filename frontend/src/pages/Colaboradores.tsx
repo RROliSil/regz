@@ -64,26 +64,20 @@ export const Colaboradores: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  // Auto-abrir modal se redirecionado da Home com flag openNewModal
+  // Auto-abrir modal ou aplicar filtros se redirecionado com estado de rota
   useEffect(() => {
-    if (location.state?.openNewModal) {
-      setEditingId(null);
-      setNome('');
-      setCpf('');
-      setCargo('');
-      setCep('');
-      setLogradouro('');
-      setNumero('');
-      setComplemento('');
-      setBairro('');
-      setCidade('');
-      setEstado('');
-      setLatitude(null);
-      setLongitude(null);
-      setFotoUrl('');
-      setValoresCustomizados({});
-      setFormError('');
-      setModalOpen(true);
+    if (location.state) {
+      if (location.state.subTab) {
+        setActiveSubTab(location.state.subTab);
+      }
+      if (location.state.searchTerm !== undefined) {
+        setSearchTerm(location.state.searchTerm);
+      }
+      if (location.state.openNewModal) {
+        setEditingId(null);
+        resetForm();
+        setModalOpen(true);
+      }
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
