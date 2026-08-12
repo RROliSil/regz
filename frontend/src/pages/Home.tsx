@@ -316,7 +316,7 @@ export const Home: React.FC = () => {
               <button
                 onClick={() => setGeoMode(prev => prev === 'cidades' ? 'estados' : 'cidades')}
                 style={{
-                  background: 'rgba(56, 189, 248, 0.15)',
+                  background: '#141416',
                   color: '#5e5eee',
                   border: '1px solid rgba(56, 189, 248, 0.3)',
                   borderRadius: '8px',
@@ -362,12 +362,12 @@ export const Home: React.FC = () => {
                       title={`Filtrar colaboradores em ${itemLabel}`}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#5e5eee', padding: '6px', borderRadius: '8px' }}>
+                        <div style={{ background: '#141416', color: '#5e5eee', padding: '6px', borderRadius: '8px' }}>
                           <MapPin size={16} />
                         </div>
                         <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.9rem' }}>{itemLabel}</span>
                       </div>
-                      <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#5e5eee', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
+                      <span style={{ background: '#141416', color: '#5e5eee', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
                         {count}
                       </span>
                     </div>
