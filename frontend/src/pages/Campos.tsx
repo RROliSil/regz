@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CampoCustomizado } from '../types/auth';
-import { Plus, Trash2, Loader2, Check, AlertCircle, Type, Hash, ListFilter, Eye, X } from 'lucide-react';
+import { Plus, Trash2, Loader2, Check, AlertCircle, Type, Hash, ListFilter, Eye, X, CheckSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface CampoColumnWidths {
@@ -17,14 +17,14 @@ export const Campos: React.FC = () => {
 
   const [campos, setCampos] = useState<CampoCustomizado[]>([]);
   const [loading, setLoading] = useState(true);
-  const [submittingType, setSubmittingType] = useState<'numero' | 'texto' | 'selecao' | null>(null);
+  const [submittingType, setSubmittingType] = useState<'numero' | 'texto' | 'selecao' | 'alternativa' | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
   // Estado do Popup Modal de Visualização dos Campos Criados
   const [viewModalOpen, setViewModalOpen] = useState(false);
 
-  // Estados dos 3 Formulários de Criação
+  // Estados dos Formulários de Criação
   // Card 1: Numérico
   const [numNome, setNumNome] = useState('');
   const [numObrigatorio, setNumObrigatorio] = useState(false);
@@ -41,6 +41,10 @@ export const Campos: React.FC = () => {
   const [selNome, setSelNome] = useState('');
   const [selObrigatorio, setSelObrigatorio] = useState(false);
   const [selOpcoes, setSelOpcoes] = useState('');
+
+  // Card 4: Alternativa (Sim / Não)
+  const [altNome, setAltNome] = useState('');
+  const [altObrigatorio, setAltObrigatorio] = useState(false);
 
   // Larguras das colunas na tabela do popup modal (salvas por usuário)
   const [colWidths, setColWidths] = useState<CampoColumnWidths>({
@@ -140,7 +144,7 @@ export const Campos: React.FC = () => {
   // Cadastrar Campo Genérico
   const handleCreateCampo = async (payload: {
     nome: string;
-    tipo: 'numero' | 'texto' | 'selecao';
+    tipo: 'numero' | 'texto' | 'selecao' | 'alternativa';
     opcoes?: string;
     obrigatorio: boolean;
     min_caracteres?: number | null;
@@ -185,6 +189,9 @@ export const Campos: React.FC = () => {
           setSelNome('');
           setSelObrigatorio(false);
           setSelOpcoes('');
+        } else if (payload.tipo === 'alternativa') {
+          setAltNome('');
+          setAltObrigatorio(false);
         }
 
         setTimeout(() => setSuccessMsg(''), 3500);
@@ -215,6 +222,7 @@ export const Campos: React.FC = () => {
   const getTipoBadge = (tipo: string) => {
     switch (tipo) {
       case 'numero':
+      case 'numerico':
         return (
           <span style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
             <Hash size={12} /> Numérico
@@ -227,9 +235,16 @@ export const Campos: React.FC = () => {
           </span>
         );
       case 'selecao':
+      case 'select':
         return (
           <span style={{ background: 'rgba(251, 146, 60, 0.15)', color: '#fb923c', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
             <ListFilter size={12} /> Seleção (Dropdown)
+          </span>
+        );
+      case 'alternativa':
+        return (
+          <span style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
+            <CheckSquare size={12} /> Alternativa (Sim/Não)
           </span>
         );
       default:
@@ -578,6 +593,89 @@ export const Campos: React.FC = () => {
                 ) : (
                   <>
                     <Plus size={18} /> Criar Campo Seleção
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+
+        {/* ======================================================== */}
+        {/* CARD 4: CRIAR CAMPO DE ALTERNATIVA (SIM / NÃO) */}
+        {/* ======================================================== */}
+        <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(52, 211, 153, 0.15)', color: '#34d399' }}>
+                  <CheckSquare size={20} />
+                </div>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700 }}>Campo de Alternativa</h3>
+              </div>
+
+              {/* Botão Olho no Cabeçalho */}
+              <button
+                onClick={() => setViewModalOpen(true)}
+                className="btn-action map"
+                title="Visualizar campos já criados"
+                style={{ borderRadius: '8px', padding: '6px' }}
+              >
+                <Eye size={16} />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleCreateCampo({
+                  nome: altNome,
+                  tipo: 'alternativa',
+                  obrigatorio: altObrigatorio
+                });
+              }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
+            >
+              <div className="form-group">
+                <label>Nome do Campo *</label>
+                <input
+                  type="text"
+                  placeholder="Ex: CNH Ativa, Possui Filhos, Vale Transporte..."
+                  value={altNome}
+                  onChange={(e) => setAltNome(e.target.value)}
+                  disabled={submittingType === 'alternativa'}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="checkbox-label" style={{ margin: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={altObrigatorio}
+                    onChange={(e) => setAltObrigatorio(e.target.checked)}
+                    disabled={submittingType === 'alternativa'}
+                  />
+                  <span>Tornar este campo obrigatório</span>
+                </label>
+              </div>
+
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', background: 'rgba(15, 23, 42, 0.4)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                ℹ️ Gera duas caixas de seleção (Sim / Não), permitindo escolher apenas uma por vez.
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={submittingType === 'alternativa' || !podeEditar}
+                style={{ justifyContent: 'center', marginTop: '10px', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)' }}
+                title={podeEditar ? 'Criar campo de alternativa' : 'Ação desativada: Seu perfil permite apenas visualização'}
+              >
+                {submittingType === 'alternativa' ? (
+                  <>
+                    <Loader2 size={16} className="spin" /> Criando...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={18} /> Criar Campo Alternativa
                   </>
                 )}
               </button>

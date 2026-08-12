@@ -33,7 +33,7 @@ export interface CboItem {
 export interface CampoCustomizado {
   id?: number;
   nome: string;
-  tipo: 'texto' | 'numero' | 'data' | 'selecao';
+  tipo: 'texto' | 'numero' | 'data' | 'selecao' | 'numerico' | 'select' | 'alternativa';
   opcoes?: string | null;
   obrigatorio?: boolean;
   min_caracteres?: number | null;
