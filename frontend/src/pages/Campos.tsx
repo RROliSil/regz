@@ -707,17 +707,6 @@ export const Campos: React.FC = () => {
                 </table>
               </div>
             </div>
-
-            {/* Modal Footer */}
-            <div className="modal-footer" style={{ padding: '16px 24px', borderTop: '1px solid var(--card-border)', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={() => setViewModalOpen(false)}
-                className="btn-secondary"
-              >
-                Fechar
-              </button>
-            </div>
           </div>
         </div>
       )}
