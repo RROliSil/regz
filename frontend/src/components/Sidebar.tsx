@@ -134,7 +134,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       {/* Footer com Perfil do Usuário e Botão de Logout */}
       <div className="sidebar-footer">
         {usuario && (
-          <div style={{
+          <div className="sidebar-user-card" style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: collapsed ? 'center' : 'space-between',
@@ -146,14 +146,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           }}>
             {!collapsed && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
-                <div style={{ background: 'rgba(99, 102, 241, 0.2)', padding: '6px', borderRadius: '50%', color: '#818cf8' }}>
+                <div className="sidebar-user-avatar" style={{ background: 'rgba(99, 102, 241, 0.2)', padding: '6px', borderRadius: '50%', color: '#818cf8' }}>
                   <User size={16} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <span className="sidebar-user-name" style={{ fontSize: '0.82rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {usuario.nome}
                   </span>
-                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  <span className="sidebar-user-role" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {usuario.perfil?.nome || 'Usuário'}
                   </span>
                 </div>

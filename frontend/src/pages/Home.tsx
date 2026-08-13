@@ -249,12 +249,12 @@ export const Home: React.FC = () => {
                       title={`Filtrar colaboradores no cargo ${cargoNome}`}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: '6px' }}>
-                        <span style={{ fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}>
+                        <span className="cargo-nome" style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '75%' }}>
                           {cargoNome}
                         </span>
                         <span style={{ color: '#c084fc', fontWeight: 700 }}>{count} ({pct}%)</span>
                       </div>
-                      <div style={{ background: 'rgba(15, 23, 42, 0.6)', borderRadius: '6px', height: '8px', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                      <div className="cargo-progress-track" style={{ background: 'rgba(15, 23, 42, 0.6)', borderRadius: '6px', height: '8px', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
                         <div
                           style={{
                             width: `${pct}%`,

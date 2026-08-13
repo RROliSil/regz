@@ -1270,8 +1270,41 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Ajustes da Home no Modo Claro ([data-theme="light"]) */
 [data-theme="light"] .colaborador-nome,
-[data-theme="light"] .total-colaboradores-num {
+[data-theme="light"] .total-colaboradores-num,
+[data-theme="light"] .cargo-nome {
   color: #5c6777 !important;
+}
+
+[data-theme="light"] .cargo-progress-track {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .sidebar-user-card {
+  background: #d1d4f7 !important;
+  border-color: #a5b4fc !important;
+}
+
+[data-theme="light"] .sidebar-user-name {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .sidebar-user-role {
+  color: #5d6878 !important;
+}
+
+[data-theme="light"] .theme-toggle-btn {
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  color: #d97706 !important;
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .nav-item.active {
+  border: 1.5px solid #655cd4 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(90deg, rgba(101, 92, 212, 0.12), rgba(101, 92, 212, 0.04)) !important;
+  color: #655cd4 !important;
 }
 
 [data-theme="light"] .geo-item-row {
