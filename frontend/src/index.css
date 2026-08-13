@@ -1394,6 +1394,18 @@ h1, h2, h3, h4, h5, h6 {
   opacity: 0.5 !important;
 }
 
+/* Seletor de registros por página no Modo Claro */
+[data-theme="light"] .custom-select-small {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .custom-select-small option {
+  background: #ffffff !important;
+  color: #475569 !important;
+}
+
 /* Fundo branco no campo de pesquisa e botão flutuante do menu no Modo Claro */
 [data-theme="light"] .search-box {
   background: #ffffff !important;
