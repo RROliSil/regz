@@ -92,7 +92,7 @@ export const Home: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Colaboradores</span>
-              <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#f8fafc', marginTop: '6px', marginBottom: '2px' }}>
+              <h2 className="total-colaboradores-num" style={{ fontSize: '2rem', fontWeight: 800, marginTop: '6px', marginBottom: '2px' }}>
                 {loading ? <Loader2 className="spin" size={20} /> : totalColaboradores}
               </h2>
             </div>
@@ -185,7 +185,7 @@ export const Home: React.FC = () => {
                             <User size={16} color="#818cf8" />
                           )}
                         </div>
-                        <span style={{ fontWeight: 600, color: '#f8fafc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</span>
+                        <span className="colaborador-nome" style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</span>
                       </div>
                     </td>
                     <td>
@@ -344,6 +344,7 @@ export const Home: React.FC = () => {
                   return (
                     <div
                       key={idx}
+                      className="geo-item-row"
                       onClick={() => navigate('/colaboradores', { state: { subTab: 'ativos', searchTerm: searchTermToApply } })}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 23, 42, 0.5)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer' }}
                       title={`Filtrar colaboradores em ${itemLabel}`}
@@ -352,7 +353,7 @@ export const Home: React.FC = () => {
                         <div className="geo-pin-icon">
                           <MapPin size={16} />
                         </div>
-                        <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.9rem' }}>{itemLabel}</span>
+                        <span className="geo-item-name" style={{ fontWeight: 600, fontSize: '0.9rem' }}>{itemLabel}</span>
                       </div>
                       <span className="geo-count-badge">
                         {count}

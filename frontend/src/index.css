@@ -1268,6 +1268,32 @@ h1, h2, h3, h4, h5, h6 {
   background: #f1f5f9 !important;
 }
 
+/* Ajustes da Home no Modo Claro ([data-theme="light"]) */
+[data-theme="light"] .colaborador-nome,
+[data-theme="light"] .total-colaboradores-num {
+  color: #5c6777 !important;
+}
+
+[data-theme="light"] .geo-item-row {
+  background: #ffffff !important;
+  border: 1px solid #4338ca !important;
+}
+
+[data-theme="light"] .geo-item-name {
+  color: #5c6777 !important;
+}
+
+[data-theme="light"] .btn-ver-todos {
+  background: #4338ca !important;
+  color: #ffffff !important;
+  border-color: #4338ca !important;
+}
+
+[data-theme="light"] .btn-ver-todos:hover {
+  background: #3730a3 !important;
+  border-color: #3730a3 !important;
+}
+
 [data-theme="light"] .modal-content {
   background: #ffffff !important;
   color: #0f172a !important;
