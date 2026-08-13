@@ -368,6 +368,12 @@ h1, h2, h3, h4, h5, h6 {
   color: #fb7185;
 }
 
+.sub-tab-badge.success {
+  background: rgba(34, 197, 94, 0.25) !important;
+  color: #22c55e !important;
+  font-weight: 700 !important;
+}
+
 /* Glassmorphism Panel */
 .glass-panel {
   background: var(--card-bg);
@@ -1472,5 +1478,34 @@ h1, h2, h3, h4, h5, h6 {
 [data-theme="dark"] ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
+}
+
+/* Ajustes de fundo da página Colaboradores (Apenas no Modo Dark) */
+[data-theme="dark"] .search-box {
+  background: #1b1b1f !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .dropdown-container .btn-secondary {
+  background: #1b1b1f !important;
+  color: #f4f4f5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .dropdown-container .btn-secondary:hover {
+  background: #242429 !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+[data-theme="dark"] .sub-tab.active {
+  background: #1b1b1f !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .table-pagination-footer {
+  background: #141416 !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
 }
 

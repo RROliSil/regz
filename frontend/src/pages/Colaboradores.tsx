@@ -741,7 +741,7 @@ export const Colaboradores: React.FC = () => {
             onClick={() => setActiveSubTab('ativos')}
           >
             Colaboradores Ativos
-            <span className="sub-tab-badge">{colaboradoresAtivos.length}</span>
+            <span className="sub-tab-badge success">{colaboradoresAtivos.length}</span>
           </button>
 
           <button
