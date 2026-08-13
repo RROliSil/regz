@@ -834,6 +834,45 @@ h1, h2, h3, h4, h5, h6 {
   font-family: monospace;
 }
 
+/* Botão Cidades / Estados e Badges do Card Geográfico (Modo Padrão) */
+.btn-geo-mode {
+  background: rgba(56, 189, 248, 0.15);
+  color: #5e5eee;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-geo-mode:hover {
+  background: rgba(56, 189, 248, 0.25);
+}
+
+.geo-pin-icon {
+  background: rgba(56, 189, 248, 0.15);
+  color: #5e5eee;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.geo-count-badge {
+  background: rgba(56, 189, 248, 0.12);
+  color: #5e5eee;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 /* Modal Styling */
 .modal-backdrop {
   position: fixed;
@@ -1521,5 +1560,12 @@ h1, h2, h3, h4, h5, h6 {
 
 [data-theme="dark"] .btn-robot:hover:not(:disabled) {
   background: #1b1b1f !important;
+}
+
+/* Card Geográfico na Home em #141416 (Apenas no Modo Dark) */
+[data-theme="dark"] .btn-geo-mode,
+[data-theme="dark"] .geo-pin-icon,
+[data-theme="dark"] .geo-count-badge {
+  background: #141416 !important;
 }
 

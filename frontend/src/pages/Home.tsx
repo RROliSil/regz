@@ -315,20 +315,7 @@ export const Home: React.FC = () => {
               {/* Botão Clicável Cidades <-> Estados com Setinha Dupla Rotacionável */}
               <button
                 onClick={() => setGeoMode(prev => prev === 'cidades' ? 'estados' : 'cidades')}
-                style={{
-                  background: '#141416',
-                  color: '#5e5eee',
-                  border: '1px solid rgba(56, 189, 248, 0.3)',
-                  borderRadius: '8px',
-                  padding: '5px 12px',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s ease'
-                }}
+                className="btn-geo-mode"
                 title={`Clique para alternar para ${geoMode === 'cidades' ? 'Estados' : 'Cidades'}`}
               >
                 {geoMode === 'cidades' ? 'Cidades' : 'Estados'}
@@ -362,12 +349,12 @@ export const Home: React.FC = () => {
                       title={`Filtrar colaboradores em ${itemLabel}`}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ background: '#141416', color: '#5e5eee', padding: '6px', borderRadius: '8px' }}>
+                        <div className="geo-pin-icon">
                           <MapPin size={16} />
                         </div>
                         <span style={{ fontWeight: 600, color: '#f8fafc', fontSize: '0.9rem' }}>{itemLabel}</span>
                       </div>
-                      <span style={{ background: '#141416', color: '#5e5eee', padding: '4px 10px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
+                      <span className="geo-count-badge">
                         {count}
                       </span>
                     </div>
