@@ -1288,8 +1288,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 [data-theme="light"] .sidebar-user-card {
-  background: #d1d4f7 !important;
-  border-color: #a5b4fc !important;
+  background: rgba(56, 189, 248, 0.15) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
 }
 
 [data-theme="light"] .sidebar-user-name {
@@ -1373,6 +1373,25 @@ h1, h2, h3, h4, h5, h6 {
   background: #ffffff !important;
   border-top-color: #e2e8f0 !important;
   color: #475569 !important;
+}
+
+[data-theme="light"] .btn-pagination {
+  background: #e0e0fc !important;
+  color: #616b7c !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .btn-pagination:hover:not(:disabled) {
+  background: #d0d0f8 !important;
+  color: #4338ca !important;
+  border-color: #a5b4fc !important;
+  transform: scale(1.08);
+}
+
+[data-theme="light"] .btn-pagination:disabled {
+  background: #e0e0fc !important;
+  color: #616b7c !important;
+  opacity: 0.5 !important;
 }
 
 /* Fundo branco no campo de pesquisa e botão flutuante do menu no Modo Claro */
