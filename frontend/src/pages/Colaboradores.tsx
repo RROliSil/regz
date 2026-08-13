@@ -959,7 +959,7 @@ export const Colaboradores: React.FC = () => {
 
                     {visibleColumns.nome && (
                       <td style={{ width: `${columnWidths.nome}px` }}>
-                        <div style={{ fontWeight: 600, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.nome}>
+                        <div className="colaborador-nome" style={{ fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={c.nome}>
                           {c.nome}
                         </div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', whiteSpace: 'nowrap' }}>
@@ -970,7 +970,7 @@ export const Colaboradores: React.FC = () => {
 
                     {visibleColumns.cpf && (
                       <td style={{ width: `${columnWidths.cpf}px` }}>
-                        <code style={{ background: 'rgba(15, 23, 42, 0.6)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', whiteSpace: 'nowrap', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
+                        <code className="cpf-badge" style={{ padding: '4px 8px', borderRadius: '6px', fontSize: '0.85rem', whiteSpace: 'nowrap', display: 'inline-block', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
                           {c.cpf}
                         </code>
                       </td>

@@ -1329,9 +1329,52 @@ h1, h2, h3, h4, h5, h6 {
   border-color: #4338ca !important;
 }
 
+.cpf-badge {
+  background: rgba(15, 23, 42, 0.6);
+  color: var(--text-main);
+}
+
 [data-theme="light"] .btn-ver-todos:hover {
   background: #3730a3 !important;
   border-color: #3730a3 !important;
+}
+
+/* Ajustes da Página Colaboradores no Modo Claro ([data-theme="light"]) */
+[data-theme="light"] .search-box {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .search-box input {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .search-box input::placeholder {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .dropdown-container .btn-secondary {
+  background: #3730a3 !important;
+  color: #ffffff !important;
+  border-color: #3730a3 !important;
+}
+
+[data-theme="light"] .dropdown-container .btn-secondary:hover {
+  background: #2e2680 !important;
+  border-color: #2e2680 !important;
+}
+
+[data-theme="light"] .cpf-badge {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .table-pagination-footer {
+  background: #ffffff !important;
+  border-top-color: #e2e8f0 !important;
+  color: #475569 !important;
 }
 
 [data-theme="light"] .modal-content {
