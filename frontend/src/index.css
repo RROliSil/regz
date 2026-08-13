@@ -1484,6 +1484,12 @@ h1, h2, h3, h4, h5, h6 {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
+[data-theme="dark"] .cpf-badge {
+  background: #1b1b1f !important;
+  color: #f4f4f5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
 [data-theme="dark"] input,
 [data-theme="dark"] select,
 [data-theme="dark"] textarea {
