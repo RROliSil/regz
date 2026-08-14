@@ -1557,9 +1557,9 @@ export const Colaboradores: React.FC = () => {
 
                       if (campo.tipo === 'alternativa') {
                         return (
-                          <div key={campo.id} className="form-group" style={{ gridColumn: 'span 2' }}>
+                          <div key={campo.id} className="form-group">
                             <label>{campo.nome} {campo.obrigatorio && '*'}</label>
-                            <div style={{ display: 'flex', gap: '24px', alignItems: 'center', marginTop: '6px', background: 'rgba(15, 23, 42, 0.4)', padding: '10px 16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                            <div className="boolean-field-box">
                               <label className="checkbox-label" style={{ cursor: 'pointer', margin: 0 }}>
                                 <input
                                   type="checkbox"

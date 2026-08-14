@@ -1105,10 +1105,24 @@ h1, h2, h3, h4, h5, h6 {
   gap: 20px;
   padding: 16px;
   background: rgba(15, 23, 42, 0.5);
-  border: 1px dashed var(--card-border);
+  border: 1.5px dashed var(--card-border);
   border-radius: 16px;
   margin-bottom: 8px;
   width: 100%;
+}
+
+/* Caixa de Campo Sim / Não (Boolean) */
+.boolean-field-box {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.4);
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  width: fit-content;
+  min-width: 170px;
+  box-sizing: border-box;
 }
 
 .photo-avatar-container {
@@ -1376,6 +1390,33 @@ h1, h2, h3, h4, h5, h6 {
   border-color: rgba(56, 189, 248, 0.5) !important;
 }
 
+/* Photo Upload Section no Modo Claro */
+[data-theme="light"] .photo-upload-section {
+  background: #ffffff !important;
+  border: 1.5px dashed #6366f1 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .photo-placeholder-icon {
+  color: #6366f1 !important;
+}
+
+[data-theme="light"] .btn-upload {
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: #6366f1 !important;
+  border: 1px solid rgba(99, 102, 241, 0.35) !important;
+}
+
+[data-theme="light"] .upload-hint {
+  color: #475569 !important;
+}
+
+/* Caixa de Campo Sim / Não no Modo Claro */
+[data-theme="light"] .boolean-field-box {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
 [data-theme="light"] .sidebar-user-card {
   background: rgba(56, 189, 248, 0.15) !important;
   border: 1px solid rgba(56, 189, 248, 0.3) !important;
@@ -1456,6 +1497,20 @@ h1, h2, h3, h4, h5, h6 {
   background: #ffffff !important;
   color: #0f172a !important;
   border: 1px solid #cbd5e1 !important;
+}
+
+/* Botão Cancelar nos Modais com Texto Branco Garantido em Todos os Temas */
+.modal-footer .btn-secondary,
+[data-theme="light"] .modal-footer .btn-secondary {
+  background: #64748b !important;
+  color: #ffffff !important;
+  border: 1px solid #475569 !important;
+}
+
+.modal-footer .btn-secondary:hover,
+[data-theme="light"] .modal-footer .btn-secondary:hover {
+  background: #475569 !important;
+  color: #ffffff !important;
 }
 
 [data-theme="light"] .table-pagination-footer {
