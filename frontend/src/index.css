@@ -847,6 +847,16 @@ h1, h2, h3, h4, h5, h6 {
   transition: all 0.2s ease;
 }
 
+.cargo-badge {
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  border: 1px solid rgba(99, 102, 241, 0.25);
+}
+
+.cargo-badge .cargo-icon {
+  color: #818cf8;
+}
+
 .btn-action.map {
   background: rgba(129, 140, 248, 0.15);
   color: #a5b4fc;
@@ -1342,6 +1352,28 @@ h1, h2, h3, h4, h5, h6 {
   color: #5e5eee !important;
   border: 1px solid rgba(56, 189, 248, 0.35) !important;
   box-shadow: none !important;
+}
+
+[data-theme="light"] .cargo-badge {
+  background: rgba(56, 189, 248, 0.15) !important;
+  color: #5e5eee !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+}
+
+[data-theme="light"] .cargo-badge .cargo-icon {
+  color: #5e5eee !important;
+}
+
+[data-theme="light"] .btn-action.map {
+  background: rgba(56, 189, 248, 0.15) !important;
+  color: #5e5eee !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+}
+
+[data-theme="light"] .btn-action.map:hover {
+  background: rgba(56, 189, 248, 0.28) !important;
+  color: #5e5eee !important;
+  border-color: rgba(56, 189, 248, 0.5) !important;
 }
 
 [data-theme="light"] .sidebar-user-card {

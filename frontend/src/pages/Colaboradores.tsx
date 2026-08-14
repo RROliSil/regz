@@ -1004,10 +1004,11 @@ export const Colaboradores: React.FC = () => {
                       <td style={{ width: `${columnWidths.cargo}px` }}>
                         {c.cargo ? (
                           <span 
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', color: '#a5b4fc', background: 'rgba(99, 102, 241, 0.12)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.25)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
+                            className="cargo-badge"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', padding: '4px 10px', borderRadius: '8px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}
                             title={c.cargo}
                           >
-                            <Briefcase size={13} color="#818cf8" style={{ flexShrink: 0 }} /> {c.cargo}
+                            <Briefcase size={13} className="cargo-icon" style={{ flexShrink: 0 }} /> {c.cargo}
                           </span>
                         ) : (
                           <span style={{ color: 'var(--text-dim)', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>Não definido</span>
