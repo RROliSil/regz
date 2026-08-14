@@ -108,19 +108,19 @@ export const Home: React.FC = () => {
               <UserPlus size={20} />
             </button>
           </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '12px', display: 'flex', gap: '12px' }}>
+          <div style={{ fontSize: '0.78rem', marginTop: '12px', display: 'flex', gap: '10px' }}>
             <span
               onClick={() => navigate('/colaboradores', { state: { subTab: 'ativos', searchTerm: '' } })}
-              style={{ color: '#34d399', fontWeight: 600, cursor: 'pointer' }}
-              title="Ver colaboradores ativos"
+              className="stat-badge-ativo"
+              title="Clique para ver todos os colaboradores ativos"
             >
               ● {colaboradoresAtivos} Ativos
             </span>
             {colaboradoresInativos > 0 && (
               <span
                 onClick={() => navigate('/colaboradores', { state: { subTab: 'inativos', searchTerm: '' } })}
-                style={{ color: '#fb7185', fontWeight: 600, cursor: 'pointer' }}
-                title="Ver colaboradores inativos"
+                className="stat-badge-inativo"
+                title="Clique para ver todos os colaboradores inativos"
               >
                 ● {colaboradoresInativos} Inativos
               </span>

@@ -1329,6 +1329,47 @@ h1, h2, h3, h4, h5, h6 {
   flex-shrink: 0;
 }
 
+/* Botões de Status (Ativos / Inativos) no Card da Home (Modo Padrão / Dark) */
+.stat-badge-ativo,
+.stat-badge-inativo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.stat-badge-ativo {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.25);
+}
+
+.stat-badge-ativo:hover {
+  background: rgba(52, 211, 153, 0.24);
+  border-color: rgba(52, 211, 153, 0.45);
+  color: #34d399;
+  transform: translateY(-1px);
+}
+
+.stat-badge-inativo {
+  color: #fb7185;
+  background: rgba(251, 113, 133, 0.12);
+  border: 1px solid rgba(251, 113, 133, 0.25);
+}
+
+.stat-badge-inativo:hover {
+  background: rgba(251, 113, 133, 0.24);
+  border-color: rgba(251, 113, 133, 0.45);
+  color: #fb7185;
+  transform: translateY(-1px);
+}
+
 /* ======================================================== */
 /* MODO CLARO (LIGHT THEME) */
 /* ======================================================== */
@@ -1437,6 +1478,29 @@ h1, h2, h3, h4, h5, h6 {
   color: #5e5eee !important;
   border: 1px solid rgba(56, 189, 248, 0.35) !important;
   box-shadow: none !important;
+}
+
+/* Botões de Status (Ativos / Inativos) no Modo Claro */
+[data-theme="light"] .stat-badge-ativo {
+  color: #059669 !important;
+  background: rgba(52, 211, 153, 0.15) !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+}
+
+[data-theme="light"] .stat-badge-ativo:hover {
+  background: rgba(52, 211, 153, 0.28) !important;
+  border-color: rgba(52, 211, 153, 0.55) !important;
+}
+
+[data-theme="light"] .stat-badge-inativo {
+  color: #e11d48 !important;
+  background: rgba(251, 113, 133, 0.15) !important;
+  border: 1px solid rgba(251, 113, 133, 0.35) !important;
+}
+
+[data-theme="light"] .stat-badge-inativo:hover {
+  background: rgba(251, 113, 133, 0.28) !important;
+  border-color: rgba(251, 113, 133, 0.55) !important;
 }
 
 [data-theme="light"] .cargo-badge {
