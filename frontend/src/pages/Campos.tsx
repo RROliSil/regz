@@ -95,8 +95,13 @@ export const Campos: React.FC = () => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizingCol) return;
       const deltaX = e.clientX - startX;
-      const newWidth = Math.max(60, startWidth + deltaX);
       setColWidths(prev => {
+        const keys: Array<keyof CampoColumnWidths> = ['nome', 'tipo', 'regras', 'obrigatorio'];
+        const otherKeys = keys.filter(k => k !== resizingCol);
+        const otherSum = otherKeys.reduce((acc, k) => acc + (prev[k] || 0), 0);
+        // Total util para as 4 colunas redimensionaveis = 772px (+ 80px fixos para Acao = 852px do container)
+        const maxAllowed = Math.max(80, 772 - otherSum);
+        const newWidth = Math.min(maxAllowed, Math.max(80, startWidth + deltaX));
         const next = { ...prev, [resizingCol]: newWidth };
         if (usuario?.id) {
           localStorage.setItem(`regz_campos_column_widths_${usuario.id}`, JSON.stringify(next));
@@ -735,7 +740,7 @@ export const Campos: React.FC = () => {
                         Obrigatório
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'obrigatorio')} />
                       </th>
-                      <th style={{ width: '90px', textAlign: 'center' }}>
+                      <th style={{ width: '80px', minWidth: '80px', maxWidth: '80px', textAlign: 'center' }}>
                         Ação
                       </th>
                     </tr>
