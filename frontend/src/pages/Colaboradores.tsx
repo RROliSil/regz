@@ -25,7 +25,7 @@ interface ColumnWidths {
 }
 
 const DEFAULT_COLUMN_WIDTHS: ColumnWidths = {
-  foto: 65,
+  foto: 85,
   nome: 200,
   cpf: 150,
   cargo: 180,
@@ -862,7 +862,7 @@ export const Colaboradores: React.FC = () => {
                   className="btn-secondary"
                   style={{ width: '100%', marginTop: '10px', padding: '6px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 >
-                  <RotateCw size={12} /> Resetar Tamanhos
+                  <RotateCw size={12} /> Ajustar Colunas
                 </button>
               </div>
             )}
@@ -881,7 +881,7 @@ export const Colaboradores: React.FC = () => {
             <thead>
               <tr>
                 {visibleColumns.foto && (
-                  <th style={{ width: `${columnWidths.foto}px` }}>
+                  <th style={{ width: `${columnWidths.foto}px`, minWidth: '80px' }}>
                     Foto
                     <div className="resizer" onMouseDown={(e) => handleResizeStart('foto', e)} />
                   </th>
