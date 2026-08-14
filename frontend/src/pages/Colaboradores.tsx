@@ -722,13 +722,20 @@ export const Colaboradores: React.FC = () => {
 
   const listTarget = activeSubTab === 'ativos' ? colaboradoresAtivos : colaboradoresInativos;
 
-  // Filtrar Colaboradores por busca
-  const filteredColaboradores = listTarget.filter(c => 
-    c.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.cpf.includes(searchTerm) ||
-    (c.cargo && c.cargo.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (c.cidade && c.cidade.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Filtrar Colaboradores por busca (incluindo UF/Estado e logradouro)
+  const filteredColaboradores = listTarget.filter(c => {
+    const term = searchTerm.toLowerCase().trim();
+    if (!term) return true;
+    return (
+      c.nome.toLowerCase().includes(term) ||
+      c.cpf.includes(term) ||
+      (c.cargo && c.cargo.toLowerCase().includes(term)) ||
+      (c.cidade && c.cidade.toLowerCase().includes(term)) ||
+      (c.estado && c.estado.toLowerCase().includes(term)) ||
+      (c.cidade && c.estado && `${c.cidade}/${c.estado}`.toLowerCase().includes(term)) ||
+      (c.logradouro && c.logradouro.toLowerCase().includes(term))
+    );
+  });
 
   // Fatiar Colaboradores de acordo com a Paginação
   const totalItems = filteredColaboradores.length;
@@ -807,7 +814,7 @@ export const Colaboradores: React.FC = () => {
           <Search size={18} color="var(--text-muted)" />
           <input
             type="text"
-            placeholder="Buscar por nome, CPF, cargo ou cidade..."
+            placeholder="Buscar por nome, CPF, cargo, cidade ou UF..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
