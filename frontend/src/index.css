@@ -1173,6 +1173,17 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
 }
 
+.boolean-field-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--card-border);
+  padding: 10px 14px;
+  border-radius: 10px;
+  height: 42px;
+}
+
 /* Photo Upload Section */
 .photo-upload-section {
   display: flex;
@@ -1436,7 +1447,8 @@ h1, h2, h3, h4, h5, h6 {
 
 [data-theme="light"] input,
 [data-theme="light"] select,
-[data-theme="light"] textarea {
+[data-theme="light"] textarea,
+[data-theme="light"] .boolean-field-box {
   background: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
@@ -1885,7 +1897,8 @@ h1, h2, h3, h4, h5, h6 {
 
 [data-theme="dark"] input,
 [data-theme="dark"] select,
-[data-theme="dark"] textarea {
+[data-theme="dark"] textarea,
+[data-theme="dark"] .boolean-field-box {
   background: #141416 !important;
   color: #f4f4f5 !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
