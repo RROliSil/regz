@@ -558,39 +558,44 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 480px;
 }
 
-/* Table Wrapper Flexível com Rolagem Horizontal */
+/* Table Wrapper Flexível com Rolagem Horizontal Discreta e Fina */
 .table-flex-wrapper {
   flex: 1;
   width: 100%;
   max-width: 100%;
   overflow-x: auto;
   scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
 }
 
 .table-flex-wrapper::-webkit-scrollbar {
-  height: 8px;
+  height: 5px;
 }
 
 .table-flex-wrapper::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.4);
-  border-radius: 4px;
+  background: transparent;
 }
 
 .table-flex-wrapper::-webkit-scrollbar-thumb {
-  background: rgba(99, 102, 241, 0.5);
+  background: rgba(99, 102, 241, 0.25);
   border-radius: 4px;
 }
 
 .table-flex-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #6366f1;
+  background: rgba(99, 102, 241, 0.6);
+}
+
+[data-theme="light"] .table-flex-wrapper {
+  scrollbar-color: rgba(203, 213, 225, 0.8) transparent;
 }
 
 [data-theme="light"] .table-flex-wrapper::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: transparent;
 }
 
 [data-theme="light"] .table-flex-wrapper::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: rgba(203, 213, 225, 0.7);
+  border-radius: 4px;
 }
 
 [data-theme="light"] .table-flex-wrapper::-webkit-scrollbar-thumb:hover {

@@ -32,7 +32,7 @@ const DEFAULT_COLUMN_WIDTHS: ColumnWidths = {
   endereco: 240,
   cidade: 160,
   criado_em: 130,
-  acoes: 90
+  acoes: 120
 };
 
 import { useAuth } from '../context/AuthContext';
@@ -200,7 +200,8 @@ export const Colaboradores: React.FC = () => {
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
-      const newWidth = Math.max(45, startWidth + deltaX);
+      const minW = colKey === 'acoes' ? 110 : 45;
+      const newWidth = Math.max(minW, startWidth + deltaX);
       setColumnWidths(prev => ({ ...prev, [colKey]: newWidth }));
     };
 
