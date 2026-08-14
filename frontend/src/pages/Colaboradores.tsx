@@ -380,6 +380,16 @@ export const Colaboradores: React.FC = () => {
     }
   };
 
+  // Suporte a rolagem horizontal da tabela com o scroler do mouse
+  const handleTableWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    const container = e.currentTarget;
+    if (container.scrollWidth > container.clientWidth) {
+      if (e.deltaY !== 0) {
+        container.scrollLeft += e.deltaY;
+      }
+    }
+  };
+
   // Máscara de CPF: 000.000.000-00
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/\D/g, '');
@@ -852,7 +862,7 @@ export const Colaboradores: React.FC = () => {
 
       {/* Tabela de Colaboradores com Altura Total Fixa de 5 Linhas */}
       <div className="glass-panel table-responsive-container">
-        <div className="table-flex-wrapper">
+        <div className="table-flex-wrapper" onWheel={handleTableWheel}>
           <table className="custom-table">
             <thead>
               <tr>

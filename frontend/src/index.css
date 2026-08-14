@@ -558,12 +558,43 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 480px;
 }
 
-/* Table Wrapper Flexível */
+/* Table Wrapper Flexível com Rolagem Horizontal */
 .table-flex-wrapper {
   flex: 1;
   width: 100%;
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table-flex-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-flex-wrapper::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 4px;
+}
+
+.table-flex-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.5);
+  border-radius: 4px;
+}
+
+.table-flex-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #6366f1;
+}
+
+[data-theme="light"] .table-flex-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .table-flex-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+[data-theme="light"] .table-flex-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 /* Custom Table Fluida (Sem Min-Width) com Suporte a Colunas Redimensionáveis */
