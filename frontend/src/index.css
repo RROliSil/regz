@@ -1342,30 +1342,28 @@ h1, h2, h3, h4, h5, h6 {
   cursor: pointer;
   transition: all 0.2s ease;
   user-select: none;
+  background: transparent;
+  border: 1px solid transparent;
 }
 
 .stat-badge-ativo {
   color: #34d399;
-  background: rgba(52, 211, 153, 0.12);
-  border: 1px solid rgba(52, 211, 153, 0.25);
 }
 
 .stat-badge-ativo:hover {
-  background: rgba(52, 211, 153, 0.24);
-  border-color: rgba(52, 211, 153, 0.45);
+  background: rgba(52, 211, 153, 0.18);
+  border: 1px solid rgba(52, 211, 153, 0.45);
   color: #34d399;
   transform: translateY(-1px);
 }
 
 .stat-badge-inativo {
   color: #fb7185;
-  background: rgba(251, 113, 133, 0.12);
-  border: 1px solid rgba(251, 113, 133, 0.25);
 }
 
 .stat-badge-inativo:hover {
-  background: rgba(251, 113, 133, 0.24);
-  border-color: rgba(251, 113, 133, 0.45);
+  background: rgba(251, 113, 133, 0.18);
+  border: 1px solid rgba(251, 113, 133, 0.45);
   color: #fb7185;
   transform: translateY(-1px);
 }
@@ -1483,24 +1481,24 @@ h1, h2, h3, h4, h5, h6 {
 /* Botões de Status (Ativos / Inativos) no Modo Claro */
 [data-theme="light"] .stat-badge-ativo {
   color: #059669 !important;
-  background: rgba(52, 211, 153, 0.15) !important;
-  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
 }
 
 [data-theme="light"] .stat-badge-ativo:hover {
-  background: rgba(52, 211, 153, 0.28) !important;
-  border-color: rgba(52, 211, 153, 0.55) !important;
+  background: rgba(52, 211, 153, 0.18) !important;
+  border: 1px solid rgba(52, 211, 153, 0.45) !important;
 }
 
 [data-theme="light"] .stat-badge-inativo {
   color: #e11d48 !important;
-  background: rgba(251, 113, 133, 0.15) !important;
-  border: 1px solid rgba(251, 113, 133, 0.35) !important;
+  background: transparent !important;
+  border: 1px solid transparent !important;
 }
 
 [data-theme="light"] .stat-badge-inativo:hover {
-  background: rgba(251, 113, 133, 0.28) !important;
-  border-color: rgba(251, 113, 133, 0.55) !important;
+  background: rgba(251, 113, 133, 0.18) !important;
+  border: 1px solid rgba(251, 113, 133, 0.45) !important;
 }
 
 [data-theme="light"] .cargo-badge {
