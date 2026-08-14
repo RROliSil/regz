@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Colaborador, Cargo, CampoCustomizado } from '../types/colaborador';
 import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink, Briefcase, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -32,7 +32,7 @@ const DEFAULT_COLUMN_WIDTHS: ColumnWidths = {
   endereco: 240,
   cidade: 160,
   criado_em: 130,
-  acoes: 120
+  acoes: 140
 };
 
 import { useAuth } from '../context/AuthContext';
@@ -186,6 +186,19 @@ export const Colaboradores: React.FC = () => {
     }
   }, [columnWidths, usuario?.id]);
 
+  // Cálculo dinâmico da largura total da tabela para garantir exibição 100% sem cortes
+  const totalTableWidth = useMemo(() => {
+    let sum = columnWidths.acoes || 140;
+    if (visibleColumns.foto) sum += columnWidths.foto;
+    if (visibleColumns.nome) sum += columnWidths.nome;
+    if (visibleColumns.cpf) sum += columnWidths.cpf;
+    if (visibleColumns.cargo) sum += columnWidths.cargo;
+    if (visibleColumns.endereco) sum += columnWidths.endereco;
+    if (visibleColumns.cidade) sum += columnWidths.cidade;
+    if (visibleColumns.criado_em) sum += columnWidths.criado_em;
+    return sum;
+  }, [visibleColumns, columnWidths]);
+
   // Resetar página atual ao alterar busca, filtro ou sub-aba
   useEffect(() => {
     setCurrentPage(1);
@@ -200,7 +213,7 @@ export const Colaboradores: React.FC = () => {
 
     const onMouseMove = (moveEvent: MouseEvent) => {
       const deltaX = moveEvent.clientX - startX;
-      const minW = colKey === 'acoes' ? 110 : 45;
+      const minW = colKey === 'acoes' ? 130 : 45;
       const newWidth = Math.max(minW, startWidth + deltaX);
       setColumnWidths(prev => ({ ...prev, [colKey]: newWidth }));
     };
@@ -864,7 +877,7 @@ export const Colaboradores: React.FC = () => {
       {/* Tabela de Colaboradores com Altura Total Fixa de 5 Linhas */}
       <div className="glass-panel table-responsive-container">
         <div className="table-flex-wrapper" onWheel={handleTableWheel}>
-          <table className="custom-table">
+          <table className="custom-table" style={{ minWidth: `${totalTableWidth}px` }}>
             <thead>
               <tr>
                 {visibleColumns.foto && (
@@ -909,7 +922,7 @@ export const Colaboradores: React.FC = () => {
                     <div className="resizer" onMouseDown={(e) => handleResizeStart('criado_em', e)} />
                   </th>
                 )}
-                <th style={{ textAlign: 'center', width: `${columnWidths.acoes}px` }}>
+                <th className="col-acoes" style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, minWidth: '130px' }}>
                   Ações
                   <div className="resizer" onMouseDown={(e) => handleResizeStart('acoes', e)} />
                 </th>
@@ -1040,7 +1053,7 @@ export const Colaboradores: React.FC = () => {
                     )}
 
                     {/* Coluna Ações Centralizada */}
-                    <td style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, whiteSpace: 'nowrap' }}>
+                    <td className="col-acoes" style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, minWidth: '130px', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'center' }}>
                         {(c.cidade || c.logradouro || c.cep) && (
                           <button

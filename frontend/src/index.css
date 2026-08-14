@@ -613,6 +613,12 @@ h1, h2, h3, h4, h5, h6 {
   box-sizing: border-box;
 }
 
+.col-acoes {
+  min-width: 130px !important;
+  white-space: nowrap !important;
+  padding-right: 18px !important;
+}
+
 .custom-table th {
   background: rgba(15, 23, 42, 0.8);
   padding: 14px 18px;
