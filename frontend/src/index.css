@@ -1815,8 +1815,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 [data-theme="light"] .modal-header {
-  background: #f8fafc !important;
-  border-bottom-color: #e2e8f0 !important;
+  background: #e6eaf8 !important;
+  border-bottom-color: #cbd5e1 !important;
 }
 
 [data-theme="light"] .modal-title {

@@ -696,7 +696,7 @@ export const Campos: React.FC = () => {
             style={{ width: '900px', maxWidth: '95vw', padding: '0', overflow: 'hidden' }}
           >
             {/* Modal Header com Posição Relativa e Margem 0 (Impede corte do título e do X) */}
-            <div style={{ position: 'relative', top: 0, margin: 0, padding: '22px 28px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.95)' }}>
+            <div className="modal-header" style={{ position: 'relative', top: 0, margin: 0, padding: '22px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <Eye size={22} color="#5e5eee" />
                 <h3 className="modal-title" style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>
