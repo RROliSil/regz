@@ -35,12 +35,13 @@ export const Home: React.FC = () => {
 
   // Cálculos das estatísticas de RH
   const totalColaboradores = colaboradores.length;
-  const colaboradoresAtivos = colaboradores.filter(c => c.ativo !== false).length;
+  const apenasAtivosList = colaboradores.filter(c => c.ativo !== false);
+  const colaboradoresAtivos = apenasAtivosList.length;
   const colaboradoresInativos = totalColaboradores - colaboradoresAtivos;
 
-  // Distribuição por Cargo
+  // Distribuição por Cargo (Apenas Colaboradores Ativos)
   const cargosMap: Record<string, number> = {};
-  colaboradores.forEach(c => {
+  apenasAtivosList.forEach(c => {
     const cargoNome = c.cargo || 'Não especificado';
     cargosMap[cargoNome] = (cargosMap[cargoNome] || 0) + 1;
   });
@@ -48,11 +49,11 @@ export const Home: React.FC = () => {
   const sortedCargos = Object.entries(cargosMap).sort((a, b) => b[1] - a[1]);
   const visibleCargos = expandedCargos ? sortedCargos : sortedCargos.slice(0, 5);
 
-  // Distribuição por Cidade e por Estado
+  // Distribuição por Cidade e por Estado (Apenas Colaboradores Ativos)
   const cidadesMap: Record<string, number> = {};
   const estadosMap: Record<string, number> = {};
 
-  colaboradores.forEach(c => {
+  apenasAtivosList.forEach(c => {
     if (c.cidade) {
       const citState = `${c.cidade} - ${c.estado || 'UF'}`;
       cidadesMap[citState] = (cidadesMap[citState] || 0) + 1;
@@ -240,7 +241,7 @@ export const Home: React.FC = () => {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {visibleCargos.map(([cargoNome, count], idx) => {
-                  const pct = totalColaboradores > 0 ? Math.round((count / totalColaboradores) * 100) : 0;
+                  const pct = colaboradoresAtivos > 0 ? Math.round((count / colaboradoresAtivos) * 100) : 0;
                   return (
                     <div
                       key={idx}
