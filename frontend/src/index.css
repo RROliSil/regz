@@ -1193,6 +1193,14 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.campo-nome {
+  font-weight: 600;
+  color: #f8fafc;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
 /* Photo Upload Section */
 .photo-upload-section {
   display: flex;
@@ -1495,6 +1503,10 @@ h1, h2, h3, h4, h5, h6 {
 [data-theme="light"] .total-colaboradores-num,
 [data-theme="light"] .cargo-nome {
   color: #5c6777 !important;
+}
+
+[data-theme="light"] .campo-nome {
+  color: #000000 !important;
 }
 
 [data-theme="light"] .cargo-progress-track {
@@ -1923,6 +1935,10 @@ h1, h2, h3, h4, h5, h6 {
   background: #141416 !important;
   color: #a1a1aa !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .campo-nome {
+  color: #f4f4f5 !important;
 }
 
 [data-theme="dark"] input::placeholder,

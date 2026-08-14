@@ -699,7 +699,7 @@ export const Campos: React.FC = () => {
             <div style={{ position: 'relative', top: 0, margin: 0, padding: '22px 28px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.95)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <Eye size={22} color="#5e5eee" />
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: '#f8fafc' }}>
+                <h3 className="modal-title" style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>
                   Campos Personalizados Cadastrados ({campos.length})
                 </h3>
               </div>
@@ -758,7 +758,7 @@ export const Campos: React.FC = () => {
                       campos.map((c) => (
                         <tr key={c.id}>
                           <td>
-                            <span style={{ fontWeight: 600, color: '#f8fafc', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
+                            <span className="campo-nome">
                               {c.nome}
                             </span>
                           </td>
