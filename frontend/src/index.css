@@ -600,7 +600,7 @@ h1, h2, h3, h4, h5, h6 {
 
 [data-theme="dark"] .sidebar-toggle-btn {
   background: #141416 !important;
-  color: #a5b4fc !important;
+  color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.25) !important;
 }
 
@@ -608,6 +608,21 @@ h1, h2, h3, h4, h5, h6 {
   background: #202026 !important;
   color: #ffffff !important;
   border-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+[data-theme="dark"] .nav-item {
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .nav-item:hover:not(.disabled) {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .nav-item.active {
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.3) !important;
 }
 
 [data-theme="light"] .table-flex-wrapper {
