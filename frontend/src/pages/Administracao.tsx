@@ -483,7 +483,7 @@ export const Administracao: React.FC = () => {
                 ) : usuarios.map((u) => (
                   <tr key={u.id}>
                     <td>
-                      <span style={{ fontWeight: 600, color: '#f8fafc', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{u.nome}</span>
+                      <span className="usuario-nome">{u.nome}</span>
                     </td>
                     <td>
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>{u.email}</span>
@@ -587,8 +587,7 @@ export const Administracao: React.FC = () => {
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th style={{ width: '60px' }}>#ID</th>
-                  <th style={{ minWidth: '180px', borderRight: '1px solid rgba(255, 255, 255, 0.1)' }}>Nome do Perfil</th>
+                  <th style={{ minWidth: '180px', borderRight: '1px solid rgba(255, 255, 255, 0.1)' }}>Perfil</th>
                   <th style={{ minWidth: '150px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '16px' }}>Home</th>
                   <th style={{ minWidth: '150px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '16px' }}>Colaboradores</th>
                   <th style={{ minWidth: '150px', borderRight: '1px solid rgba(255, 255, 255, 0.1)', paddingLeft: '16px' }}>Campos</th>
@@ -599,7 +598,7 @@ export const Administracao: React.FC = () => {
               <tbody>
                 {loadingPerfis ? (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: '40px' }}>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
                       <Loader2 className="spin" size={20} /> Carregando matriz de perfis...
                     </td>
                   </tr>
@@ -609,10 +608,9 @@ export const Administracao: React.FC = () => {
 
                   return (
                     <tr key={p.id}>
-                      <td style={{ color: 'var(--text-dim)' }}>#{p.id}</td>
                       <td style={{ borderRight: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                        <div style={{ fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {p.nome}
+                        <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span className="perfil-nome">{p.nome}</span>
                           {isAdmin && (
                             <span style={{ fontSize: '0.7rem', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', padding: '1px 6px', borderRadius: '4px' }}>
                               ADMIN
@@ -624,7 +622,6 @@ export const Administracao: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        {p.descricao && <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginTop: '2px' }}>{p.descricao}</div>}
                       </td>
 
                       {/* Células da Matriz com Checkboxes EMPILHADOS VERTICALMENTE e BORDAS DE DIVISÃO */}

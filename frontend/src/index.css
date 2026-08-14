@@ -1193,7 +1193,9 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.campo-nome {
+.campo-nome,
+.usuario-nome,
+.perfil-nome {
   font-weight: 600;
   color: #f8fafc;
   overflow: hidden;
@@ -1518,7 +1520,9 @@ h1, h2, h3, h4, h5, h6 {
   color: #5c6777 !important;
 }
 
-[data-theme="light"] .campo-nome {
+[data-theme="light"] .campo-nome,
+[data-theme="light"] .usuario-nome,
+[data-theme="light"] .perfil-nome {
   color: #000000 !important;
 }
 
@@ -1950,7 +1954,9 @@ h1, h2, h3, h4, h5, h6 {
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
 }
 
-[data-theme="dark"] .campo-nome {
+[data-theme="dark"] .campo-nome,
+[data-theme="dark"] .usuario-nome,
+[data-theme="dark"] .perfil-nome {
   color: #f4f4f5 !important;
 }
 
