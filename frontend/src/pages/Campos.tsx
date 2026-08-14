@@ -735,9 +735,8 @@ export const Campos: React.FC = () => {
                         Obrigatório
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'obrigatorio')} />
                       </th>
-                      <th style={{ width: `${colWidths.acoes}px`, textAlign: 'center', position: 'relative' }}>
+                      <th style={{ width: '90px', textAlign: 'center' }}>
                         Ação
-                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'acoes')} />
                       </th>
                     </tr>
                   </thead>
