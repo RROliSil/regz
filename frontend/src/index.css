@@ -73,9 +73,9 @@ h1, h2, h3, h4, h5, h6 {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: #141416;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #a5b4fc;
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #5e5eee;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,10 +86,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .sidebar-toggle-btn:hover {
-  background: #202026;
+  background: #1e293b;
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.6);
-  box-shadow: 0 0 14px rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.35);
   transform: scale(1.1);
 }
 
