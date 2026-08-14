@@ -943,11 +943,11 @@ h1, h2, h3, h4, h5, h6 {
   font-family: monospace;
 }
 
-/* Botão Cidades / Estados e Badges do Card Geográfico (Modo Padrão) */
+/* Botão Cidades / Estados e Badges do Card Geográfico (Modo Padrão - igual ao btn-secondary) */
 .btn-geo-mode {
-  background: rgba(56, 189, 248, 0.15);
-  color: #5e5eee;
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  background: rgba(30, 41, 59, 0.8);
+  color: var(--text-muted);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 5px 12px;
   font-size: 0.8rem;
@@ -960,7 +960,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-geo-mode:hover {
-  background: rgba(56, 189, 248, 0.25);
+  background: rgba(51, 65, 85, 0.8);
+  color: #ffffff;
 }
 
 .geo-pin-icon {
