@@ -1182,6 +1182,7 @@ h1, h2, h3, h4, h5, h6 {
 /* MODO CLARO (LIGHT THEME) */
 /* ======================================================== */
 [data-theme="light"] {
+  color-scheme: light !important;
   --bg-gradient: radial-gradient(circle at 50% 0%, #f8fafc 0%, #e2e8f0 60%, #cbd5e1 100%);
   --accent-purple: #6366f1;
   --accent-cyan: #0284c7;
@@ -1394,14 +1395,15 @@ h1, h2, h3, h4, h5, h6 {
   opacity: 0.5 !important;
 }
 
-/* Seletor de registros por página no Modo Claro */
-[data-theme="light"] .custom-select-small {
-  background: #ffffff !important;
-  color: #475569 !important;
-  border: 1px solid #cbd5e1 !important;
-}
-
-[data-theme="light"] .custom-select-small option {
+/* Seletor de registros por página e selects no Modo Claro */
+[data-theme="light"] select,
+[data-theme="light"] option,
+[data-theme="light"] select option,
+[data-theme="light"] .custom-select-small,
+[data-theme="light"] .custom-select-small option,
+[data-theme="light"] .form-group select.custom-select option {
+  color-scheme: light !important;
+  background-color: #ffffff !important;
   background: #ffffff !important;
   color: #475569 !important;
 }
