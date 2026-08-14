@@ -367,7 +367,7 @@ export const Campos: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', background: 'rgba(15, 23, 42, 0.4)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <div className="card-info-box">
                 ℹ️ Aceita pontuações e símbolos, porém valida <strong>somente a quantidade de dígitos numéricos</strong>.
               </div>
             </div>
@@ -477,7 +477,7 @@ export const Campos: React.FC = () => {
                 </div>
               </div>
 
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', background: 'rgba(15, 23, 42, 0.4)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <div className="card-info-box">
                 ℹ️ Aceita alfanuméricos completos (textos, números e caracteres especiais).
               </div>
             </div>
@@ -576,7 +576,7 @@ export const Campos: React.FC = () => {
                 />
               </div>
 
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', background: 'rgba(15, 23, 42, 0.4)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <div className="card-info-box">
                 ℹ️ Separe cada opção por vírgula.
               </div>
             </div>
@@ -659,7 +659,7 @@ export const Campos: React.FC = () => {
                 </label>
               </div>
 
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', background: 'rgba(15, 23, 42, 0.4)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <div className="card-info-box">
                 ℹ️ Gera duas caixas de seleção (Sim / Não), permitindo escolher apenas uma por vez.
               </div>
             </div>

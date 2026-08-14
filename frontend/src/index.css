@@ -1184,6 +1184,15 @@ h1, h2, h3, h4, h5, h6 {
   height: 42px;
 }
 
+.card-info-box {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  background: rgba(15, 23, 42, 0.4);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
 /* Photo Upload Section */
 .photo-upload-section {
   display: flex;
@@ -1452,6 +1461,12 @@ h1, h2, h3, h4, h5, h6 {
   background: #ffffff !important;
   color: #0f172a !important;
   border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .card-info-box {
+  background: #ffffff !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
 }
 
 [data-theme="light"] input::placeholder,
@@ -1902,6 +1917,12 @@ h1, h2, h3, h4, h5, h6 {
   background: #141416 !important;
   color: #f4f4f5 !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .card-info-box {
+  background: #141416 !important;
+  color: #a1a1aa !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
 }
 
 [data-theme="dark"] input::placeholder,
