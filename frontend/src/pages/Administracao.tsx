@@ -506,40 +506,53 @@ export const Administracao: React.FC = () => {
                       })()}
                     </td>
                     <td style={{ textAlign: 'center' }}>
-                      <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'center' }}>
-                        <button
-                          onClick={() => podeEditar && handleToggleUserStatus(u.id, u.ativo)}
-                          className="btn-action"
-                          disabled={!podeEditar}
-                          style={{
-                            background: u.ativo ? 'rgba(251, 113, 133, 0.15)' : 'rgba(52, 211, 153, 0.15)',
-                            color: u.ativo ? '#fb7185' : '#34d399',
-                            opacity: podeEditar ? 1 : 0.4,
-                            cursor: podeEditar ? 'pointer' : 'not-allowed'
-                          }}
-                          title={podeEditar ? (u.ativo ? 'Inativar Usuário' : 'Ativar Usuário') : 'Ação desativada: Seu perfil permite apenas visualização'}
-                        >
-                          {u.ativo ? <UserX size={14} /> : <UserCheck size={14} />}
-                        </button>
-                        <button
-                          onClick={() => podeEditar && handleOpenEditUser(u)}
-                          className="btn-action map"
-                          disabled={!podeEditar}
-                          style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
-                          title={podeEditar ? "Editar Usuário" : "Ação desativada: Seu perfil permite apenas visualização"}
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          onClick={() => podeEditar && handleDeleteUser(u.id, u.nome)}
-                          className="btn-action delete"
-                          disabled={!podeEditar}
-                          style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
-                          title={podeEditar ? "Excluir Usuário" : "Ação desativada: Seu perfil permite apenas visualização"}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
+                      {(() => {
+                        const pObj = u.perfil || perfis.find(p => p.id === u.perfil_id);
+                        const isUserAdminTotal = pObj?.is_admin || pObj?.nome === 'Administrador Total';
+                        if (isUserAdminTotal) {
+                          return (
+                            <span style={{ fontSize: '0.88rem', color: 'var(--text-dim)', fontWeight: 600 }}>
+                              -
+                            </span>
+                          );
+                        }
+                        return (
+                          <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => podeEditar && handleToggleUserStatus(u.id, u.ativo)}
+                              className="btn-action"
+                              disabled={!podeEditar}
+                              style={{
+                                background: u.ativo ? 'rgba(251, 113, 133, 0.15)' : 'rgba(52, 211, 153, 0.15)',
+                                color: u.ativo ? '#fb7185' : '#34d399',
+                                opacity: podeEditar ? 1 : 0.4,
+                                cursor: podeEditar ? 'pointer' : 'not-allowed'
+                              }}
+                              title={podeEditar ? (u.ativo ? 'Inativar Usuário' : 'Ativar Usuário') : 'Ação desativada: Seu perfil permite apenas visualização'}
+                            >
+                              {u.ativo ? <UserX size={14} /> : <UserCheck size={14} />}
+                            </button>
+                            <button
+                              onClick={() => podeEditar && handleOpenEditUser(u)}
+                              className="btn-action map"
+                              disabled={!podeEditar}
+                              style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+                              title={podeEditar ? "Editar Usuário" : "Ação desativada: Seu perfil permite apenas visualização"}
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              onClick={() => podeEditar && handleDeleteUser(u.id, u.nome)}
+                              className="btn-action delete"
+                              disabled={!podeEditar}
+                              style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+                              title={podeEditar ? "Excluir Usuário" : "Ação desativada: Seu perfil permite apenas visualização"}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        );
+                      })()}
                     </td>
                   </tr>
                 ))}
@@ -698,8 +711,8 @@ export const Administracao: React.FC = () => {
                             </button>
                           </div>
                         ) : (
-                          <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)', fontWeight: 600, display: 'inline-block', width: '100%', textAlign: 'center' }}>
-                            Fixo
+                          <span style={{ fontSize: '0.88rem', color: 'var(--text-dim)', fontWeight: 600, display: 'inline-block', width: '100%', textAlign: 'center' }}>
+                            -
                           </span>
                         )}
                       </td>
