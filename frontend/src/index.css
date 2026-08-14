@@ -1911,13 +1911,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 [data-theme="dark"] .nav-item {
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid transparent !important;
+  box-shadow: none !important;
 }
 
-[data-theme="dark"] .nav-item:hover,
+[data-theme="dark"] .nav-item:hover:not(.active) {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
 [data-theme="dark"] .nav-item.active {
-  border-color: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid rgba(255, 255, 255, 0.85) !important;
   box-shadow: 0 0 12px rgba(255, 255, 255, 0.3) !important;
 }
 
