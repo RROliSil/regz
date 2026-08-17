@@ -5,6 +5,7 @@ export interface PermissoesAba {
   colaboradores: PermissaoNivel;
   campos: PermissaoNivel;
   administracao: PermissaoNivel;
+  relatorios?: PermissaoNivel;
 }
 
 export interface PerfilAcesso {

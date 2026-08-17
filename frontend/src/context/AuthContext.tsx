@@ -77,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Administrador possui acesso total a tudo
     if (usuario.perfil.is_admin) return true;
 
-    const nivelAba = usuario.perfil.permissoes?.[aba] || 'sem_acesso';
+    const nivelAba = usuario.perfil.permissoes?.[aba] || (aba === 'relatorios' ? 'leitura' : 'sem_acesso');
 
     if (nivelAba === 'sem_acesso') return false;
     if (nivelExigido === 'leitura') return nivelAba === 'leitura' || nivelAba === 'escrita';

@@ -103,6 +103,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           </NavLink>
         )}
 
+        {/* Aba de Relatórios & Exportações */}
+        {temPermissao('relatorios') !== false && (
+          <NavLink
+            to="/relatorios"
+            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+            title="Relatórios"
+          >
+            <FileBarChart size={20} style={{ flexShrink: 0 }} />
+            <span>Relatórios</span>
+          </NavLink>
+        )}
+
         {/* Aba Configurações (Exclusiva para Perfil Administrador) */}
         {usuario?.perfil?.is_admin && (
           <NavLink
@@ -121,12 +133,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         <div className="nav-item disabled" title="Departamentos (Em breve)">
           <Briefcase size={20} style={{ flexShrink: 0 }} />
           <span>Departamentos</span>
-          <span className="badge-soon">Em breve</span>
-        </div>
-
-        <div className="nav-item disabled" title="Relatórios (Em breve)">
-          <FileBarChart size={20} style={{ flexShrink: 0 }} />
-          <span>Relatórios</span>
           <span className="badge-soon">Em breve</span>
         </div>
       </nav>

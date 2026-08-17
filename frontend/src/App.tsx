@@ -8,6 +8,7 @@ import { Colaboradores } from './pages/Colaboradores';
 import { Campos } from './pages/Campos';
 import { Administracao } from './pages/Administracao';
 import { Configuracoes } from './pages/Configuracoes';
+import { Relatorios } from './pages/Relatorios';
 import { Login } from './pages/Login';
 import { PermissoesAba } from './types/auth';
 import { Loader2, Eye } from 'lucide-react';
@@ -32,6 +33,7 @@ const ProtectedLayout: React.FC = () => {
     if (path.includes('/colaboradores')) return 'colaboradores';
     if (path.includes('/campos')) return 'campos';
     if (path.includes('/administracao')) return 'administracao';
+    if (path.includes('/relatorios')) return 'relatorios';
     return null;
   };
 
@@ -111,6 +113,7 @@ const ProtectedLayout: React.FC = () => {
             <Route path="/colaboradores" element={<RequireAuth aba="colaboradores"><Colaboradores /></RequireAuth>} />
             <Route path="/campos" element={<RequireAuth aba="campos"><Campos /></RequireAuth>} />
             <Route path="/administracao" element={<RequireAuth aba="administracao"><Administracao /></RequireAuth>} />
+            <Route path="/relatorios" element={<RequireAuth aba="relatorios"><Relatorios /></RequireAuth>} />
             <Route path="/configuracoes" element={<RequireAdmin><Configuracoes /></RequireAdmin>} />
             <Route path="*" element={<Navigate to="/colaboradores" replace />} />
           </Routes>

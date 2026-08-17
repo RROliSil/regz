@@ -2385,3 +2385,59 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: var(--badge-outro-glow) !important;
 }
 
+/* ======================================================== */
+/* MÓDULO DE RELATÓRIOS & SUPORTE A IMPRESSÃO / PDF */
+/* ======================================================== */
+.pdf-header-only {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .sidebar,
+  .sidebar-toggle-btn,
+  .relatorio-card,
+  .glass-panel:not(.printable-report-area),
+  button,
+  .search-box,
+  .nav-section-label {
+    display: none !important;
+  }
+
+  .app-layout {
+    display: block !important;
+  }
+
+  .main-viewport {
+    margin-left: 0 !important;
+    padding: 0 !important;
+  }
+
+  .printable-report-area {
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  .pdf-header-only {
+    display: block !important;
+  }
+
+  .custom-table th {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+  }
+
+  .custom-table td {
+    color: #000000 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+}
+
