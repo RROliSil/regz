@@ -462,21 +462,21 @@ h1, h2, h3, h4, h5, h6 {
   height: 44px;
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(129, 140, 248, 0.15));
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid transparent;
   color: #5e5eee;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
+  box-shadow: none;
 }
 
 .btn-robot:hover:not(:disabled) {
   transform: translateY(-2px) scale(1.05);
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(129, 140, 248, 0.3));
-  border-color: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 0 18px rgba(255, 255, 255, 0.4);
+  border-color: transparent;
+  box-shadow: none;
   color: #ffffff;
 }
 
