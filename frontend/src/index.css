@@ -2166,3 +2166,23 @@ h1, h2, h3, h4, h5, h6 {
   background: #141416 !important;
 }
 
+/* Janelas de Dropdown e Opções no Modo Escuro */
+[data-theme="dark"] select,
+[data-theme="dark"] select option,
+[data-theme="dark"] .dropdown-menu,
+[data-theme="dark"] .cargo-dropdown-popover {
+  background-color: #141416 !important;
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] select option:hover,
+[data-theme="dark"] select option:focus,
+[data-theme="dark"] select option:active,
+[data-theme="dark"] select option:checked,
+[data-theme="dark"] .dropdown-item:hover,
+[data-theme="dark"] .cargo-dropdown-item:hover,
+[data-theme="dark"] .cargo-dropdown-item.selected {
+  background-color: #59595b !important;
+  color: #ffffff !important;
+}
+
