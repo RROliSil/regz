@@ -95,24 +95,24 @@ export const Configuracoes: React.FC = () => {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+          <div className="info-box-ambiente" style={{ padding: '16px 20px', borderRadius: '12px' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Aplicação</span>
-            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc' }}>Regz - Gestão de Pessoas</span>
+            <span className="info-box-valor" style={{ fontSize: '1rem', fontWeight: 700 }}>Regz - Gestão de Pessoas</span>
           </div>
 
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+          <div className="info-box-ambiente" style={{ padding: '16px 20px', borderRadius: '12px' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Ambiente de Implantação</span>
             <span style={{ fontSize: '1rem', fontWeight: 700, color: '#5e5eee' }}>Docker / Portainer.io</span>
           </div>
 
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+          <div className="info-box-ambiente" style={{ padding: '16px 20px', borderRadius: '12px' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Usuário Autenticado</span>
             <span style={{ fontSize: '1rem', fontWeight: 700, color: '#a855f7', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Shield size={16} /> {usuario?.nome} ({usuario?.perfil?.nome || 'Administrador'})
             </span>
           </div>
 
-          <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '16px 20px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+          <div className="info-box-ambiente" style={{ padding: '16px 20px', borderRadius: '12px' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Status Geral dos Serviços</span>
             <span style={{ fontSize: '1rem', fontWeight: 700, color: backendStatus && dbStatus ? '#34d399' : '#fb7185', display: 'flex', alignItems: 'center', gap: '6px' }}>
               {backendStatus && dbStatus ? (
