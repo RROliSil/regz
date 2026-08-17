@@ -52,6 +52,14 @@ services:
       - TOKEN=${DUCKDNS_TOKEN}
       - LOG_FILE=true
 
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: regz-tunnel
+    restart: always
+    command: tunnel --no-autoupdate run --url http://frontend:4000
+    depends_on:
+      - frontend
+
 volumes:
   regz_postgres_data:
     driver: local
