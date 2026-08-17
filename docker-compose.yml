@@ -48,7 +48,7 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=America/Sao_Paulo
-      - SUBDOMAINS=${DUCKDNS_SUBDOMAINS}
+      - SUBDOMAINS=${DUCKDNS_SUBDOMAINS:-regiz-app}
       - TOKEN=${DUCKDNS_TOKEN}
       - LOG_FILE=true
 
