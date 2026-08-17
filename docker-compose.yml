@@ -34,8 +34,6 @@ services:
       DB_USER: regz_user
       DB_PASSWORD: regz_password
       DB_NAME: regz_db
-    ports:
-      - "${FRONTEND_PORT:-8280}:4000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -57,9 +55,9 @@ services:
     container_name: regz-caddy
     restart: always
     ports:
-      - "4001:4001"
-      - "4002:4002"
-    command: caddy reverse-proxy --from https://${DUCKDNS_SUBDOMAINS:-regiz-app}.duckdns.org:4002 --to frontend:4000
+      - "80:80"
+      - "8280:8280"
+    command: caddy reverse-proxy --from https://${DUCKDNS_SUBDOMAINS:-regiz-app}.duckdns.org:8280 --to frontend:4000
     volumes:
       - regz_caddy_data:/data
       - regz_caddy_config:/config
