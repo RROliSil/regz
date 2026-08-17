@@ -56,7 +56,7 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: regz-tunnel
     restart: always
-    command: tunnel --no-autoupdate run --url http://frontend:4000
+    command: tunnel --url http://frontend:4000
     depends_on:
       - frontend
 
