@@ -2194,6 +2194,12 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: none !important;
 }
 
+/* Caixas de Informações da Página Configurações no Modo Escuro (fundo #121214) */
+[data-theme="dark"] .info-box-ambiente {
+  background: #121214 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
 /* Botão Remover Foto Atual (Fundo vermelho #f43f5e sem brilho em todos os temas) */
 .btn-remove-photo {
   background: #f43f5e !important;
