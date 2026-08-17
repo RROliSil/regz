@@ -2244,3 +2244,16 @@ h1, h2, h3, h4, h5, h6 {
   stroke: #ffffff !important;
 }
 
+/* Página de Campos no Modo Escuro (Trocar brilhos nos botões para branco discreto) */
+[data-theme="dark"] .campos-page button,
+[data-theme="dark"] .campos-page .btn-primary,
+[data-theme="dark"] .campos-page .btn-action {
+  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .campos-page button:hover:not(:disabled),
+[data-theme="dark"] .campos-page .btn-primary:hover:not(:disabled),
+[data-theme="dark"] .campos-page .btn-action:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.22) !important;
+}
+

@@ -258,7 +258,7 @@ export const Campos: React.FC = () => {
   };
 
   return (
-    <div className="page-content">
+    <div className="page-content campos-page">
       {/* Header da Página */}
       <header className="page-header" style={{ marginBottom: '28px' }}>
         <div>
