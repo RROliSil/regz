@@ -2257,3 +2257,14 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.22) !important;
 }
 
+/* Manter texto do checkbox em preto no hover no Modo Claro */
+[data-theme="light"] .checkbox-label,
+[data-theme="light"] .checkbox-label span {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .checkbox-label:hover,
+[data-theme="light"] .checkbox-label:hover span {
+  color: #0f172a !important;
+}
+
