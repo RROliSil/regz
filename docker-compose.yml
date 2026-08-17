@@ -57,9 +57,9 @@ services:
     container_name: regz-caddy
     restart: always
     ports:
-      - "80:80"
-      - "443:443"
-    command: caddy reverse-proxy --from https://${DUCKDNS_SUBDOMAINS:-regiz-app}.duckdns.org --to frontend:4000
+      - "4001:4001"
+      - "4002:4002"
+    command: caddy reverse-proxy --from https://${DUCKDNS_SUBDOMAINS:-regiz-app}.duckdns.org:4002 --to frontend:4000
     volumes:
       - regz_caddy_data:/data
       - regz_caddy_config:/config
