@@ -17,6 +17,36 @@
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
   --text-dim: #64748b;
+
+  /* Design Tokens / Theme System Variables (Modo Padrao) */
+  --subtab-inactive-bg: rgba(30, 41, 59, 0.6);
+  --subtab-inactive-text: var(--text-muted);
+  --subtab-inactive-border: var(--card-border);
+
+  --badge-admin-bg: rgba(99, 102, 241, 0.16);
+  --badge-admin-text: #a5b4fc;
+  --badge-admin-border: rgba(129, 140, 248, 0.4);
+  --badge-admin-glow: 0 0 8px rgba(99, 102, 241, 0.35);
+
+  --badge-rh-bg: rgba(52, 211, 153, 0.15);
+  --badge-rh-text: #34d399;
+  --badge-rh-border: rgba(52, 211, 153, 0.35);
+  --badge-rh-glow: none;
+
+  --badge-operador-bg: rgba(56, 189, 248, 0.15);
+  --badge-operador-text: #38bdf8;
+  --badge-operador-border: rgba(56, 189, 248, 0.35);
+  --badge-operador-glow: none;
+
+  --badge-consulta-bg: rgba(129, 140, 248, 0.15);
+  --badge-consulta-text: #818cf8;
+  --badge-consulta-border: rgba(129, 140, 248, 0.35);
+  --badge-consulta-glow: none;
+
+  --badge-outro-bg: rgba(148, 163, 184, 0.15);
+  --badge-outro-text: #cbd5e1;
+  --badge-outro-border: rgba(148, 163, 184, 0.35);
+  --badge-outro-glow: none;
 }
 
 * {
@@ -1420,6 +1450,36 @@ h1, h2, h3, h4, h5, h6 {
   --text-main: #0f172a;
   --text-muted: #475569;
   --text-dim: #64748b;
+
+  /* Design Tokens / Theme System Variables (Modo Claro) */
+  --subtab-inactive-bg: #ffffff;
+  --subtab-inactive-text: #475569;
+  --subtab-inactive-border: #cbd5e1;
+
+  --badge-admin-bg: rgba(99, 102, 241, 0.15);
+  --badge-admin-text: #5e5eee;
+  --badge-admin-border: rgba(99, 102, 241, 0.4);
+  --badge-admin-glow: 0 0 6px rgba(99, 102, 241, 0.25);
+
+  --badge-rh-bg: rgba(16, 185, 129, 0.12);
+  --badge-rh-text: #047857;
+  --badge-rh-border: rgba(16, 185, 129, 0.35);
+  --badge-rh-glow: none;
+
+  --badge-operador-bg: rgba(2, 132, 199, 0.12);
+  --badge-operador-text: #0369a1;
+  --badge-operador-border: rgba(2, 132, 199, 0.35);
+  --badge-operador-glow: none;
+
+  --badge-consulta-bg: rgba(79, 70, 229, 0.12);
+  --badge-consulta-text: #4338ca;
+  --badge-consulta-border: rgba(79, 70, 229, 0.35);
+  --badge-consulta-glow: none;
+
+  --badge-outro-bg: rgba(71, 85, 105, 0.12);
+  --badge-outro-text: #334155;
+  --badge-outro-border: rgba(71, 85, 105, 0.35);
+  --badge-outro-glow: none;
 }
 
 [data-theme="light"] body {
@@ -2287,113 +2347,41 @@ h1, h2, h3, h4, h5, h6 {
 /* 1. PERFIL ADMINISTRADOR (COM BRILHO NO CONTORNO) */
 .badge-perfil.admin,
 .badge-admin-total {
-  background: rgba(99, 102, 241, 0.16);
-  color: #a5b4fc;
-  border: 1px solid rgba(129, 140, 248, 0.4);
-  box-shadow: 0 0 8px rgba(99, 102, 241, 0.35);
-}
-
-[data-theme="light"] .badge-perfil.admin,
-[data-theme="light"] .badge-admin-total {
-  background: rgba(99, 102, 241, 0.15) !important;
-  color: #5e5eee !important;
-  border: 1px solid rgba(99, 102, 241, 0.4) !important;
-  box-shadow: 0 0 6px rgba(99, 102, 241, 0.25) !important;
-}
-
-[data-theme="dark"] .badge-perfil.admin,
-[data-theme="dark"] .badge-admin-total {
-  background: #141416 !important;
-  color: #ffffff !important;
-  border: 1px solid rgba(255, 255, 255, 0.35) !important;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.25) !important;
+  background: var(--badge-admin-bg) !important;
+  color: var(--badge-admin-text) !important;
+  border: 1px solid var(--badge-admin-border) !important;
+  box-shadow: var(--badge-admin-glow) !important;
 }
 
 /* 2. GESTOR DE RH (VERDE / SEM BRILHO) */
 .badge-perfil.gestor-rh {
-  background: rgba(52, 211, 153, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(52, 211, 153, 0.35);
-  box-shadow: none !important;
-}
-
-[data-theme="light"] .badge-perfil.gestor-rh {
-  background: rgba(16, 185, 129, 0.12) !important;
-  color: #047857 !important;
-  border: 1px solid rgba(16, 185, 129, 0.35) !important;
-  box-shadow: none !important;
-}
-
-[data-theme="dark"] .badge-perfil.gestor-rh {
-  background: #141416 !important;
-  color: #34d399 !important;
-  border: 1px solid rgba(52, 211, 153, 0.35) !important;
-  box-shadow: none !important;
+  background: var(--badge-rh-bg) !important;
+  color: var(--badge-rh-text) !important;
+  border: 1px solid var(--badge-rh-border) !important;
+  box-shadow: var(--badge-rh-glow) !important;
 }
 
 /* 3. OPERADOR (AZUL / CYAN / SEM BRILHO) */
 .badge-perfil.operador {
-  background: rgba(56, 189, 248, 0.15);
-  color: #38bdf8;
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  box-shadow: none !important;
-}
-
-[data-theme="light"] .badge-perfil.operador {
-  background: rgba(2, 132, 199, 0.12) !important;
-  color: #0369a1 !important;
-  border: 1px solid rgba(2, 132, 199, 0.35) !important;
-  box-shadow: none !important;
-}
-
-[data-theme="dark"] .badge-perfil.operador {
-  background: #141416 !important;
-  color: #38bdf8 !important;
-  border: 1px solid rgba(56, 189, 248, 0.35) !important;
-  box-shadow: none !important;
+  background: var(--badge-operador-bg) !important;
+  color: var(--badge-operador-text) !important;
+  border: 1px solid var(--badge-operador-border) !important;
+  box-shadow: var(--badge-operador-glow) !important;
 }
 
 /* 4. CONSULTA (AZUL ESCURO / INDIGO / SEM BRILHO) */
 .badge-perfil.consulta {
-  background: rgba(129, 140, 248, 0.15);
-  color: #818cf8;
-  border: 1px solid rgba(129, 140, 248, 0.35);
-  box-shadow: none !important;
-}
-
-[data-theme="light"] .badge-perfil.consulta {
-  background: rgba(79, 70, 229, 0.12) !important;
-  color: #4338ca !important;
-  border: 1px solid rgba(79, 70, 229, 0.35) !important;
-  box-shadow: none !important;
-}
-
-[data-theme="dark"] .badge-perfil.consulta {
-  background: #141416 !important;
-  color: #818cf8 !important;
-  border: 1px solid rgba(129, 140, 248, 0.35) !important;
-  box-shadow: none !important;
+  background: var(--badge-consulta-bg) !important;
+  color: var(--badge-consulta-text) !important;
+  border: 1px solid var(--badge-consulta-border) !important;
+  box-shadow: var(--badge-consulta-glow) !important;
 }
 
 /* 5. OUTROS PERFIS CUSTOMIZADOS (SEM BRILHO) */
 .badge-perfil.outro {
-  background: rgba(148, 163, 184, 0.15);
-  color: #cbd5e1;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  box-shadow: none !important;
-}
-
-[data-theme="light"] .badge-perfil.outro {
-  background: rgba(71, 85, 105, 0.12) !important;
-  color: #334155 !important;
-  border: 1px solid rgba(71, 85, 105, 0.35) !important;
-  box-shadow: none !important;
-}
-
-[data-theme="dark"] .badge-perfil.outro {
-  background: #141416 !important;
-  color: #cbd5e1 !important;
-  border: 1px solid rgba(148, 163, 184, 0.35) !important;
-  box-shadow: none !important;
+  background: var(--badge-outro-bg) !important;
+  color: var(--badge-outro-text) !important;
+  border: 1px solid var(--badge-outro-border) !important;
+  box-shadow: var(--badge-outro-glow) !important;
 }
 
