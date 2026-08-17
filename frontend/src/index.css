@@ -2194,7 +2194,7 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: none !important;
 }
 
-/* Botão Remover Foto Atual (Sempre com a cor vermelha intensa do hover) */
+/* Botão Remover Foto Atual (Fundo vermelho #f43f5e sem brilho em todos os temas) */
 .btn-remove-photo {
   background: #f43f5e !important;
   color: #ffffff !important;
@@ -2209,14 +2209,14 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.4) !important;
+  box-shadow: none !important;
 }
 
 .btn-remove-photo:hover:not(:disabled) {
   background: #e11d48 !important;
   border-color: #e11d48 !important;
   color: #ffffff !important;
-  box-shadow: 0 6px 18px rgba(225, 29, 72, 0.5) !important;
+  box-shadow: none !important;
   transform: translateY(-1px);
 }
 
