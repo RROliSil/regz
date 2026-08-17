@@ -153,6 +153,20 @@ export const Colaboradores: React.FC = () => {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const quickFileInputRef = useRef<HTMLInputElement>(null);
+  const cargoDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fechar dropdown de cargo ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (cargoDropdownRef.current && !cargoDropdownRef.current.contains(event.target as Node)) {
+        setCargoSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Carregar preferências salvas do LocalStorage específicas do usuário logado
   useEffect(() => {
@@ -1317,20 +1331,20 @@ export const Colaboradores: React.FC = () => {
                 </div>
 
                 {/* Dropdown Selecionável com Busca por Nome ou Código CBO */}
-                <div className="form-group" style={{ position: 'relative' }}>
+                <div className="form-group" style={{ position: 'relative' }} ref={cargoDropdownRef}>
                   <label>Cargo / Função (Pesquisa por Nome ou CBO)</label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="text"
                       placeholder="Pesquisar por cargo ou CBO..."
-                      value={cargoSearchOpen ? cargoSearchTerm : cargo}
+                      value={cargo}
                       onFocus={() => {
                         setCargoSearchOpen(true);
                         setCargoSearchTerm(cargo || '');
                       }}
                       onChange={(e) => {
-                        setCargoSearchTerm(e.target.value);
                         setCargo(e.target.value);
+                        setCargoSearchTerm(e.target.value);
                         setCargoSearchOpen(true);
                       }}
                       style={{ paddingRight: '36px' }}
@@ -1339,61 +1353,55 @@ export const Colaboradores: React.FC = () => {
                   </div>
 
                   {cargoSearchOpen && (
-                    <>
-                      <div 
-                        style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 998 }} 
-                        onClick={() => setCargoSearchOpen(false)} 
-                      />
-                      <div 
-                        className="cargo-dropdown-popover" 
-                        style={{
-                          position: 'absolute',
-                          left: 0,
-                          right: 0,
-                          top: '100%',
-                          marginTop: '6px',
-                          maxHeight: '230px',
-                          overflowY: 'auto',
-                          zIndex: 999,
-                          padding: '6px'
-                        }}
-                      >
-                        {cargosList
-                          .filter(cg => {
-                            const q = cargoSearchTerm.toLowerCase().trim();
-                            if (!q) return true;
-                            return cg.nome.toLowerCase().includes(q) || (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().includes(q));
-                          })
-                          .map(cg => (
-                            <div
-                              key={cg.id}
-                              onClick={() => {
-                                setCargo(cg.nome);
-                                setCargoSearchTerm(cg.nome);
-                                setCargoSearchOpen(false);
-                              }}
-                              className={`cargo-dropdown-item ${cargo === cg.nome ? 'selected' : ''}`}
-                            >
-                              <span className="cargo-dropdown-item-title">{cg.nome}</span>
-                              {cg.codigo_cbo && (
-                                <span className="cargo-dropdown-cbo-badge">
-                                  CBO {cg.codigo_cbo}
-                                </span>
-                              )}
-                            </div>
-                          ))}
-
-                        {cargosList.filter(cg => {
+                    <div 
+                      className="cargo-dropdown-popover" 
+                      style={{
+                        position: 'absolute',
+                        left: 0,
+                        right: 0,
+                        top: '100%',
+                        marginTop: '6px',
+                        maxHeight: '230px',
+                        overflowY: 'auto',
+                        zIndex: 999,
+                        padding: '6px'
+                      }}
+                    >
+                      {cargosList
+                        .filter(cg => {
                           const q = cargoSearchTerm.toLowerCase().trim();
                           if (!q) return true;
                           return cg.nome.toLowerCase().includes(q) || (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().includes(q));
-                        }).length === 0 && (
-                          <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.84rem' }}>
-                            Nenhum cargo CBO encontrado para "{cargoSearchTerm}".
+                        })
+                        .map(cg => (
+                          <div
+                            key={cg.id}
+                            onClick={() => {
+                              setCargo(cg.nome);
+                              setCargoSearchTerm(cg.nome);
+                              setCargoSearchOpen(false);
+                            }}
+                            className={`cargo-dropdown-item ${cargo === cg.nome ? 'selected' : ''}`}
+                          >
+                            <span className="cargo-dropdown-item-title">{cg.nome}</span>
+                            {cg.codigo_cbo && (
+                              <span className="cargo-dropdown-cbo-badge">
+                                CBO {cg.codigo_cbo}
+                              </span>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </>
+                        ))}
+
+                      {cargosList.filter(cg => {
+                        const q = cargoSearchTerm.toLowerCase().trim();
+                        if (!q) return true;
+                        return cg.nome.toLowerCase().includes(q) || (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().includes(q));
+                      }).length === 0 && (
+                        <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.84rem' }}>
+                          Nenhum cargo CBO encontrado para "{cargoSearchTerm}".
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
