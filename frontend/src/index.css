@@ -2053,7 +2053,7 @@ h1, h2, h3, h4, h5, h6 {
   background: #141416 !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2) !important;
+  box-shadow: none !important;
 }
 
 [data-theme="dark"] .text-gradient {
@@ -2198,6 +2198,19 @@ h1, h2, h3, h4, h5, h6 {
 [data-theme="dark"] .info-box-ambiente {
   background: #121214 !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Botões inativos na página de Administração no Modo Escuro (fundo #1b1b1f) */
+[data-theme="dark"] .admin-subtab-btn {
+  background: #1b1b1f !important;
+  color: #a1a1aa !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .admin-subtab-btn:hover {
+  background: #242429 !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
 /* Botão Remover Foto Atual (Fundo vermelho #f43f5e sem brilho em todos os temas) */

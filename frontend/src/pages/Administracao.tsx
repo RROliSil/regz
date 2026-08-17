@@ -403,14 +403,14 @@ export const Administracao: React.FC = () => {
       <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
         <button
           onClick={() => setSubTab('usuarios')}
-          className={subTab === 'usuarios' ? 'btn-primary' : 'btn-secondary'}
+          className={subTab === 'usuarios' ? 'btn-primary' : 'btn-secondary admin-subtab-btn'}
           style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
         >
           <Users size={18} /> Usuários do Sistema ({usuarios.length})
         </button>
         <button
           onClick={() => setSubTab('perfis')}
-          className={subTab === 'perfis' ? 'btn-primary' : 'btn-secondary'}
+          className={subTab === 'perfis' ? 'btn-primary' : 'btn-secondary admin-subtab-btn'}
           style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
         >
           <Shield size={18} /> Perfis de Acesso & Permissões ({perfis.length})
