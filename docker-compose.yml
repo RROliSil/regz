@@ -52,6 +52,24 @@ services:
       - TOKEN=${DUCKDNS_TOKEN}
       - LOG_FILE=true
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: regz-caddy
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    command: caddy reverse-proxy --from https://${DUCKDNS_SUBDOMAINS:-regiz-app}.duckdns.org --to frontend:4000
+    volumes:
+      - regz_caddy_data:/data
+      - regz_caddy_config:/config
+    depends_on:
+      - frontend
+
 volumes:
   regz_postgres_data:
+    driver: local
+  regz_caddy_data:
+    driver: local
+  regz_caddy_config:
     driver: local
