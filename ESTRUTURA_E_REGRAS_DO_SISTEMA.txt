@@ -127,7 +127,7 @@ Campos:
 
 A. Autenticação e Autorização (RBAC):
 - O login gera um token JWT enviado nas requisições no cabeçalho Authorization: Bearer <token>.
-- O usuário Administrador possui acesso irrestrito a todas as funcionalidades.
+- O usuário Administrador possui acesso irrestrito a todas as funcionalidades. Na matriz de perfis de acesso da página Administração, o perfil administrador exibe exclusivamente a Tag/Badge ADMIN sem o texto estendido "Administrador".
 - O sistema valida a permissão de escrita/leitura do usuário para exibir ou ocultar botões de ação (Criar, Editar, Remover).
 
 B. Cadastro e Otimização de Fotos de Colaboradores:

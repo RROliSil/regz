@@ -610,11 +610,12 @@ export const Administracao: React.FC = () => {
                     <tr key={p.id}>
                       <td style={{ borderRight: '1px solid rgba(255, 255, 255, 0.1)' }}>
                         <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <span className="perfil-nome">{p.nome}</span>
-                          {isAdmin && (
-                            <span style={{ fontSize: '0.7rem', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', padding: '1px 6px', borderRadius: '4px' }}>
+                          {isAdmin ? (
+                            <span style={{ fontSize: '0.75rem', background: 'rgba(99, 102, 241, 0.2)', color: '#a5b4fc', border: '1px solid rgba(99, 102, 241, 0.4)', padding: '2px 8px', borderRadius: '6px', fontWeight: 700, letterSpacing: '0.05em' }}>
                               ADMIN
                             </span>
+                          ) : (
+                            <span className="perfil-nome">{p.nome}</span>
                           )}
                           {savedRowId === p.id && (
                             <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 600, animation: 'fadeIn 0.3s' }}>
