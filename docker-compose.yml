@@ -40,6 +40,18 @@ services:
       postgres:
         condition: service_healthy
 
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    container_name: regz-duckdns
+    restart: always
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Sao_Paulo
+      - SUBDOMAINS=${DUCKDNS_SUBDOMAINS:-regiz-app}
+      - TOKEN=${DUCKDNS_TOKEN}
+      - LOG_FILE=true
+
 volumes:
   regz_postgres_data:
     driver: local
