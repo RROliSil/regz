@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Briefcase, UserPlus, MapPin, Loader2, User, ChevronRight, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
-import { Colaborador } from '../types/colaborador';
+import { Colaborador, ESTADOS_MAP } from '../types/colaborador';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -341,14 +341,15 @@ export const Home: React.FC = () => {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 {visibleGeoList.map(([itemLabel, count], idx) => {
-                  const searchTermToApply = geoMode === 'cidades' ? itemLabel.split(' - ')[0] : itemLabel;
+                  const stateFullName = ESTADOS_MAP[itemLabel.toUpperCase()] || itemLabel;
+                  const searchTermToApply = geoMode === 'cidades' ? itemLabel.split(' - ')[0] : stateFullName;
                   return (
                     <div
                       key={idx}
                       className="geo-item-row"
                       onClick={() => navigate('/colaboradores', { state: { subTab: 'ativos', searchTerm: searchTermToApply } })}
                       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(15, 23, 42, 0.5)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.05)', cursor: 'pointer' }}
-                      title={`Filtrar colaboradores em ${itemLabel}`}
+                      title={`Filtrar colaboradores em ${geoMode === 'estados' ? stateFullName : itemLabel}`}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div className="geo-pin-icon">

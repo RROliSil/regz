@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Colaborador, Cargo, CampoCustomizado } from '../types/colaborador';
+import { Colaborador, Cargo, CampoCustomizado, ESTADOS_MAP, normalizeText } from '../types/colaborador';
 import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink, Briefcase, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ColumnConfig {
@@ -714,18 +714,24 @@ export const Colaboradores: React.FC = () => {
 
   const listTarget = activeSubTab === 'ativos' ? colaboradoresAtivos : colaboradoresInativos;
 
-  // Filtrar Colaboradores por busca (incluindo UF/Estado e logradouro)
+  // Filtrar Colaboradores por busca (incluindo UF/Estado por sigla e por extenso sem acentos)
   const filteredColaboradores = listTarget.filter(c => {
-    const term = searchTerm.toLowerCase().trim();
-    if (!term) return true;
+    const rawTerm = searchTerm.trim();
+    if (!rawTerm) return true;
+    const normTerm = normalizeText(rawTerm);
+
+    const ufSigla = c.estado ? c.estado.toUpperCase().trim() : '';
+    const ufNomeCompleto = ESTADOS_MAP[ufSigla] || '';
+
     return (
-      c.nome.toLowerCase().includes(term) ||
-      c.cpf.includes(term) ||
-      (c.cargo && c.cargo.toLowerCase().includes(term)) ||
-      (c.cidade && c.cidade.toLowerCase().includes(term)) ||
-      (c.estado && c.estado.toLowerCase().includes(term)) ||
-      (c.cidade && c.estado && `${c.cidade}/${c.estado}`.toLowerCase().includes(term)) ||
-      (c.logradouro && c.logradouro.toLowerCase().includes(term))
+      normalizeText(c.nome || '').includes(normTerm) ||
+      (c.cpf && c.cpf.includes(rawTerm)) ||
+      normalizeText(c.cargo || '').includes(normTerm) ||
+      normalizeText(c.cidade || '').includes(normTerm) ||
+      normalizeText(ufSigla).includes(normTerm) ||
+      normalizeText(ufNomeCompleto).includes(normTerm) ||
+      (c.cidade && c.estado && normalizeText(`${c.cidade}/${c.estado}`).includes(normTerm)) ||
+      normalizeText(c.logradouro || '').includes(normTerm)
     );
   });
 
