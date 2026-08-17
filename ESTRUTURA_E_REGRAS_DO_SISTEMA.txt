@@ -1,0 +1,171 @@
+===============================================================================
+REGZ - SISTEMA DE GESTÃO DE PESSOAS E COLABORADORES
+DOCUMENTAÇÃO TÉCNICA: ARQUITETURA, BANCO DE DADOS E REGRAS DE NEGÓCIO
+===============================================================================
+
+1. VISÃO GERAL DO PROJETO
+-------------------------------------------------------------------------------
+O Regz é uma plataforma completa para Gestão de Pessoas, acompanhamento de colaboradores, mapeamento geográfico por GPS/CEP, controle de permissões de acesso (RBAC) e criação de campos dinâmicos customizados.
+
+Stack Tecnológica:
+- Frontend: React 18, Vite, TypeScript, Lucide Icons, Vanilla CSS (Design Responsivo, Dark/Light Mode).
+- Backend: Node.js, Express API, TypeScript, PostgreSQL Client (pg), JWT, BcryptJS.
+- Banco de Dados: PostgreSQL 15-alpine com suporte a campos JSONB e Geocodificação.
+- Implantação: Docker, Docker Compose, Portainer.io.
+
+Portas do Ambiente Docker (docker-compose.yml):
+- Frontend Web: Porta 8280 (mapeada para a porta interna 4000 do container regz-app).
+- PostgreSQL: Porta 5434 (mapeada para a porta interna 5432 do container regz-postgres).
+
+
+2. ESTRUTURA DO BANCO DE DADOS (POSTGRESQL 15)
+-------------------------------------------------------------------------------
+
+TABELA 1: perfis_acesso
+Descrição: Armazena os perfis de acesso do sistema (RBAC - Role Based Access Control).
+Campos:
+  - id SERIAL PRIMARY KEY
+  - nome VARCHAR(255) NOT NULL UNIQUE
+  - descricao TEXT
+  - is_admin BOOLEAN DEFAULT false
+  - permissoes JSONB NOT NULL DEFAULT '{}'::jsonb
+  - criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+Perfis Padrão do Sistema:
+  1. Administrador (is_admin = true, Acesso total a todas as abas e configurações)
+  2. Gestor de RH (Acesso a colaboradores e campos personalizáveis)
+  3. Operador (Leitura e escrita em colaboradores, sem acesso a campos e administração)
+  4. Consulta (Somente leitura de dados e relatórios)
+
+Estrutura da Coluna permissoes (JSONB):
+{
+  "home": "escrita" | "leitura" | "sem_acesso",
+  "colaboradores": "escrita" | "leitura" | "sem_acesso",
+  "campos": "escrita" | "leitura" | "sem_acesso",
+  "administracao": "escrita" | "leitura" | "sem_acesso"
+}
+
+
+TABELA 2: usuarios
+Descrição: Armazena os usuários autenticáveis que acessam a plataforma Regz.
+Campos:
+  - id SERIAL PRIMARY KEY
+  - nome VARCHAR(255) NOT NULL
+  - email VARCHAR(255) NOT NULL UNIQUE
+  - senha_hash VARCHAR(255) NOT NULL
+  - perfil_id INT REFERENCES perfis_acesso(id) ON DELETE SET NULL
+  - ativo BOOLEAN DEFAULT true
+  - criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+Usuário Padrão Inicial:
+  - E-mail: admin@regz.app
+  - Senha: admin123 (Criptografada com bcrypt cost factor 10)
+
+
+TABELA 3: cargos
+Descrição: Armazena o catálogo de cargos e ocupações CBO oficiais (Classificação Brasileira de Ocupações - MTE/Brasil).
+Campos:
+  - id SERIAL PRIMARY KEY
+  - nome VARCHAR(255) NOT NULL UNIQUE
+  - codigo_cbo VARCHAR(20)
+  - criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+
+TABELA 4: colaboradores
+Descrição: Armazena os cadastros principais de colaboradores da organização.
+Campos:
+  - id SERIAL PRIMARY KEY
+  - nome VARCHAR(255) NOT NULL
+  - cpf VARCHAR(14) NOT NULL UNIQUE (Formato: 000.000.000-00)
+  - cargo VARCHAR(255)
+  - cep VARCHAR(9) (Formato: 00000-000)
+  - logradouro VARCHAR(255)
+  - numero VARCHAR(50)
+  - complemento VARCHAR(255)
+  - bairro VARCHAR(255)
+  - cidade VARCHAR(255)
+  - estado VARCHAR(2) (UF com 2 letras, ex: SP, RS, RJ)
+  - latitude NUMERIC(10,8)
+  - longitude NUMERIC(11,8)
+  - foto_url TEXT (Armazena imagem comprimida ultraleve ~25KB em Base64 Data URL)
+  - ativo BOOLEAN DEFAULT true
+  - criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+
+TABELA 5: campos_customizados
+Descrição: Permite a definição de novos campos dinâmicos sem alterar o schema do banco de dados.
+Campos:
+  - id SERIAL PRIMARY KEY
+  - nome VARCHAR(255) NOT NULL UNIQUE
+  - tipo VARCHAR(50) DEFAULT 'texto' (Valores aceitos: texto, numero, data, selecao, booleano, email, cpf, telefone)
+  - opcoes TEXT (Lista de opções separadas por vírgula para o tipo selecao)
+  - obrigatorio BOOLEAN DEFAULT false
+  - min_caracteres INT
+  - max_caracteres INT
+  - criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+Campos Customizados Padrão:
+  - Setor / Departamento (tipo: selecao)
+  - Nome da Mãe (tipo: texto)
+  - Nome do Pai (tipo: texto)
+  - Estado Civil (tipo: selecao)
+  - PIS / PASEP (tipo: texto)
+
+
+TABELA 6: colaboradores_valores_customizados
+Descrição: Armazena os valores preenchidos para os campos customizados de cada colaborador.
+Campos:
+  - id SERIAL PRIMARY KEY
+  - colaborador_id INT REFERENCES colaboradores(id) ON DELETE CASCADE
+  - campo_id INT REFERENCES campos_customizados(id) ON DELETE CASCADE
+  - valor TEXT
+  - CONSTRAINT unique_colab_campo UNIQUE (colaborador_id, campo_id)
+
+
+3. REGRAS DE NEGÓCIO E COMPORTAMENTOS DO SISTEMA
+-------------------------------------------------------------------------------
+
+A. Autenticação e Autorização (RBAC):
+- O login gera um token JWT enviado nas requisições no cabeçalho Authorization: Bearer <token>.
+- O usuário Administrador possui acesso irrestrito a todas as funcionalidades.
+- O sistema valida a permissão de escrita/leitura do usuário para exibir ou ocultar botões de ação (Criar, Editar, Remover).
+
+B. Cadastro e Otimização de Fotos de Colaboradores:
+- Ao enviar ou alterar a foto de um colaborador, a imagem é comprimida e convertida no navegador para Base64 ultraleve (~25KB) para otimizar o banco de dados.
+- O botão "Remover Foto Atual" exibe uma estilização vermelha intensa (#f43f5e) sem brilho/sombra (box-shadow: none) e texto/ícone em branco (#ffffff) em todos os temas.
+
+C. Validação de Dados e Máscaras:
+- CPF: Validação de formato (000.000.000-00) e verificação de duplicidade no banco.
+- CEP: Integração automática com a API ViaCEP para preenchimento automático de Logradouro, Bairro, Cidade e Estado.
+
+D. Busca e Filtro de Colaboradores:
+- Suporta busca unificada por Nome, CPF, Cargo, Cidade ou Nome Completo do Estado.
+- Ao pesquisar pelo nome do Estado (ex: "São Paulo", "Rio Grande do Sul") ou sigla (ex: "SP", "RS"), o filtro normaliza acentos e localiza os colaboradores correspondentes.
+- Suporta filtro por sub-abas de Colaboradores "Ativos" ou "Inativos".
+
+E. Seleção no Campo Cargo / Função (CBO):
+- Permite pesquisar os cargos oficiais da CBO por nome ou pelo código numérico CBO.
+- O campo utiliza a técnica de controle de foco via useRef e handleClickOutside, permitindo clicar e arrastar o cursor para selecionar o texto normalmente.
+
+F. Design e Temas Visuais:
+- O sistema possui 3 temas distintos:
+  1. Modo Padrão (Tema Navy Blue / Neon Azul).
+  2. Modo Claro [data-theme="light"] (Fundo branco, cartões com borda #868a93 e texto preto).
+  3. Modo Escuro [data-theme="dark"] (Fundo preto/cinza #121214 / #141416, cartões em #121214, badges de CBO em #141416 com texto branco e borda suave).
+
+G. Persistência de Preferências do Usuário (LocalStorage):
+- Quantidade de itens por página na tabela ("regz_page_size").
+- Colunas visíveis selecionadas ("regz_visible_columns").
+- Larguras personalizadas das colunas redimensionáveis ("regz_column_widths").
+- Modo do gráfico de distribuição geográfica Cidades/Estados ("regz_home_geo_mode").
+
+
+4. INSTRUÇÕES DE EXECUÇÃO E DEPLOY NO PORTAINER.IO
+-------------------------------------------------------------------------------
+1. Toda alteração no código deve ser commitada e enviada via 'git push origin main'.
+2. No Portainer.io, abrir a Stack 'regz' e clicar no botão 'Pull and redeploy'.
+3. O container do frontend subirá na porta 8280 e se conectará ao container do banco PostgreSQL na porta 5434.
+
+===============================================================================
+FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO
+===============================================================================
