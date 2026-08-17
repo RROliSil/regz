@@ -1205,7 +1205,7 @@ export const Colaboradores: React.FC = () => {
                 </label>
 
                 {targetPhotoColaborador.foto_url && (
-                  <button onClick={handleQuickRemovePhoto} className="btn-secondary" style={{ color: '#fb7185', borderColor: 'rgba(251, 113, 133, 0.3)' }}>
+                  <button onClick={handleQuickRemovePhoto} className="btn-remove-photo">
                     <Trash2 size={16} /> Remover Foto Atual
                   </button>
                 )}
@@ -1283,7 +1283,7 @@ export const Colaboradores: React.FC = () => {
                       onClick={() => setFotoUrl('')}
                       className="btn-remove-photo"
                     >
-                      Remover foto
+                      <Trash2 size={14} /> Remover foto
                     </button>
                   )}
                   <span className="upload-hint">Foto otimizada automaticamente (~25KB)</span>

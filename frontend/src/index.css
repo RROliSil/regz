@@ -2194,3 +2194,34 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: none !important;
 }
 
+/* Botão Remover Foto Atual (Vermelho em todos os temas com texto/ícone branco) */
+.btn-remove-photo {
+  background: #fb7185 !important;
+  color: #ffffff !important;
+  border: 1px solid #fb7185 !important;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(251, 113, 133, 0.3);
+}
+
+.btn-remove-photo:hover:not(:disabled) {
+  background: #f43f5e !important;
+  border-color: #f43f5e !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(244, 63, 94, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-remove-photo svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
