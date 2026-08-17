@@ -127,7 +127,7 @@ Campos:
 
 A. Autenticação e Autorização (RBAC):
 - O login gera um token JWT enviado nas requisições no cabeçalho Authorization: Bearer <token>.
-- O usuário Administrador possui acesso irrestrito a todas as funcionalidades. Na matriz de perfis de acesso da página Administração, o perfil administrador exibe exclusivamente a Tag/Badge ADMIN utilizando a mesma classe e padronização visual da tag NOVO (badge-novo) nos temas Claro e Escuro.
+- O usuário Administrador possui acesso irrestrito a todas as funcionalidades. Na página Administração, todas as badges de perfis utilizam o padrão de tags pílula estilizada; o perfil Administrador/ADMIN possui brilho no contorno (box-shadow) em todos os temas, enquanto os demais perfis (Gestor de RH em verde, Operador em azul, Consulta em índigo, etc.) usam suas cores temáticas sem brilho (box-shadow: none).
 - O sistema valida a permissão de escrita/leitura do usuário para exibir ou ocultar botões de ação (Criar, Editar, Remover).
 
 B. Cadastro e Otimização de Fotos de Colaboradores:

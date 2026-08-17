@@ -2268,3 +2268,132 @@ h1, h2, h3, h4, h5, h6 {
   color: #0f172a !important;
 }
 
+/* ======================================================== */
+/* PADRONIZAÇÃO DAS TAGS/BADGES DE PERFIS DE ACESSO (RBAC) */
+/* ======================================================== */
+.badge-perfil {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  user-select: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+/* 1. PERFIL ADMINISTRADOR (COM BRILHO NO CONTORNO) */
+.badge-perfil.admin,
+.badge-admin-total {
+  background: rgba(99, 102, 241, 0.16);
+  color: #a5b4fc;
+  border: 1px solid rgba(129, 140, 248, 0.4);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.35);
+}
+
+[data-theme="light"] .badge-perfil.admin,
+[data-theme="light"] .badge-admin-total {
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: #5e5eee !important;
+  border: 1px solid rgba(99, 102, 241, 0.4) !important;
+  box-shadow: 0 0 6px rgba(99, 102, 241, 0.25) !important;
+}
+
+[data-theme="dark"] .badge-perfil.admin,
+[data-theme="dark"] .badge-admin-total {
+  background: #141416 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.25) !important;
+}
+
+/* 2. GESTOR DE RH (VERDE / SEM BRILHO) */
+.badge-perfil.gestor-rh {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .badge-perfil.gestor-rh {
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #047857 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .badge-perfil.gestor-rh {
+  background: #141416 !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+  box-shadow: none !important;
+}
+
+/* 3. OPERADOR (AZUL / CYAN / SEM BRILHO) */
+.badge-perfil.operador {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .badge-perfil.operador {
+  background: rgba(2, 132, 199, 0.12) !important;
+  color: #0369a1 !important;
+  border: 1px solid rgba(2, 132, 199, 0.35) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .badge-perfil.operador {
+  background: #141416 !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+  box-shadow: none !important;
+}
+
+/* 4. CONSULTA (AZUL ESCURO / INDIGO / SEM BRILHO) */
+.badge-perfil.consulta {
+  background: rgba(129, 140, 248, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(129, 140, 248, 0.35);
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .badge-perfil.consulta {
+  background: rgba(79, 70, 229, 0.12) !important;
+  color: #4338ca !important;
+  border: 1px solid rgba(79, 70, 229, 0.35) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .badge-perfil.consulta {
+  background: #141416 !important;
+  color: #818cf8 !important;
+  border: 1px solid rgba(129, 140, 248, 0.35) !important;
+  box-shadow: none !important;
+}
+
+/* 5. OUTROS PERFIS CUSTOMIZADOS (SEM BRILHO) */
+.badge-perfil.outro {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .badge-perfil.outro {
+  background: rgba(71, 85, 105, 0.12) !important;
+  color: #334155 !important;
+  border: 1px solid rgba(71, 85, 105, 0.35) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="dark"] .badge-perfil.outro {
+  background: #141416 !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.35) !important;
+  box-shadow: none !important;
+}
+

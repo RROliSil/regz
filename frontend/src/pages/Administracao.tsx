@@ -17,6 +17,34 @@ export const Administracao: React.FC = () => {
 
   const [subTab, setSubTab] = useState<'usuarios' | 'perfis'>('usuarios');
 
+  // Helper para renderizar a Badge de Perfil com cores tematicas (Admin com brilho, outros sem brilho)
+  const renderPerfilBadge = (nome: string, isAdmin?: boolean) => {
+    if (isAdmin) {
+      return (
+        <span className="badge-perfil admin">
+          <Shield size={12} /> ADMIN
+        </span>
+      );
+    }
+
+    const nomeLower = (nome || '').toLowerCase();
+    let variant = 'outro';
+
+    if (nomeLower.includes('rh') || nomeLower.includes('gestor')) {
+      variant = 'gestor-rh';
+    } else if (nomeLower.includes('operador')) {
+      variant = 'operador';
+    } else if (nomeLower.includes('consulta')) {
+      variant = 'consulta';
+    }
+
+    return (
+      <span className={`badge-perfil ${variant}`}>
+        {nome || 'Sem Perfil'}
+      </span>
+    );
+  };
+
   // Estados de Usuários
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loadingUsuarios, setLoadingUsuarios] = useState(true);
@@ -491,18 +519,7 @@ export const Administracao: React.FC = () => {
                     <td>
                       {(() => {
                         const pObj = u.perfil || perfis.find(p => p.id === u.perfil_id);
-                        if (pObj?.is_admin) {
-                          return (
-                            <span style={{ background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.4)', padding: '3px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <Shield size={12} /> Administrador Total
-                            </span>
-                          );
-                        }
-                        return (
-                          <span style={{ background: 'rgba(56, 189, 248, 0.12)', color: '#5e5eee', padding: '3px 8px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
-                            {pObj?.nome || 'Sem Perfil'}
-                          </span>
-                        );
+                        return renderPerfilBadge(pObj?.nome || 'Sem Perfil', pObj?.is_admin);
                       })()}
                     </td>
                     <td style={{ textAlign: 'center' }}>
@@ -610,13 +627,7 @@ export const Administracao: React.FC = () => {
                     <tr key={p.id}>
                       <td style={{ borderRight: '1px solid rgba(255, 255, 255, 0.1)' }}>
                         <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          {isAdmin ? (
-                            <span className="badge-novo">
-                              ADMIN
-                            </span>
-                          ) : (
-                            <span className="perfil-nome">{p.nome}</span>
-                          )}
+                          {renderPerfilBadge(p.nome, p.is_admin)}
                           {savedRowId === p.id && (
                             <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 600, animation: 'fadeIn 0.3s' }}>
                               ✓ Salvo
