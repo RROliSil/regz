@@ -2186,3 +2186,11 @@ h1, h2, h3, h4, h5, h6 {
   color: #ffffff !important;
 }
 
+/* Tag CBO no Dropdown de Cargos no Modo Escuro (fundo #141416, texto branco, sem brilho) */
+[data-theme="dark"] .cargo-dropdown-cbo-badge {
+  background: #141416 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  box-shadow: none !important;
+}
+
