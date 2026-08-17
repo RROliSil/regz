@@ -164,7 +164,8 @@ G. Persistência de Preferências do Usuário (LocalStorage):
 -------------------------------------------------------------------------------
 1. Toda alteração no código deve ser commitada e enviada via 'git push origin main'.
 2. No Portainer.io, abrir a Stack 'regz' e clicar no botão 'Pull and redeploy'.
-3. O container do frontend subirá na porta 8280 e se conectará ao container do banco PostgreSQL na porta 5434.
+3. Importante: Manter a chave 'Re-pull image' DESMARCADA/DESATIVADA no popup para evitar tempo limite (TLS handshake timeout) na comunicação externa com o Docker Hub.
+4. O container do frontend subirá na porta 8280 e se conectará ao container do banco PostgreSQL na porta 5434.
 
 ===============================================================================
 FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO
