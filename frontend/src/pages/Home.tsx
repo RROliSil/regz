@@ -9,10 +9,21 @@ export const Home: React.FC = () => {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Estados de controle de alternância e expansão
-  const [geoMode, setGeoMode] = useState<'cidades' | 'estados'>('cidades');
+  // Estados de controle de alternância e expansão com persistência no LocalStorage
+  const [geoMode, setGeoMode] = useState<'cidades' | 'estados'>(() => {
+    const saved = localStorage.getItem('regz_home_geo_mode');
+    return saved === 'estados' ? 'estados' : 'cidades';
+  });
   const [expandedCargos, setExpandedCargos] = useState(false);
   const [expandedGeo, setExpandedGeo] = useState(false);
+
+  const handleToggleGeoMode = () => {
+    setGeoMode(prev => {
+      const next = prev === 'cidades' ? 'estados' : 'cidades';
+      localStorage.setItem('regz_home_geo_mode', next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -315,7 +326,7 @@ export const Home: React.FC = () => {
 
               {/* Botão Clicável Cidades <-> Estados com Setinha Dupla Rotacionável */}
               <button
-                onClick={() => setGeoMode(prev => prev === 'cidades' ? 'estados' : 'cidades')}
+                onClick={handleToggleGeoMode}
                 className="btn-geo-mode"
                 title={`Clique para alternar para ${geoMode === 'cidades' ? 'Estados' : 'Cidades'}`}
               >
