@@ -2109,6 +2109,20 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(-2px) scale(1.05) !important;
 }
 
+/* Botões secundários da página de Relatórios (Atualizar e Exportar Excel) no Modo Dark */
+[data-theme="dark"] .relatorios-container .btn-secondary,
+[data-theme="dark"] .btn-relatorio-sec {
+  background: #1b1b1f !important;
+  color: #f4f4f5 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .relatorios-container .btn-secondary:hover,
+[data-theme="dark"] .btn-relatorio-sec:hover {
+  background: #27272a !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
 [data-theme="dark"] .sidebar-user-avatar {
   background: #141416 !important;
   color: #ffffff !important;

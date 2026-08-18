@@ -160,7 +160,8 @@ G. Persistência de Preferências do Usuário (LocalStorage):
 - Modo do gráfico de distribuição geográfica Cidades/Estados ("regz_home_geo_mode").
 
 H. Módulo de Relatórios & Exportações:
-- Seleção de relatório via Janela Dropdown unificada (Quadro de Colaboradores, Campos Personalizados, Distribuição Geográfica e Usuários/Perfis RBAC) com suporte visual padronizado aos 3 temas (Modo Padrão com fundo escuro #0f172a e texto branco, Modo Claro com fundo branco #ffffff e texto escuro, e Modo Escuro com fundo #141416).
+- Seleção de relatório via Janela Dropdown unificada (Quadro de Colaboradores, Campos Personalizados, Distribuição Geográfica e Usuários/Perfis RBAC) com suporte visual padronizado aos 3 temas.
+- Botões de ação dispostos em linha (Seletor -> Atualizar -> Exportar Excel CSV -> PDF / Imprimir), com fundo #1b1b1f nos botões secundários no Modo Dark.
 - Filtros dinâmicos em tempo real por Status (Ativos/Inativos), Cargo (CBO), Estado (UF) e Busca Unificada.
 - Exportação em CSV/XLSX codificado com BOM UTF-8 (\uFEFF) para visualização imediata no Microsoft Excel sem desconfigurar acentos.
 - Impressão e PDF A4 Executivo via @media print ajustado para preencher 100% de uma folha A4 Retrato (margin: 10mm 12mm), ocultando elementos de interface (.no-print) e mantendo cabeçalho institucional e tabelas fluidas sem truncamento.
