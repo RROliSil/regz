@@ -689,9 +689,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .col-acoes {
-  min-width: 130px !important;
+  min-width: 165px !important;
   white-space: nowrap !important;
   padding-right: 18px !important;
+}
+
+th.col-acoes .resizer,
+th.col-acoes .col-resizer {
+  display: none !important;
 }
 
 .custom-table th {

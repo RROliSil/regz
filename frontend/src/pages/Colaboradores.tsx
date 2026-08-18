@@ -33,7 +33,7 @@ const DEFAULT_COLUMN_WIDTHS: ColumnWidths = {
   endereco: 240,
   cidade: 160,
   criado_em: 130,
-  acoes: 140
+  acoes: 165
 };
 
 import { useAuth } from '../context/AuthContext';
@@ -995,9 +995,8 @@ export const Colaboradores: React.FC = () => {
                     <div className="resizer" onMouseDown={(e) => handleResizeStart('criado_em', e)} />
                   </th>
                 )}
-                <th className="col-acoes" style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, minWidth: '130px' }}>
+                <th className="col-acoes" style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, minWidth: '165px' }}>
                   Ações
-                  <div className="resizer" onMouseDown={(e) => handleResizeStart('acoes', e)} />
                 </th>
               </tr>
             </thead>
@@ -1127,7 +1126,7 @@ export const Colaboradores: React.FC = () => {
                     )}
 
                     {/* Coluna Ações Centralizada */}
-                    <td className="col-acoes" style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, minWidth: '130px', whiteSpace: 'nowrap' }}>
+                    <td className="col-acoes" style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, minWidth: '165px', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'center' }}>
                         <button
                           onClick={(e) => {

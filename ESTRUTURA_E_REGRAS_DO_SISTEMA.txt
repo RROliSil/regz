@@ -140,10 +140,11 @@ C. Validação de Dados, Máscaras & Crachá Digital:
 - Crachá Digital & QR Code: Geração de QR Code 2D vetorizado (qrcode.react) e crachá corporativo com avatar, nome, CPF, cargo, registro e status do colaborador. O modal abre como um Pop-Up centralizado em primeiro plano (position: fixed, z-index: 999999) com fundo desfocado (.modal-backdrop), download em PNG e suporte a fechamento via tecla Esc.
 - Botão "X" de Fechar Modals: Padronizado em todos os modals (.btn-close) como um botão circular vermelho translúcido (#fb7185) com aura/brilho neon, transição de escala e rotação de 90° no hover.
 
-D. Busca e Filtro de Colaboradores:
+D. Busca, Filtro & Tabela de Colaboradores:
 - Suporta busca unificada por Nome, CPF, Cargo, Cidade ou Nome Completo do Estado.
 - Ao pesquisar pelo nome do Estado (ex: "São Paulo", "Rio Grande do Sul") ou sigla (ex: "SP", "RS"), o filtro normaliza acentos e localiza os colaboradores correspondentes.
 - Suporta filtro por sub-abas de Colaboradores "Ativos" ou "Inativos".
+- Painel da Coluna Ações: Configurado com largura expandida (165px) sem alça de redimensionamento (.resizer) na borda direita do cabeçalho, garantindo que os botões (QR Code, Google Maps e Inativar/Reativar) sejam exibidos por completo sem cortes.
 
 E. Seleção no Campo Cargo / Função (CBO):
 - Permite pesquisar os cargos oficiais da CBO por nome ou pelo código numérico CBO.
