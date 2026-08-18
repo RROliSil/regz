@@ -659,7 +659,7 @@ export const Administracao: React.FC = () => {
             </button>
           </div>
 
-          <div className="table-flex-wrapper" style={{ overflowX: 'hidden' }}>
+          <div className="table-flex-wrapper" style={{ overflowX: 'auto' }}>
             <table className="custom-table" style={{ tableLayout: 'fixed', width: '100%' }}>
               <thead>
                 <tr>
