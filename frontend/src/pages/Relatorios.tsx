@@ -231,6 +231,7 @@ export const Relatorios: React.FC = () => {
             <select
               value={tipo}
               onChange={e => setTipo(e.target.value as TipoRelatorio)}
+              className="relatorio-type-select"
               style={{
                 background: 'transparent',
                 border: 'none',

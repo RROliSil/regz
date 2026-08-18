@@ -2385,6 +2385,34 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: var(--badge-outro-glow) !important;
 }
 
+/* Styling das Opções de Select/Dropdown nos Temas */
+select option,
+.relatorio-type-select option,
+.custom-select-small option {
+  color-scheme: dark !important;
+  background-color: #0f172a !important;
+  background: #0f172a !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] select option,
+[data-theme="light"] .relatorio-type-select option,
+[data-theme="light"] .custom-select-small option {
+  color-scheme: light !important;
+  background-color: #ffffff !important;
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+[data-theme="dark"] select option,
+[data-theme="dark"] .relatorio-type-select option,
+[data-theme="dark"] .custom-select-small option {
+  color-scheme: dark !important;
+  background-color: #141416 !important;
+  background: #141416 !important;
+  color: #ffffff !important;
+}
+
 /* ======================================================== */
 /* MÓDULO DE RELATÓRIOS & SUPORTE A IMPRESSÃO / PDF (A4) */
 /* ======================================================== */
