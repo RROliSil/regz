@@ -676,16 +676,15 @@ export const Administracao: React.FC = () => {
                     <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'perfil')} />
                   </th>
                   <th style={{ width: `${userColumnWidths.licenca}px`, position: 'relative' }}>
-                    Chave de Licença
+                    Licença
                     <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'licenca')} />
                   </th>
                   <th style={{ width: `${userColumnWidths.senha}px`, position: 'relative' }}>
-                    Expiração de Senha
+                    Exp.
                     <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'senha')} />
                   </th>
-                  <th style={{ width: `${userColumnWidths.acoes}px`, textAlign: 'center', position: 'relative' }}>
+                  <th style={{ width: '150px', minWidth: '150px', textAlign: 'center' }}>
                     Ações
-                    <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'acoes')} />
                   </th>
                 </tr>
               </thead>
@@ -715,8 +714,8 @@ export const Administracao: React.FC = () => {
                         const isRowSuperAdmin = !!(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz');
                         if (isRowSuperAdmin) {
                           return (
-                            <span style={{ fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                              ✨ Isento (Super Admin)
+                            <span style={{ fontSize: '0.88rem', color: 'var(--text-dim)', fontWeight: 600 }}>
+                              -
                             </span>
                           );
                         }
@@ -751,7 +750,7 @@ export const Administracao: React.FC = () => {
                           return (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                                🔴 Expirada ({Math.abs(dias)}d)
+                                🔴 ({dias}d)
                               </span>
                               {podeEditar && (
                                 <button
@@ -760,7 +759,7 @@ export const Administracao: React.FC = () => {
                                   title="Renovar Validade da Senha por +30 Dias"
                                   style={{ padding: '3px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                                 >
-                                  <RefreshCw size={12} /> Renovar
+                                  <RefreshCw size={12} /> +30d
                                 </button>
                               )}
                             </div>
@@ -770,7 +769,7 @@ export const Administracao: React.FC = () => {
                           return (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ fontSize: '0.78rem', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                                🟡 Expirando em {dias}d
+                                🟡 ({dias}d)
                               </span>
                               {podeEditar && (
                                 <button
@@ -787,7 +786,7 @@ export const Administracao: React.FC = () => {
                         }
                         return (
                           <span style={{ fontSize: '0.78rem', background: 'rgba(52, 211, 153, 0.12)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.25)', padding: '3px 8px', borderRadius: '6px', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                            🟢 Válida ({dias}d)
+                            🟢 ({dias}d)
                           </span>
                         );
                       })()}
