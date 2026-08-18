@@ -25,6 +25,27 @@ export interface Usuario {
   perfil?: PerfilAcesso;
   ativo: boolean;
   criado_em?: string;
+  senha_atualizada_em?: string;
+  dias_para_expirar?: number;
+  senha_expirada?: boolean;
+  chave_licenca?: string | null;
+  tipo_licenca?: string;
+  status_licenca?: string;
+}
+
+export interface Licenca {
+  id: number;
+  chave: string;
+  usuario_id?: number | null;
+  usuario_nome?: string;
+  usuario_email?: string;
+  tipo_licenca: string;
+  max_colaboradores: number;
+  data_ativacao: string;
+  data_expiracao: string;
+  status: 'Ativa' | 'Expirada' | 'Suspensa';
+  dias_restantes: number;
+  criado_em?: string;
 }
 
 export interface AuthContextType {

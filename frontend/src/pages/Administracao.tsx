@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Usuario, PerfilAcesso } from '../types/auth';
-import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX, Home, Sliders, ShieldCheck, FileBarChart, Settings, Briefcase, X } from 'lucide-react';
+import { Usuario, PerfilAcesso, Licenca } from '../types/auth';
+import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX, Home, Sliders, ShieldCheck, FileBarChart, Settings, Briefcase, X, Key, Copy, RefreshCw, Calendar, Award, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 
 interface UserColumnWidths {
   nome: number;
   email: number;
   perfil: number;
+  senha: number;
   acoes: number;
 }
 
@@ -44,7 +45,7 @@ export const Administracao: React.FC = () => {
   const { usuario, temPermissao } = useAuth();
   const podeEditar = temPermissao('administracao', 'escrita');
 
-  const [subTab, setSubTab] = useState<'usuarios' | 'perfis'>('usuarios');
+  const [subTab, setSubTab] = useState<'usuarios' | 'perfis' | 'licencas'>('usuarios');
 
   // Helper para renderizar a Badge de Perfil com cores tematicas (Admin com brilho, outros sem brilho)
   const renderPerfilBadge = (nome: string, isAdmin?: boolean) => {
@@ -86,23 +87,37 @@ export const Administracao: React.FC = () => {
   const [modalPerfilOpen, setModalPerfilOpen] = useState(false);
   const [editingPerfilId, setEditingPerfilId] = useState<number | null>(null);
 
+  // Estados de Licenças
+  const [licencas, setLicencas] = useState<Licenca[]>([]);
+  const [loadingLicencas, setLoadingLicencas] = useState(true);
+  const [modalLicencaOpen, setModalLicencaOpen] = useState(false);
+  const [newLicencaUsuarioId, setNewLicencaUsuarioId] = useState<string>('');
+  const [newLicencaTipo, setNewLicencaTipo] = useState<string>('Enterprise');
+  const [newLicencaMaxColab, setNewLicencaMaxColab] = useState<number>(500);
+  const [newLicencaValidade, setNewLicencaValidade] = useState<number>(365);
+  const [submittingLicenca, setSubmittingLicenca] = useState(false);
+  const [licencaSuccess, setLicencaSuccess] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
   // Listener para fechar modais exclusivamente ao pressionar a tecla ESC
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (modalUserOpen) setModalUserOpen(false);
         if (modalPerfilOpen) setModalPerfilOpen(false);
+        if (modalLicencaOpen) setModalLicencaOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modalUserOpen, modalPerfilOpen]);
+  }, [modalUserOpen, modalPerfilOpen, modalLicencaOpen]);
 
   // Estados para Largura Arrastável de Colunas na Tabela de Usuários (com LocalStorage por Usuário)
   const [userColumnWidths, setUserColumnWidths] = useState<UserColumnWidths>({
-    nome: 260,
-    email: 260,
-    perfil: 200,
+    nome: 220,
+    email: 220,
+    perfil: 160,
+    senha: 200,
     acoes: 140
   });
 
@@ -222,10 +237,126 @@ export const Administracao: React.FC = () => {
     }
   };
 
+  const fetchLicencas = async () => {
+    setLoadingLicencas(true);
+    try {
+      const res = await fetch('/api/licencas');
+      if (res.ok) {
+        const data = await res.json();
+        setLicencas(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar licenças:', err);
+    } finally {
+      setLoadingLicencas(false);
+    }
+  };
+
   useEffect(() => {
     fetchUsuarios();
     fetchPerfis();
+    fetchLicencas();
   }, []);
+
+  const handleRenovarSenha = async (usuarioId: number) => {
+    try {
+      const res = await fetch(`/api/usuarios/${usuarioId}/renovar-senha`, { method: 'POST' });
+      if (res.ok) {
+        setUserSuccess('Validade da senha renovada por mais 30 dias com sucesso!');
+        fetchUsuarios();
+        setTimeout(() => setUserSuccess(''), 4000);
+      }
+    } catch (err) {
+      console.error('Erro ao renovar senha:', err);
+    }
+  };
+
+  const handleCopyKey = (chave: string) => {
+    navigator.clipboard.writeText(chave);
+    setCopiedKey(chave);
+    setTimeout(() => setCopiedKey(null), 3000);
+  };
+
+  const handleCreateLicenca = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingLicenca(true);
+    try {
+      const res = await fetch('/api/licencas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          usuario_id: newLicencaUsuarioId ? parseInt(newLicencaUsuarioId, 10) : null,
+          tipo_licenca: newLicencaTipo,
+          max_colaboradores: newLicencaMaxColab,
+          validade_dias: newLicencaValidade
+        })
+      });
+
+      if (res.ok) {
+        setLicencaSuccess('Nova chave de licença gerada e ativada com sucesso!');
+        setModalLicencaOpen(false);
+        fetchLicencas();
+        fetchUsuarios();
+        setTimeout(() => setLicencaSuccess(null), 4000);
+      }
+    } catch (err) {
+      console.error('Erro ao criar licença:', err);
+    } finally {
+      setSubmittingLicenca(false);
+    }
+  };
+
+  const handleRenovarLicenca = async (id: number) => {
+    try {
+      const res = await fetch(`/api/licencas/${id}/renovar`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dias: 365 })
+      });
+      if (res.ok) {
+        setLicencaSuccess('Prazo da chave de licença renovado por +365 dias com sucesso!');
+        fetchLicencas();
+        fetchUsuarios();
+        setTimeout(() => setLicencaSuccess(null), 4000);
+      }
+    } catch (err) {
+      console.error('Erro ao renovar licença:', err);
+    }
+  };
+
+  const handleToggleStatusLicenca = async (id: number, currentStatus: string) => {
+    const nextStatus = currentStatus === 'Ativa' ? 'Suspensa' : 'Ativa';
+    try {
+      const res = await fetch(`/api/licencas/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      if (res.ok) {
+        setLicencaSuccess(`Status da licença alterado para ${nextStatus}!`);
+        fetchLicencas();
+        fetchUsuarios();
+        setTimeout(() => setLicencaSuccess(null), 4000);
+      }
+    } catch (err) {
+      console.error('Erro ao alterar status da licença:', err);
+    }
+  };
+
+  const handleDeleteLicenca = async (id: number, chave: string) => {
+    if (!window.confirm(`Tem certeza que deseja excluir a chave de licença ${chave}?`)) return;
+    try {
+      const res = await fetch(`/api/licencas/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setLicencaSuccess('Chave de licença removida com sucesso!');
+        fetchLicencas();
+        fetchUsuarios();
+        setTimeout(() => setLicencaSuccess(null), 4000);
+      }
+    } catch (err) {
+      console.error('Erro ao excluir licença:', err);
+    }
+  };
 
   // Handlers de Usuários
   const handleOpenNewUser = () => {
@@ -436,8 +567,8 @@ export const Administracao: React.FC = () => {
         </div>
       </header>
 
-      {/* Sub-Navegação (Abas Internas: Usuários | Perfis de Acesso) */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
+      {/* Sub-Navegação (Abas Internas: Usuários | Perfis de Acesso | Chaves de Licença) */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
         <button
           onClick={() => setSubTab('usuarios')}
           className={subTab === 'usuarios' ? 'btn-primary' : 'btn-secondary admin-subtab-btn'}
@@ -452,7 +583,20 @@ export const Administracao: React.FC = () => {
         >
           <Shield size={18} /> Perfis de Acesso & Permissões ({perfis.length})
         </button>
+        <button
+          onClick={() => setSubTab('licencas')}
+          className={subTab === 'licencas' ? 'btn-primary' : 'btn-secondary admin-subtab-btn'}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+        >
+          <Key size={18} color={subTab === 'licencas' ? '#ffffff' : '#38bdf8'} /> Chaves de Licença ({licencas.length})
+        </button>
       </div>
+
+      {licencaSuccess && (
+        <div style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', padding: '12px 16px', borderRadius: '12px', fontSize: '0.9rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Check size={18} /> {licencaSuccess}
+        </div>
+      )}
 
       {userSuccess && (
         <div style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', padding: '12px 16px', borderRadius: '12px', fontSize: '0.9rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -504,6 +648,10 @@ export const Administracao: React.FC = () => {
                     Perfil
                     <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'perfil')} />
                   </th>
+                  <th style={{ width: `${userColumnWidths.senha}px`, position: 'relative' }}>
+                    Expiração de Senha
+                    <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'senha')} />
+                  </th>
                   <th style={{ width: `${userColumnWidths.acoes}px`, textAlign: 'center', position: 'relative' }}>
                     Ações
                     <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'acoes')} />
@@ -513,7 +661,7 @@ export const Administracao: React.FC = () => {
               <tbody>
                 {loadingUsuarios ? (
                   <tr>
-                    <td colSpan={4} style={{ textAlign: 'center', padding: '40px' }}>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '40px' }}>
                       <Loader2 className="spin" size={20} /> Carregando usuários...
                     </td>
                   </tr>
@@ -529,6 +677,54 @@ export const Administracao: React.FC = () => {
                       {(() => {
                         const pObj = u.perfil || perfis.find(p => p.id === u.perfil_id);
                         return renderPerfilBadge(pObj?.nome || 'Sem Perfil', pObj?.is_admin);
+                      })()}
+                    </td>
+                    <td>
+                      {(() => {
+                        const dias = typeof u.dias_para_expirar === 'number' ? u.dias_para_expirar : 30;
+                        if (dias <= 0) {
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                🔴 Expirada ({Math.abs(dias)}d)
+                              </span>
+                              {podeEditar && (
+                                <button
+                                  onClick={() => handleRenovarSenha(u.id)}
+                                  className="btn-action map"
+                                  title="Renovar Validade da Senha por +30 Dias"
+                                  style={{ padding: '3px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <RefreshCw size={12} /> Renovar
+                                </button>
+                              )}
+                            </div>
+                          );
+                        }
+                        if (dias <= 5) {
+                          return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '0.78rem', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                🟡 Expirando em {dias}d
+                              </span>
+                              {podeEditar && (
+                                <button
+                                  onClick={() => handleRenovarSenha(u.id)}
+                                  className="btn-action map"
+                                  title="Renovar Validade por +30 Dias"
+                                  style={{ padding: '3px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <RefreshCw size={12} /> +30d
+                                </button>
+                              )}
+                            </div>
+                          );
+                        }
+                        return (
+                          <span style={{ fontSize: '0.78rem', background: 'rgba(52, 211, 153, 0.12)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.25)', padding: '3px 8px', borderRadius: '6px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            🟢 Válida ({dias}d)
+                          </span>
+                        );
                       })()}
                     </td>
                     <td style={{ textAlign: 'center' }}>
@@ -703,6 +899,211 @@ export const Administracao: React.FC = () => {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* CONTEÚDO DA ABA: CHAVES DE LICENÇA (LICENCIAMENTO) */}
+      {/* ======================================================== */}
+      {subTab === 'licencas' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* Cards de Resumo de Licenças */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '12px', borderRadius: '12px', color: '#38bdf8' }}>
+                <Key size={24} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Total de Chaves</span>
+                <h4 style={{ fontSize: '1.5rem', fontWeight: 800 }}>{licencas.length}</h4>
+              </div>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ background: 'rgba(52, 211, 153, 0.15)', padding: '12px', borderRadius: '12px', color: '#34d399' }}>
+                <CheckCircle2 size={24} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Licenças Ativas</span>
+                <h4 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#34d399' }}>
+                  {licencas.filter(l => l.status === 'Ativa' && l.dias_restantes > 0).length}
+                </h4>
+              </div>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '20px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.15)', padding: '12px', borderRadius: '12px', color: '#f87171' }}>
+                <XCircle size={24} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Expiradas / Suspensas</span>
+                <h4 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#f87171' }}>
+                  {licencas.filter(l => l.status !== 'Ativa' || l.dias_restantes <= 0).length}
+                </h4>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabela de Chaves de Licença */}
+          <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Key size={20} color="#38bdf8" />
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Gerenciador de Licenças ({licencas.length})</h3>
+              </div>
+
+              <button
+                onClick={() => podeEditar && setModalLicencaOpen(true)}
+                className="btn-primary"
+                disabled={!podeEditar}
+                style={{ fontSize: '0.88rem', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+                title={podeEditar ? 'Gerar Nova Licença' : 'Ação desativada: Seu perfil permite apenas visualização'}
+              >
+                <Plus size={16} /> Gerar Nova Licença
+              </button>
+            </div>
+
+            <div className="table-flex-wrapper" style={{ overflowX: 'auto' }}>
+              <table className="custom-table" style={{ width: '100%' }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '250px' }}>Chave de Licença</th>
+                    <th>Usuário Vinculado</th>
+                    <th style={{ width: '130px' }}>Plano</th>
+                    <th style={{ width: '140px' }}>Limite Colab.</th>
+                    <th style={{ width: '200px' }}>Validade / Vencimento</th>
+                    <th style={{ width: '120px' }}>Status</th>
+                    <th style={{ textAlign: 'center', width: '140px' }}>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingLicencas ? (
+                    <tr>
+                      <td colSpan={7} style={{ textAlign: 'center', padding: '40px' }}>
+                        <Loader2 className="spin" size={20} /> Carregando chaves de licença...
+                      </td>
+                    </tr>
+                  ) : licencas.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                        Nenhuma chave de licença encontrada.
+                      </td>
+                    </tr>
+                  ) : licencas.map((lic) => {
+                    const isExpirada = lic.dias_restantes <= 0 || lic.status === 'Expirada';
+                    const isSuspensa = lic.status === 'Suspensa';
+
+                    return (
+                      <tr key={lic.id}>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <code style={{ fontFamily: 'monospace', fontSize: '0.88rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', padding: '4px 8px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.25)', fontWeight: 700 }}>
+                              {lic.chave}
+                            </code>
+                            <button
+                              onClick={() => handleCopyKey(lic.chave)}
+                              className="btn-action map"
+                              style={{ padding: '4px 6px' }}
+                              title={copiedKey === lic.chave ? 'Copiada!' : 'Copiar Chave'}
+                            >
+                              {copiedKey === lic.chave ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
+                            </button>
+                          </div>
+                        </td>
+
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{lic.usuario_nome}</span>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{lic.usuario_email}</span>
+                          </div>
+                        </td>
+
+                        <td>
+                          <span style={{ fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                            <Award size={11} style={{ display: 'inline', marginRight: '4px' }} />
+                            {lic.tipo_licenca}
+                          </span>
+                        </td>
+
+                        <td>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                            Até {lic.max_colaboradores} colab.
+                          </span>
+                        </td>
+
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <Calendar size={13} color="var(--text-dim)" />
+                              {new Date(lic.data_expiracao).toLocaleDateString('pt-BR')}
+                            </span>
+                            <span style={{ fontSize: '0.74rem', color: isExpirada ? '#f87171' : 'var(--text-dim)' }}>
+                              {isExpirada ? `Expirada há ${Math.abs(lic.dias_restantes)}d` : `Faltam ${lic.dias_restantes} dias`}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td>
+                          {isSuspensa ? (
+                            <span style={{ fontSize: '0.78rem', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                              Suspensa
+                            </span>
+                          ) : isExpirada ? (
+                            <span style={{ fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                              Expirada
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.78rem', background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                              Ativa
+                            </span>
+                          )}
+                        </td>
+
+                        <td style={{ textAlign: 'center' }}>
+                          <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => podeEditar && handleRenovarLicenca(lic.id)}
+                              className="btn-action map"
+                              disabled={!podeEditar}
+                              style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+                              title={podeEditar ? "Renovar Licença por +365 dias" : "Ação desativada: Seu perfil permite apenas visualização"}
+                            >
+                              <RefreshCw size={14} />
+                            </button>
+
+                            <button
+                              onClick={() => podeEditar && handleToggleStatusLicenca(lic.id, lic.status)}
+                              className="btn-action"
+                              disabled={!podeEditar}
+                              style={{
+                                background: lic.status === 'Ativa' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(52, 211, 153, 0.15)',
+                                color: lic.status === 'Ativa' ? '#fbbf24' : '#34d399',
+                                opacity: podeEditar ? 1 : 0.4,
+                                cursor: podeEditar ? 'pointer' : 'not-allowed'
+                              }}
+                              title={podeEditar ? (lic.status === 'Ativa' ? 'Suspender Licença' : 'Ativar Licença') : 'Ação desativada: Seu perfil permite apenas visualização'}
+                            >
+                              {lic.status === 'Ativa' ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
+                            </button>
+
+                            <button
+                              onClick={() => podeEditar && handleDeleteLicenca(lic.id, lic.chave)}
+                              className="btn-action delete"
+                              disabled={!podeEditar}
+                              style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
+                              title={podeEditar ? "Excluir Licença" : "Ação desativada: Seu perfil permite apenas visualização"}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
@@ -979,6 +1380,102 @@ export const Administracao: React.FC = () => {
                 </button>
                 <button type="submit" className="btn-primary" disabled={submittingPerfil}>
                   {submittingPerfil ? <Loader2 size={16} className="spin" /> : <Check size={16} />} {editingPerfilId ? 'SALVAR PERFIL' : 'CRIAR PERFIL'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL DE GERAÇÃO DE NOVA CHAVE DE LICENÇA */}
+      {/* ======================================================== */}
+      {modalLicencaOpen && (
+        <div className="modal-backdrop">
+          <div className="modal-content" style={{ maxWidth: '540px', padding: '24px' }}>
+            <div className="modal-header">
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>GERAR NOVA CHAVE DE LICENÇA</h3>
+              <button onClick={() => setModalLicencaOpen(false)} className="btn-close" title="Fechar">
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateLicenca} className="modal-form">
+              <div className="form-group">
+                <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+                  VINCULAR A UM USUÁRIO (OPCIONAL)
+                </label>
+                <select
+                  value={newLicencaUsuarioId}
+                  onChange={(e) => setNewLicencaUsuarioId(e.target.value)}
+                  className="custom-select"
+                  disabled={submittingLicenca}
+                >
+                  <option value="">Selecione um usuário para vincular...</option>
+                  {usuarios.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.nome} ({u.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+                  TIPO / PLANO DE LICENÇA *
+                </label>
+                <select
+                  value={newLicencaTipo}
+                  onChange={(e) => setNewLicencaTipo(e.target.value)}
+                  className="custom-select"
+                  disabled={submittingLicenca}
+                  required
+                >
+                  <option value="Enterprise">Enterprise (Acesso Completo)</option>
+                  <option value="Profissional">Profissional (Recursos Avançados)</option>
+                  <option value="Básica">Básica (Padrão)</option>
+                  <option value="Dev / Trial">Dev / Avaliação (Trial)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="form-group">
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+                    LIMITE DE COLABORADORES
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100000"
+                    value={newLicencaMaxColab}
+                    onChange={(e) => setNewLicencaMaxColab(parseInt(e.target.value, 10) || 100)}
+                    disabled={submittingLicenca}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+                    VALIDADE (DIAS)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="3650"
+                    value={newLicencaValidade}
+                    onChange={(e) => setNewLicencaValidade(parseInt(e.target.value, 10) || 365)}
+                    disabled={submittingLicenca}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer" style={{ marginTop: '24px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                <button type="button" onClick={() => setModalLicencaOpen(false)} className="btn-secondary" disabled={submittingLicenca}>
+                  CANCELAR
+                </button>
+                <button type="submit" className="btn-primary" disabled={submittingLicenca}>
+                  {submittingLicenca ? <Loader2 size={16} className="spin" /> : <Key size={16} />} GERAR LICENÇA
                 </button>
               </div>
             </form>

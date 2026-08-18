@@ -192,6 +192,40 @@ const initDb = async () => {
     `);
     console.log('✅ Migração de vínculo de perfis de usuários executada!');
 
+    // Migration SQL: Expiração de Senha (30 dias)
+    await pool.query(`
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_atualizada_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+    `);
+
+    // Tabela de Chaves de Licença
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chaves_licenca (
+        id SERIAL PRIMARY KEY,
+        chave VARCHAR(100) NOT NULL UNIQUE,
+        usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
+        tipo_licenca VARCHAR(50) DEFAULT 'Enterprise',
+        max_colaboradores INT DEFAULT 500,
+        data_ativacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        data_expiracao TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '365 days'),
+        status VARCHAR(20) DEFAULT 'Ativa',
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Se a tabela de licenças estiver vazia para algum usuário, criar chaves automáticas
+    await pool.query(`
+      INSERT INTO chaves_licenca (chave, usuario_id, tipo_licenca, max_colaboradores, status)
+      SELECT 
+        'REGZ-2026-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)) || '-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)) || '-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)),
+        u.id,
+        'Enterprise',
+        500,
+        'Ativa'
+      FROM usuarios u
+      WHERE NOT EXISTS (SELECT 1 FROM chaves_licenca l WHERE l.usuario_id = u.id);
+    `);
+    console.log('✅ Migração de chaves de licença e expiração de senhas de 30 dias concluída!');
+
     // 3. Tabela de Cargos CBO
     await pool.query(`
       CREATE TABLE IF NOT EXISTS cargos (
@@ -650,32 +684,44 @@ app.delete('/api/perfis-acesso/:id', checkPermission('administracao'), async (re
 // ROTAS DE GESTÃO DE USUÁRIOS (ADMIN PAINEL)
 // ==========================================
 
-// Listar todos os usuários com dados do perfil
+// Listar todos os usuários com dados do perfil e expiração de senha
 app.get('/api/usuarios', async (req: Request, res: Response) => {
   try {
     const query = `
-      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em,
-             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em, u.senha_atualizada_em,
+             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
+             (30 - FLOOR(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - COALESCE(u.senha_atualizada_em, u.criado_em))) / 86400))::int as dias_para_expirar,
+             l.chave as chave_licenca, l.tipo_licenca, l.status as status_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
+      LEFT JOIN chaves_licenca l ON l.usuario_id = u.id
       ORDER BY u.id ASC
     `;
     const result = await pool.query(query);
-    const usuariosFormatados = result.rows.map(u => ({
-      id: u.id,
-      nome: u.nome,
-      email: u.email,
-      ativo: u.ativo,
-      perfil_id: u.perfil_id,
-      criado_em: u.criado_em,
-      perfil: u.perfil_id ? {
-        id: u.perfil_id,
-        nome: u.perfil_nome,
-        descricao: u.perfil_descricao,
-        is_admin: !!u.is_admin,
-        permissoes: u.permissoes
-      } : null
-    }));
+    const usuariosFormatados = result.rows.map(u => {
+      const diasRestantes = typeof u.dias_para_expirar === 'number' ? u.dias_para_expirar : 30;
+      return {
+        id: u.id,
+        nome: u.nome,
+        email: u.email,
+        ativo: u.ativo,
+        perfil_id: u.perfil_id,
+        criado_em: u.criado_em,
+        senha_atualizada_em: u.senha_atualizada_em || u.criado_em,
+        dias_para_expirar: diasRestantes,
+        senha_expirada: diasRestantes <= 0,
+        chave_licenca: u.chave_licenca || null,
+        tipo_licenca: u.tipo_licenca || 'Enterprise',
+        status_licenca: u.status_licenca || 'Ativa',
+        perfil: u.perfil_id ? {
+          id: u.perfil_id,
+          nome: u.perfil_nome,
+          descricao: u.perfil_descricao,
+          is_admin: !!u.is_admin,
+          permissoes: u.permissoes
+        } : null
+      };
+    });
     res.json(usuariosFormatados);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar usuários' });
@@ -815,6 +861,142 @@ app.put('/api/usuarios/:id/status', async (req: Request, res: Response) => {
     res.json(result.rows[0]);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao alterar status do usuário' });
+  }
+});
+
+// Renovar validade da senha por mais 30 dias
+app.post('/api/usuarios/:id/renovar-senha', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await pool.query('UPDATE usuarios SET senha_atualizada_em = CURRENT_TIMESTAMP WHERE id = $1', [id]);
+    res.json({ message: 'Validade da senha renovada por mais 30 dias com sucesso!' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao renovar validade da senha' });
+  }
+});
+
+// ==========================================
+// ROTAS DE GESTÃO DE CHAVES DE LICENÇA
+// ==========================================
+
+// Listar todas as chaves de licença
+app.get('/api/licencas', async (req: Request, res: Response) => {
+  try {
+    const query = `
+      SELECT l.id, l.chave, l.usuario_id, l.tipo_licenca, l.max_colaboradores,
+             l.data_ativacao, l.data_expiracao, l.status, l.criado_em,
+             u.nome as usuario_nome, u.email as usuario_email,
+             CEIL(EXTRACT(EPOCH FROM (l.data_expiracao - CURRENT_TIMESTAMP)) / 86400)::int as dias_restantes
+      FROM chaves_licenca l
+      LEFT JOIN usuarios u ON l.usuario_id = u.id
+      ORDER BY l.id DESC
+    `;
+    const result = await pool.query(query);
+    const licencasFormatadas = result.rows.map(l => ({
+      id: l.id,
+      chave: l.chave,
+      usuario_id: l.usuario_id,
+      usuario_nome: l.usuario_nome || 'Não Vinculado',
+      usuario_email: l.usuario_email || '-',
+      tipo_licenca: l.tipo_licenca,
+      max_colaboradores: l.max_colaboradores,
+      data_ativacao: l.data_ativacao,
+      data_expiracao: l.data_expiracao,
+      status: l.status,
+      dias_restantes: typeof l.dias_restantes === 'number' ? l.dias_restantes : 0,
+      criado_em: l.criado_em
+    }));
+    res.json(licencasFormatadas);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar chaves de licença' });
+  }
+});
+
+// Gerar nova chave de licença
+app.post('/api/licencas', async (req: Request, res: Response) => {
+  const { usuario_id, tipo_licenca, max_colaboradores, validade_dias } = req.body;
+
+  try {
+    const randomHex = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+    const chaveGerada = `REGZ-2026-${randomHex()}-${randomHex()}-${randomHex()}`;
+    const diasValidade = validade_dias ? parseInt(validade_dias, 10) : 365;
+
+    const query = `
+      INSERT INTO chaves_licenca (chave, usuario_id, tipo_licenca, max_colaboradores, data_expiracao, status)
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP + ($5 || ' days')::interval, 'Ativa')
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      chaveGerada,
+      usuario_id || null,
+      tipo_licenca || 'Enterprise',
+      max_colaboradores || 500,
+      diasValidade
+    ]);
+
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao gerar chave de licença' });
+  }
+});
+
+// Renovar prazo da licença por +365 dias (ou dias customizados)
+app.put('/api/licencas/:id/renovar', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { dias } = req.body;
+  const diasAdicionais = dias ? parseInt(dias, 10) : 365;
+
+  try {
+    const query = `
+      UPDATE chaves_licenca
+      SET data_expiracao = GREATEST(data_expiracao, CURRENT_TIMESTAMP) + ($1 || ' days')::interval,
+          status = 'Ativa'
+      WHERE id = $2
+      RETURNING *
+    `;
+    const result = await pool.query(query, [diasAdicionais, id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Licença não encontrada' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao renovar chave de licença' });
+  }
+});
+
+// Alterar status da licença (Ativa, Suspensa, Expirada)
+app.put('/api/licencas/:id/status', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!['Ativa', 'Suspensa', 'Expirada'].includes(status)) {
+    return res.status(400).json({ error: 'Status de licença inválido' });
+  }
+
+  try {
+    const result = await pool.query('UPDATE chaves_licenca SET status = $1 WHERE id = $2 RETURNING *', [status, id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Licença não encontrada' });
+    }
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao atualizar status da licença' });
+  }
+});
+
+// Excluir chave de licença
+app.delete('/api/licencas/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM chaves_licenca WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Licença não encontrada' });
+    }
+    res.json({ message: 'Licença excluída com sucesso' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao excluir chave de licença' });
   }
 });
 
