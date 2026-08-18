@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Colaborador, Cargo, CampoCustomizado, ESTADOS_MAP, normalizeText } from '../types/colaborador';
-import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink, Briefcase, RotateCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { UserPlus, Search, Trash2, MapPin, Upload, Camera, X, Check, Loader2, RotateCcw, Columns, ChevronDown, Bot, Map, ExternalLink, Briefcase, RotateCw, ChevronLeft, ChevronRight, QrCode, Printer, Download } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface ColumnConfig {
   foto: boolean;
@@ -61,6 +62,49 @@ export const Colaboradores: React.FC = () => {
     }
     return 5;
   });
+
+  // Modal de Crachá Digital & QR Code
+  const [selectedColabQrCode, setSelectedColabQrCode] = useState<Colaborador | null>(null);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+
+  const openQrModal = (colab: Colaborador) => {
+    setSelectedColabQrCode(colab);
+    setIsQrModalOpen(true);
+  };
+
+  const closeQrModal = () => {
+    setIsQrModalOpen(false);
+    setSelectedColabQrCode(null);
+  };
+
+  const downloadQrCode = () => {
+    if (!selectedColabQrCode) return;
+    const svgElement = document.getElementById(`qr-code-svg-${selectedColabQrCode.id}`);
+    if (!svgElement) return;
+
+    const svgData = new XMLSerializer().serializeToString(svgElement);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+
+    img.onload = () => {
+      canvas.width = img.width + 40;
+      canvas.height = img.height + 40;
+      if (ctx) {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 20, 20);
+        const pngFile = canvas.toDataURL('image/png');
+        const downloadLink = document.createElement('a');
+        downloadLink.href = pngFile;
+        downloadLink.download = `qrcode_regz_${selectedColabQrCode.nome.toLowerCase().replace(/\s+/g, '_')}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+      }
+    };
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+  };
 
   // Modal Principal de Cadastro / Edição
   const [modalOpen, setModalOpen] = useState(false);
@@ -1075,6 +1119,17 @@ export const Colaboradores: React.FC = () => {
                     {/* Coluna Ações Centralizada */}
                     <td className="col-acoes" style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, minWidth: '130px', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'center' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openQrModal(c);
+                          }}
+                          className="btn-action qrcode"
+                          title="Ver Crachá Digital & QR Code"
+                        >
+                          <QrCode size={15} />
+                        </button>
+
                         {(c.cidade || c.logradouro || c.cep) && (
                           <button
                             onClick={(e) => {
@@ -1634,6 +1689,92 @@ export const Colaboradores: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Crachá Digital & QR Code */}
+      {isQrModalOpen && selectedColabQrCode && (
+        <div className="modal-overlay" onClick={closeQrModal}>
+          <div className="modal-content cracha-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', padding: '24px' }}>
+            <div className="modal-header">
+              <h2>Crachá Digital & QR Code</h2>
+              <button onClick={closeQrModal} className="btn-icon">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="cracha-card-wrapper">
+              <div className="cracha-card" id="cracha-card-print">
+                <div className="cracha-header">
+                  <div className="cracha-brand">REGZ • RH</div>
+                  <span className={`cracha-status-tag ${selectedColabQrCode.ativo !== false ? 'ativo' : 'inativo'}`}>
+                    {selectedColabQrCode.ativo !== false ? 'ATIVO' : 'INATIVO'}
+                  </span>
+                </div>
+
+                <div className="cracha-body">
+                  <div className="cracha-avatar">
+                    {selectedColabQrCode.foto_url ? (
+                      <img src={selectedColabQrCode.foto_url} alt={selectedColabQrCode.nome} />
+                    ) : (
+                      <span className="cracha-avatar-initials">{selectedColabQrCode.nome.charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+
+                  <div className="cracha-nome">{selectedColabQrCode.nome}</div>
+                  <div className="cracha-cargo">{selectedColabQrCode.cargo || 'Colaborador'}</div>
+
+                  <div className="cracha-info-grid">
+                    <div className="cracha-info-item">
+                      <label>CPF</label>
+                      <span>{selectedColabQrCode.cpf}</span>
+                    </div>
+                    <div className="cracha-info-item">
+                      <label>ID REGZ</label>
+                      <span>#{selectedColabQrCode.id}</span>
+                    </div>
+                    <div className="cracha-info-item">
+                      <label>CIDADE/UF</label>
+                      <span>{selectedColabQrCode.cidade ? `${selectedColabQrCode.cidade}/${selectedColabQrCode.estado || ''}` : '-'}</span>
+                    </div>
+                    <div className="cracha-info-item">
+                      <label>REGISTRO</label>
+                      <span>{selectedColabQrCode.criado_em ? new Date(selectedColabQrCode.criado_em).toLocaleDateString('pt-BR') : '-'}</span>
+                    </div>
+                  </div>
+
+                  <div className="cracha-qrcode-box">
+                    <QRCodeSVG
+                      id={`qr-code-svg-${selectedColabQrCode.id}`}
+                      value={JSON.stringify({
+                        id: selectedColabQrCode.id,
+                        nome: selectedColabQrCode.nome,
+                        cpf: selectedColabQrCode.cpf,
+                        cargo: selectedColabQrCode.cargo,
+                        ativo: selectedColabQrCode.ativo !== false,
+                        sistema: 'REGZ_GESTÃO_DE_PESSOAS'
+                      })}
+                      size={150}
+                      level="H"
+                      includeMargin={true}
+                    />
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '4px' }}>
+                    Escaneie para validar a identificação
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', width: '100%', justifyContent: 'center' }}>
+                <button onClick={downloadQrCode} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
+                  <Download size={15} /> Baixar QR Code (PNG)
+                </button>
+                <button onClick={() => window.print()} className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
+                  <Printer size={15} /> Imprimir Crachá
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

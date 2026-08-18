@@ -2643,3 +2643,175 @@ select option,
   }
 }
 
+/* ======================================================== */
+/* CRACHÁ DIGITAL & QR CODE MODAL */
+/* ======================================================== */
+.btn-action.qrcode {
+  background: rgba(99, 102, 241, 0.12);
+  color: #6366f1;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.btn-action.qrcode:hover {
+  background: rgba(99, 102, 241, 0.25);
+  color: #818cf8;
+  border-color: rgba(99, 102, 241, 0.5);
+}
+
+.cracha-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 10px;
+}
+
+.cracha-card {
+  width: 340px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  padding: 20px;
+  color: #ffffff;
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme="light"] .cracha-card {
+  background: linear-gradient(135deg, #ffffff, #f1f5f9);
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .cracha-card {
+  background: #141416;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #f4f4f5;
+}
+
+.cracha-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+[data-theme="light"] .cracha-header {
+  border-bottom-color: #e2e8f0;
+}
+
+.cracha-brand {
+  font-family: var(--font-primary);
+  font-weight: 800;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+  background: linear-gradient(90deg, #818cf8, #38bdf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.cracha-status-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+}
+
+.cracha-status-tag.ativo {
+  background: rgba(52, 211, 153, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+}
+
+.cracha-status-tag.inativo {
+  background: rgba(251, 113, 133, 0.2);
+  color: #fb7185;
+  border: 1px solid rgba(251, 113, 133, 0.4);
+}
+
+.cracha-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.cracha-avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid #6366f1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.cracha-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cracha-avatar-initials {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #6366f1;
+}
+
+.cracha-nome {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.cracha-cargo {
+  font-size: 0.85rem;
+  color: #818cf8;
+  font-weight: 600;
+}
+
+[data-theme="light"] .cracha-cargo {
+  color: #4f46e5;
+}
+
+.cracha-info-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  margin-top: 8px;
+  text-align: left;
+}
+
+[data-theme="light"] .cracha-info-grid {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.cracha-info-item label {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  display: block;
+}
+
+.cracha-qrcode-box {
+  background: #ffffff;
+  padding: 12px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  margin-top: 8px;
+}
+

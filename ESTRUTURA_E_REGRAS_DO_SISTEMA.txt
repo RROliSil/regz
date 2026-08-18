@@ -134,9 +134,10 @@ B. Cadastro e Otimização de Fotos de Colaboradores:
 - Ao enviar ou alterar a foto de um colaborador, a imagem é comprimida e convertida no navegador para Base64 ultraleve (~25KB) para otimizar o banco de dados.
 - O botão "Remover Foto Atual" exibe uma estilização vermelha intensa (#f43f5e) sem brilho/sombra (box-shadow: none) e texto/ícone em branco (#ffffff) em todos os temas.
 
-C. Validação de Dados e Máscaras:
+C. Validação de Dados, Máscaras & Crachá Digital:
 - CPF: Validação de formato (000.000.000-00) e verificação de duplicidade no banco.
 - CEP: Integração automática com a API ViaCEP para preenchimento automático de Logradouro, Bairro, Cidade e Estado.
+- Crachá Digital & QR Code: Geração de QR Code 2D vetorizado (qrcode.react) e crachá corporativo com avatar, nome, CPF, cargo, departamento, registro e status do colaborador, com suporte a download em imagem PNG e impressão executiva.
 
 D. Busca e Filtro de Colaboradores:
 - Suporta busca unificada por Nome, CPF, Cargo, Cidade ou Nome Completo do Estado.
