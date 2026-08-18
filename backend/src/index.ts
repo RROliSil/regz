@@ -126,6 +126,36 @@ const CBO_DATASET = [
   { codigo: '5174-10', titulo: 'Porteiro de edifício' }
 ];
 
+// Função de Sincronização Bidirecional e Auto-Invalidação no Banco de Dados
+const syncDatabaseLicenses = async () => {
+  try {
+    // 1. Invalidação automática no banco de dados para licenças com prazo de validade expirado
+    await pool.query(`
+      UPDATE chaves_licenca
+      SET status = 'Expirada'
+      WHERE data_expiracao < CURRENT_TIMESTAMP AND status = 'Ativa';
+    `);
+
+    // 2. Preencher/sincronizar usuarios.chave_licenca a partir da tabela chaves_licenca
+    await pool.query(`
+      UPDATE usuarios u
+      SET chave_licenca = l.chave
+      FROM chaves_licenca l
+      WHERE l.usuario_id = u.id AND (u.chave_licenca IS NULL OR u.chave_licenca != l.chave);
+    `);
+
+    // 3. Sincronizar chaves_licenca.usuario_id a partir de usuarios.chave_licenca
+    await pool.query(`
+      UPDATE chaves_licenca l
+      SET usuario_id = u.id
+      FROM usuarios u
+      WHERE u.chave_licenca IS NOT NULL AND u.chave_licenca = l.chave AND (l.usuario_id IS NULL OR l.usuario_id != u.id);
+    `);
+  } catch (err: any) {
+    console.error('⚠️ Erro ao sincronizar chaves de licença no banco:', err.message);
+  }
+};
+
 // Inicialização e migrations do banco de dados
 const initDb = async () => {
   try {
@@ -231,7 +261,8 @@ const initDb = async () => {
       FROM usuarios u
       WHERE NOT EXISTS (SELECT 1 FROM chaves_licenca l WHERE l.usuario_id = u.id);
     `);
-    console.log('✅ Migração de chaves de licença com validade padrão de 30 dias concluída!');
+    await syncDatabaseLicenses();
+    console.log('✅ Migração e sincronização estrita de chaves de licença no banco de dados concluída!');
 
     // 3. Tabela de Cargos CBO
     await pool.query(`
@@ -470,6 +501,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
   }
 
   try {
+    await syncDatabaseLicenses();
     const query = `
       SELECT u.id, u.nome, u.email, u.senha_hash, u.ativo, u.perfil_id, u.chave_licenca,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
@@ -549,6 +581,7 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
 
   const token = authHeader.split(' ')[1];
   try {
+    await syncDatabaseLicenses();
     const decoded: any = jwt.verify(token, JWT_SECRET);
     const query = `
       SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca, u.is_super_admin,
@@ -728,6 +761,7 @@ app.delete('/api/perfis-acesso/:id', checkPermission('administracao'), async (re
 // Listar todos os usuários com dados do perfil e expiração de senha
 app.get('/api/usuarios', async (req: Request, res: Response) => {
   try {
+    await syncDatabaseLicenses();
     const query = `
       SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em, u.senha_atualizada_em, u.chave_licenca, u.is_super_admin,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
@@ -791,16 +825,33 @@ app.post('/api/usuarios', async (req: Request, res: Response) => {
     }
 
     const senhaHash = await bcrypt.hash(senha, 10);
+    let finalChave = chave_licenca && chave_licenca.trim() ? chave_licenca.trim() : null;
+
+    if (!finalChave) {
+      const randomHex = () => Math.random().toString(36).substring(2, 6).toUpperCase();
+      finalChave = `REGZ-2026-${randomHex()}-${randomHex()}-${randomHex()}`;
+    }
+
     const result = await pool.query(
       'INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo, chave_licenca) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-      [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false, chave_licenca || null]
+      [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false, finalChave]
     );
 
     const newId = result.rows[0].id;
 
-    if (chave_licenca && chave_licenca.trim()) {
-      await pool.query('UPDATE chaves_licenca SET usuario_id = $1 WHERE chave = $2', [newId, chave_licenca.trim()]);
+    if (finalChave) {
+      const checkLic = await pool.query('SELECT id FROM chaves_licenca WHERE chave = $1', [finalChave]);
+      if (checkLic.rows.length > 0) {
+        await pool.query('UPDATE chaves_licenca SET usuario_id = $1, status = \'Ativa\' WHERE chave = $2', [newId, finalChave]);
+      } else {
+        await pool.query(
+          'INSERT INTO chaves_licenca (chave, usuario_id, tipo_licenca, data_expiracao, status) VALUES ($1, $2, \'Enterprise\', CURRENT_TIMESTAMP + INTERVAL \'30 days\', \'Ativa\')',
+          [finalChave, newId]
+        );
+      }
     }
+
+    await syncDatabaseLicenses();
 
     const queryUser = `
       SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca, u.criado_em,
@@ -863,8 +914,9 @@ app.put('/api/usuarios/:id', async (req: Request, res: Response) => {
     }
 
     if (chave_licenca && chave_licenca.trim()) {
-      await pool.query('UPDATE chaves_licenca SET usuario_id = $1 WHERE chave = $2', [id, chave_licenca.trim()]);
+      await pool.query('UPDATE chaves_licenca SET usuario_id = $1, status = \'Ativa\' WHERE chave = $2', [id, chave_licenca.trim()]);
     }
+    await syncDatabaseLicenses();
 
     const queryUser = `
       SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca, u.criado_em,
@@ -962,6 +1014,7 @@ app.post('/api/usuarios/:id/renovar-senha', async (req: Request, res: Response) 
 // Listar todas as chaves de licença
 app.get('/api/licencas', async (req: Request, res: Response) => {
   try {
+    await syncDatabaseLicenses();
     const query = `
       SELECT l.id, l.chave, l.usuario_id, l.tipo_licenca,
              l.data_ativacao, l.data_expiracao, l.status, l.criado_em,
@@ -1012,6 +1065,11 @@ app.post('/api/licencas', async (req: Request, res: Response) => {
       diasValidade
     ]);
 
+    if (usuario_id) {
+      await pool.query('UPDATE usuarios SET chave_licenca = $1 WHERE id = $2', [chaveGerada, usuario_id]);
+    }
+
+    await syncDatabaseLicenses();
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao gerar chave de licença' });
@@ -1068,10 +1126,18 @@ app.put('/api/licencas/:id/status', async (req: Request, res: Response) => {
 app.delete('/api/licencas/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    const licRes = await pool.query('SELECT chave FROM chaves_licenca WHERE id = $1', [id]);
+    if (licRes.rows.length > 0) {
+      const chaveExcluida = licRes.rows[0].chave;
+      await pool.query('UPDATE usuarios SET chave_licenca = NULL WHERE chave_licenca = $1', [chaveExcluida]);
+    }
+
     const result = await pool.query('DELETE FROM chaves_licenca WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Licença não encontrada' });
     }
+
+    await syncDatabaseLicenses();
     res.json({ message: 'Licença excluída com sucesso' });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao excluir chave de licença' });
