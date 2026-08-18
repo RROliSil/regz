@@ -1776,7 +1776,7 @@ export const Colaboradores: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '10px', width: '100%', justifyContent: 'center' }}>
-                <button onClick={downloadQrCode} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
+                <button onClick={downloadQrCode} className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
                   <Download size={15} /> Baixar QR Code (PNG)
                 </button>
                 <button onClick={() => window.print()} className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
