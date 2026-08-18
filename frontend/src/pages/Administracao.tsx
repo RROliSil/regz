@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Usuario, PerfilAcesso, Licenca } from '../types/auth';
-import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX, Home, Sliders, ShieldCheck, FileBarChart, Settings, Briefcase, X, Key, Copy, RefreshCw, Calendar, Award, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
+import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX, Home, Sliders, ShieldCheck, FileBarChart, Settings, Briefcase, X, Key, Copy, RefreshCw, Calendar, Award, CheckCircle2, XCircle, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 
 interface UserColumnWidths {
   nome: number;
@@ -169,6 +169,14 @@ export const Administracao: React.FC = () => {
   const [perfilError, setPerfilError] = useState('');
   const [perfilSuccess, setPerfilSuccess] = useState('');
   const [submittingPerfil, setSubmittingPerfil] = useState(false);
+
+  // Estado para visibilidade da chave de licenca por ID (Mascara com olho revelador para Admin)
+  const [visibleKeys, setVisibleKeys] = useState<Record<number, boolean>>({});
+
+  const handleToggleKeyVisibility = (licId: number) => {
+    if (!isUserAdminTag) return;
+    setVisibleKeys(prev => ({ ...prev, [licId]: !prev[licId] }));
+  };
 
   // Arraste de Redimensionamento de Colunas
   const handleMouseDownResize = (e: React.MouseEvent, colKey: keyof UserColumnWidths) => {
@@ -703,16 +711,26 @@ export const Administracao: React.FC = () => {
                             </span>
                           );
                         }
-                        if (u.chave_licenca) {
+                        if (!u.chave_licenca) {
                           return (
-                            <code style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', padding: '3px 8px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.25)', fontWeight: 700 }}>
-                              {u.chave_licenca}
-                            </code>
+                            <span style={{ fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                              🔴 Sem Licença
+                            </span>
+                          );
+                        }
+                        const isTrial = u.tipo_licenca === 'Trial' || u.tipo_licenca === 'Dev / Trial';
+                        if (isTrial) {
+                          return (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', background: 'rgba(20, 184, 166, 0.18)', color: '#2dd4bf', padding: '4px 10px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(20, 184, 166, 0.35)', whiteSpace: 'nowrap' }}>
+                              <Key size={13} style={{ flexShrink: 0 }} />
+                              Trial (30d)
+                            </span>
                           );
                         }
                         return (
-                          <span style={{ fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                            🔴 Sem Licença
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', background: 'rgba(99, 102, 241, 0.18)', color: '#a5b4fc', padding: '4px 10px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(99, 102, 241, 0.35)', whiteSpace: 'nowrap' }}>
+                            <Award size={13} style={{ flexShrink: 0 }} />
+                            Enterprise
                           </span>
                         );
                       })()}
@@ -1036,16 +1054,27 @@ export const Administracao: React.FC = () => {
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <code style={{ fontFamily: 'monospace', fontSize: '0.88rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', padding: '4px 8px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.25)', fontWeight: 700 }}>
-                              {lic.chave}
+                              {visibleKeys[lic.id] && isUserAdminTag ? lic.chave : 'REGZ-2026-••••-••••-••••'}
                             </code>
                             <button
-                              onClick={() => handleCopyKey(lic.chave)}
+                              onClick={() => handleToggleKeyVisibility(lic.id)}
                               className="btn-action map"
-                              style={{ padding: '4px 6px' }}
-                              title={copiedKey === lic.chave ? 'Copiada!' : 'Copiar Chave'}
+                              disabled={!isUserAdminTag}
+                              style={{ padding: '4px 6px', opacity: isUserAdminTag ? 1 : 0.4, cursor: isUserAdminTag ? 'pointer' : 'not-allowed' }}
+                              title={isUserAdminTag ? (visibleKeys[lic.id] ? 'Ocultar Chave' : 'Revelar Chave de Licença') : 'Apenas o perfil Administrador pode revelar a licença'}
                             >
-                              {copiedKey === lic.chave ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
+                              {visibleKeys[lic.id] && isUserAdminTag ? <EyeOff size={13} color="#fca5a5" /> : <Eye size={13} color="#38bdf8" />}
                             </button>
+                            {visibleKeys[lic.id] && isUserAdminTag && (
+                              <button
+                                onClick={() => handleCopyKey(lic.chave)}
+                                className="btn-action map"
+                                style={{ padding: '4px 6px' }}
+                                title={copiedKey === lic.chave ? 'Copiada!' : 'Copiar Chave'}
+                              >
+                                {copiedKey === lic.chave ? <Check size={13} color="#34d399" /> : <Copy size={13} />}
+                              </button>
+                            )}
                           </div>
                         </td>
 
