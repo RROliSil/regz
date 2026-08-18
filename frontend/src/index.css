@@ -2644,6 +2644,51 @@ select option,
 }
 
 /* ======================================================== */
+/* MODAL BACKDROP & CENTRED POPUP OVERLAY */
+/* ======================================================== */
+.modal-backdrop,
+.modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  background: rgba(2, 6, 23, 0.75) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 999999 !important;
+  padding: 20px !important;
+  overflow-y: auto !important;
+  animation: fadeInModal 0.25s ease-out;
+}
+
+[data-theme="light"] .modal-backdrop,
+[data-theme="light"] .modal-overlay {
+  background: rgba(15, 23, 42, 0.45) !important;
+}
+
+[data-theme="dark"] .modal-backdrop,
+[data-theme="dark"] .modal-overlay {
+  background: rgba(0, 0, 0, 0.8) !important;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ======================================================== */
 /* CRACHÁ DIGITAL & QR CODE MODAL */
 /* ======================================================== */
 .btn-action.qrcode {

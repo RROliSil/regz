@@ -106,6 +106,16 @@ export const Colaboradores: React.FC = () => {
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isQrModalOpen) {
+        closeQrModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isQrModalOpen]);
+
   // Modal Principal de Cadastro / Edição
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -1695,7 +1705,7 @@ export const Colaboradores: React.FC = () => {
 
       {/* Modal de Crachá Digital & QR Code */}
       {isQrModalOpen && selectedColabQrCode && (
-        <div className="modal-overlay" onClick={closeQrModal}>
+        <div className="modal-backdrop" onClick={closeQrModal}>
           <div className="modal-content cracha-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', padding: '24px' }}>
             <div className="modal-header">
               <h2>Crachá Digital & QR Code</h2>
