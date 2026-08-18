@@ -32,6 +32,7 @@ export interface Usuario {
   tipo_licenca?: string;
   status_licenca?: string;
   licenca_expirada?: boolean;
+  sem_licenca?: boolean;
   dias_restantes_licenca?: number;
 }
 

@@ -6,6 +6,7 @@ interface UserColumnWidths {
   nome: number;
   email: number;
   perfil: number;
+  licenca: number;
   senha: number;
   acoes: number;
 }
@@ -114,10 +115,11 @@ export const Administracao: React.FC = () => {
 
   // Estados para Largura Arrastável de Colunas na Tabela de Usuários (com LocalStorage por Usuário)
   const [userColumnWidths, setUserColumnWidths] = useState<UserColumnWidths>({
-    nome: 220,
-    email: 220,
-    perfil: 160,
-    senha: 200,
+    nome: 200,
+    email: 200,
+    perfil: 140,
+    licenca: 220,
+    senha: 180,
     acoes: 140
   });
 
@@ -144,6 +146,7 @@ export const Administracao: React.FC = () => {
   const [userEmail, setUserEmail] = useState('');
   const [userSenha, setUserSenha] = useState('');
   const [userPerfilId, setUserPerfilId] = useState<number | ''>('');
+  const [userChaveLicenca, setUserChaveLicenca] = useState('');
   const [userAtivo, setUserAtivo] = useState(true);
   const [userError, setUserError] = useState('');
   const [userSuccess, setUserSuccess] = useState('');
@@ -369,6 +372,7 @@ export const Administracao: React.FC = () => {
     setUserEmail('');
     setUserSenha('');
     setUserPerfilId(perfis[0]?.id || '');
+    setUserChaveLicenca('');
     setUserAtivo(true);
     setUserError('');
     setModalUserOpen(true);
@@ -380,6 +384,7 @@ export const Administracao: React.FC = () => {
     setUserEmail(u.email);
     setUserSenha('');
     setUserPerfilId(u.perfil_id || '');
+    setUserChaveLicenca(u.chave_licenca || '');
     setUserAtivo(u.ativo);
     setUserError('');
     setModalUserOpen(true);
@@ -413,6 +418,7 @@ export const Administracao: React.FC = () => {
           email: userEmail.trim(),
           senha: userSenha.trim() || undefined,
           perfil_id: userPerfilId ? Number(userPerfilId) : null,
+          chave_licenca: userChaveLicenca.trim() || null,
           ativo: userAtivo
         })
       });
@@ -652,6 +658,10 @@ export const Administracao: React.FC = () => {
                     Perfil
                     <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'perfil')} />
                   </th>
+                  <th style={{ width: `${userColumnWidths.licenca}px`, position: 'relative' }}>
+                    Chave de Licença
+                    <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'licenca')} />
+                  </th>
                   <th style={{ width: `${userColumnWidths.senha}px`, position: 'relative' }}>
                     Expiração de Senha
                     <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'senha')} />
@@ -665,7 +675,7 @@ export const Administracao: React.FC = () => {
               <tbody>
                 {loadingUsuarios ? (
                   <tr>
-                    <td colSpan={5} style={{ textAlign: 'center', padding: '40px' }}>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
                       <Loader2 className="spin" size={20} /> Carregando usuários...
                     </td>
                   </tr>
@@ -681,6 +691,30 @@ export const Administracao: React.FC = () => {
                       {(() => {
                         const pObj = u.perfil || perfis.find(p => p.id === u.perfil_id);
                         return renderPerfilBadge(pObj?.nome || 'Sem Perfil', pObj?.is_admin);
+                      })()}
+                    </td>
+                    <td>
+                      {(() => {
+                        const pObj = u.perfil || perfis.find(p => p.id === u.perfil_id);
+                        if (pObj?.is_admin) {
+                          return (
+                            <span style={{ fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                              ✨ Isento (Admin)
+                            </span>
+                          );
+                        }
+                        if (u.chave_licenca) {
+                          return (
+                            <code style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', padding: '3px 8px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.25)', fontWeight: 700 }}>
+                              {u.chave_licenca}
+                            </code>
+                          );
+                        }
+                        return (
+                          <span style={{ fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                            🔴 Sem Licença
+                          </span>
+                        );
                       })()}
                     </td>
                     <td>
@@ -1201,6 +1235,23 @@ export const Administracao: React.FC = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="form-group">
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Key size={14} color="#38bdf8" /> Chave de Licença (Vínculo)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Ex: REGZ-2026-F9A8-12B4-90C3"
+                  value={userChaveLicenca}
+                  onChange={(e) => setUserChaveLicenca(e.target.value)}
+                  disabled={submittingUser}
+                  style={{ fontFamily: 'monospace', color: '#38bdf8' }}
+                />
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
+                  Informe a chave de licença ativa vinculada a este usuário (Usuários Administradores são isentos).
+                </span>
               </div>
 
               <div className="form-group">

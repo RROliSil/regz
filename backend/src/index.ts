@@ -192,9 +192,10 @@ const initDb = async () => {
     `);
     console.log('✅ Migração de vínculo de perfis de usuários executada!');
 
-    // Migration SQL: Expiração de Senha (30 dias)
+    // Migration SQL: Expiração de Senha (30 dias) e Chave de Licença vinculada
     await pool.query(`
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_atualizada_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS chave_licenca VARCHAR(100);
     `);
 
     // Tabela de Chaves de Licença (Validade Inicial Padrão = 30 Dias)
@@ -468,13 +469,13 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
   try {
     const query = `
-      SELECT u.id, u.nome, u.email, u.senha_hash, u.ativo, u.perfil_id,
+      SELECT u.id, u.nome, u.email, u.senha_hash, u.ativo, u.perfil_id, u.chave_licenca,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
-             l.status as licenca_status, l.data_expiracao as licenca_expiracao,
+             l.chave as licenca_chave, l.status as licenca_status, l.data_expiracao as licenca_expiracao,
              CEIL(EXTRACT(EPOCH FROM (l.data_expiracao - CURRENT_TIMESTAMP)) / 86400)::int as dias_restantes_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
-      LEFT JOIN chaves_licenca l ON l.usuario_id = u.id
+      LEFT JOIN chaves_licenca l ON (l.chave = u.chave_licenca OR l.usuario_id = u.id)
       WHERE LOWER(u.email) = LOWER($1)
     `;
     const result = await pool.query(query, [email.trim()]);
@@ -502,9 +503,13 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
       permissoes: usuario.permissoes || { home: 'escrita', colaboradores: 'escrita', campos: 'escrita', administracao: 'escrita' }
     };
 
-    const diasRestantesLic = typeof usuario.dias_restantes_licenca === 'number' ? usuario.dias_restantes_licenca : 30;
-    const licencaStatus = usuario.licenca_status || 'Ativa';
-    const licencaExpirada = diasRestantesLic <= 0 || licencaStatus !== 'Ativa';
+    // EXCEÇÃO EXCLUSIVA PARA O USUÁRIO ADMIN REGZ (is_admin === true)
+    const isAdminUser = !!usuario.is_admin;
+    const temChaveVinculada = !!(usuario.chave_licenca || usuario.licenca_chave);
+    const diasRestantesLic = isAdminUser ? 999 : (typeof usuario.dias_restantes_licenca === 'number' ? usuario.dias_restantes_licenca : 0);
+    const licencaStatus = isAdminUser ? 'Ativa (Isento - Admin)' : (usuario.licenca_status || (temChaveVinculada ? 'Ativa' : 'Sem Licença'));
+    const semLicenca = !isAdminUser && !temChaveVinculada;
+    const licencaExpirada = !isAdminUser && (semLicenca || diasRestantesLic <= 0 || usuario.licenca_status === 'Suspensa' || usuario.licenca_status === 'Expirada');
 
     const token = jwt.sign(
       { id: usuario.id, email: usuario.email, perfil_id: usuario.perfil_id },
@@ -519,7 +524,9 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         nome: usuario.nome,
         email: usuario.email,
         ativo: usuario.ativo,
+        chave_licenca: usuario.chave_licenca || usuario.licenca_chave || null,
         perfil,
+        sem_licenca: semLicenca,
         licenca_expirada: licencaExpirada,
         dias_restantes_licenca: diasRestantesLic,
         status_licenca: licencaStatus
@@ -541,13 +548,13 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
   try {
     const decoded: any = jwt.verify(token, JWT_SECRET);
     const query = `
-      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id,
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
-             l.status as licenca_status, l.data_expiracao as licenca_expiracao,
+             l.chave as licenca_chave, l.status as licenca_status, l.data_expiracao as licenca_expiracao,
              CEIL(EXTRACT(EPOCH FROM (l.data_expiracao - CURRENT_TIMESTAMP)) / 86400)::int as dias_restantes_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
-      LEFT JOIN chaves_licenca l ON l.usuario_id = u.id
+      LEFT JOIN chaves_licenca l ON (l.chave = u.chave_licenca OR l.usuario_id = u.id)
       WHERE u.id = $1
     `;
     const result = await pool.query(query, [decoded.id]);
@@ -565,9 +572,13 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
       permissoes: usuario.permissoes || { home: 'escrita', colaboradores: 'escrita', campos: 'escrita', administracao: 'escrita' }
     };
 
-    const diasRestantesLic = typeof usuario.dias_restantes_licenca === 'number' ? usuario.dias_restantes_licenca : 30;
-    const licencaStatus = usuario.licenca_status || 'Ativa';
-    const licencaExpirada = diasRestantesLic <= 0 || licencaStatus !== 'Ativa';
+    // EXCEÇÃO EXCLUSIVA PARA O USUÁRIO ADMIN REGZ (is_admin === true)
+    const isAdminUser = !!usuario.is_admin;
+    const temChaveVinculada = !!(usuario.chave_licenca || usuario.licenca_chave);
+    const diasRestantesLic = isAdminUser ? 999 : (typeof usuario.dias_restantes_licenca === 'number' ? usuario.dias_restantes_licenca : 0);
+    const licencaStatus = isAdminUser ? 'Ativa (Isento - Admin)' : (usuario.licenca_status || (temChaveVinculada ? 'Ativa' : 'Sem Licença'));
+    const semLicenca = !isAdminUser && !temChaveVinculada;
+    const licencaExpirada = !isAdminUser && (semLicenca || diasRestantesLic <= 0 || usuario.licenca_status === 'Suspensa' || usuario.licenca_status === 'Expirada');
 
     res.json({
       usuario: {
@@ -575,7 +586,9 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
         nome: usuario.nome,
         email: usuario.email,
         ativo: usuario.ativo,
+        chave_licenca: usuario.chave_licenca || usuario.licenca_chave || null,
         perfil,
+        sem_licenca: semLicenca,
         licenca_expirada: licencaExpirada,
         dias_restantes_licenca: diasRestantesLic,
         status_licenca: licencaStatus
@@ -754,7 +767,7 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
 
 // Cadastrar novo usuário (Apenas via Painel Admin)
 app.post('/api/usuarios', async (req: Request, res: Response) => {
-  const { nome, email, senha, perfil_id, ativo } = req.body;
+  const { nome, email, senha, perfil_id, ativo, chave_licenca } = req.body;
 
   if (!nome || !email || !senha) {
     return res.status(400).json({ error: 'Nome, E-mail e Senha são obrigatórios' });
@@ -773,13 +786,18 @@ app.post('/api/usuarios', async (req: Request, res: Response) => {
 
     const senhaHash = await bcrypt.hash(senha, 10);
     const result = await pool.query(
-      'INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-      [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false]
+      'INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo, chave_licenca) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+      [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false, chave_licenca || null]
     );
 
     const newId = result.rows[0].id;
+
+    if (chave_licenca && chave_licenca.trim()) {
+      await pool.query('UPDATE chaves_licenca SET usuario_id = $1 WHERE chave = $2', [newId, chave_licenca.trim()]);
+    }
+
     const queryUser = `
-      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em,
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca, u.criado_em,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
@@ -794,6 +812,7 @@ app.post('/api/usuarios', async (req: Request, res: Response) => {
       email: u.email,
       ativo: u.ativo,
       perfil_id: u.perfil_id,
+      chave_licenca: u.chave_licenca,
       criado_em: u.criado_em,
       perfil: u.perfil_id ? {
         id: u.perfil_id,
@@ -811,7 +830,7 @@ app.post('/api/usuarios', async (req: Request, res: Response) => {
 // Atualizar usuário
 app.put('/api/usuarios/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { nome, email, senha, perfil_id, ativo } = req.body;
+  const { nome, email, senha, perfil_id, ativo, chave_licenca } = req.body;
 
   if (!nome || !email) {
     return res.status(400).json({ error: 'Nome e E-mail são obrigatórios' });
@@ -827,18 +846,22 @@ app.put('/api/usuarios/:id', async (req: Request, res: Response) => {
     if (senha && senha.trim()) {
       const senhaHash = await bcrypt.hash(senha, 10);
       await pool.query(
-        'UPDATE usuarios SET nome = $1, email = $2, senha_hash = $3, perfil_id = $4, ativo = $5 WHERE id = $6',
-        [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false, id]
+        'UPDATE usuarios SET nome = $1, email = $2, senha_hash = $3, perfil_id = $4, ativo = $5, chave_licenca = $6 WHERE id = $7',
+        [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false, chave_licenca || null, id]
       );
     } else {
       await pool.query(
-        'UPDATE usuarios SET nome = $1, email = $2, perfil_id = $3, ativo = $4 WHERE id = $5',
-        [nome.trim(), emailTrimmed, perfil_id || null, ativo !== false, id]
+        'UPDATE usuarios SET nome = $1, email = $2, perfil_id = $3, ativo = $4, chave_licenca = $5 WHERE id = $6',
+        [nome.trim(), emailTrimmed, perfil_id || null, ativo !== false, chave_licenca || null, id]
       );
     }
 
+    if (chave_licenca && chave_licenca.trim()) {
+      await pool.query('UPDATE chaves_licenca SET usuario_id = $1 WHERE chave = $2', [id, chave_licenca.trim()]);
+    }
+
     const queryUser = `
-      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em,
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca, u.criado_em,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
@@ -853,6 +876,7 @@ app.put('/api/usuarios/:id', async (req: Request, res: Response) => {
       email: u.email,
       ativo: u.ativo,
       perfil_id: u.perfil_id,
+      chave_licenca: u.chave_licenca,
       criado_em: u.criado_em,
       perfil: u.perfil_id ? {
         id: u.perfil_id,
@@ -864,6 +888,32 @@ app.put('/api/usuarios/:id', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao atualizar usuário' });
+  }
+});
+
+// Atribuir/Vincular chave de licença a um usuário
+app.put('/api/usuarios/:id/atribuir-licenca', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { chave_licenca } = req.body;
+
+  if (!chave_licenca || !chave_licenca.trim()) {
+    return res.status(400).json({ error: 'Chave de licença é obrigatória' });
+  }
+
+  try {
+    const chaveStr = chave_licenca.trim();
+    // Verificar se a chave existe
+    const licRes = await pool.query('SELECT id, status FROM chaves_licenca WHERE chave = $1', [chaveStr]);
+    if (licRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Chave de licença não encontrada no sistema' });
+    }
+
+    await pool.query('UPDATE usuarios SET chave_licenca = $1 WHERE id = $2', [chaveStr, id]);
+    await pool.query('UPDATE chaves_licenca SET usuario_id = $1 WHERE chave = $2', [id, chaveStr]);
+
+    res.json({ success: true, message: 'Chave de licença atrelada ao usuário com sucesso!' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao atribuir licença' });
   }
 });
 

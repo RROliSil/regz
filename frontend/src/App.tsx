@@ -61,8 +61,50 @@ const ProtectedLayout: React.FC = () => {
 
       {/* Conteúdo Principal Ajustado Dinamicamente ao Menu Lateral */}
       <main className={`main-viewport ${sidebarCollapsed ? 'collapsed' : ''}`} style={{ padding: 0 }}>
-        {/* Banner Top Alert de Licença Expirada (Modo Somente Leitura Forçado) */}
-        {usuario?.licenca_expirada ? (
+        {/* Banner Top Alert de Licença Ausente / Expirada (Modo Somente Leitura Forçado) */}
+        {usuario?.sem_licenca ? (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: sidebarCollapsed ? '80px' : '260px',
+            right: 0,
+            zIndex: 99999,
+            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            background: 'linear-gradient(90deg, #854d0e 0%, #a16207 50%, #ca8a04 100%)',
+            borderBottom: '1px solid #eab308',
+            color: '#fef9c3',
+            padding: '10px 24px',
+            fontSize: '0.85rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '12px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.7)',
+            backdropFilter: 'blur(12px)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <AlertTriangle size={18} color="#fef08a" />
+              <span>
+                <strong>SEM LICENÇA VINCULADA:</strong> Sua conta de usuário não possui uma Chave de Licença ativa vinculada! O acesso foi alterado para <u>MODO SOMENTE LEITURA</u>. Contate um Administrador para vincular uma chave válida.
+              </span>
+            </div>
+            <span style={{
+              background: 'rgba(255, 255, 255, 0.15)',
+              border: '1px solid rgba(254, 240, 138, 0.4)',
+              color: '#fef9c3',
+              borderRadius: '20px',
+              padding: '3px 12px',
+              fontSize: '0.75rem',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              whiteSpace: 'nowrap'
+            }}>
+              🔑 Licença Necessária
+            </span>
+          </div>
+        ) : usuario?.licenca_expirada ? (
           <div style={{
             position: 'fixed',
             top: 0,
