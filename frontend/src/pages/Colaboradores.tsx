@@ -1709,7 +1709,7 @@ export const Colaboradores: React.FC = () => {
           <div className="modal-content cracha-modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', padding: '24px' }}>
             <div className="modal-header">
               <h2>Crachá Digital & QR Code</h2>
-              <button onClick={closeQrModal} className="btn-icon">
+              <button onClick={closeQrModal} className="btn-close" title="Fechar">
                 <X size={20} />
               </button>
             </div>

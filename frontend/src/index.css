@@ -2688,6 +2688,53 @@ select option,
   }
 }
 
+/* Botão "X" de Fechar Modal (Círculo Vermelho Suave com Brilho Neon) */
+.btn-close,
+.modal-header .btn-icon,
+.modal-header .btn-close {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: rgba(251, 113, 133, 0.12) !important;
+  color: #fb7185 !important;
+  border: 1px solid rgba(251, 113, 133, 0.35) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 0 0 8px rgba(251, 113, 133, 0.2) !important;
+  flex-shrink: 0 !important;
+  padding: 0 !important;
+}
+
+.btn-close:hover,
+.modal-header .btn-icon:hover,
+.modal-header .btn-close:hover {
+  background: rgba(251, 113, 133, 0.25) !important;
+  color: #ffffff !important;
+  border-color: rgba(251, 113, 133, 0.6) !important;
+  box-shadow: 0 0 14px rgba(251, 113, 133, 0.45) !important;
+  transform: scale(1.08) rotate(90deg) !important;
+}
+
+[data-theme="light"] .btn-close,
+[data-theme="light"] .modal-header .btn-icon,
+[data-theme="light"] .modal-header .btn-close {
+  background: rgba(225, 29, 72, 0.1) !important;
+  color: #e11d48 !important;
+  border: 1px solid rgba(225, 29, 72, 0.3) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .btn-close:hover,
+[data-theme="light"] .modal-header .btn-icon:hover,
+[data-theme="light"] .modal-header .btn-close:hover {
+  background: rgba(225, 29, 72, 0.2) !important;
+  color: #e11d48 !important;
+  border-color: rgba(225, 29, 72, 0.5) !important;
+}
+
 /* ======================================================== */
 /* CRACHÁ DIGITAL & QR CODE MODAL */
 /* ======================================================== */

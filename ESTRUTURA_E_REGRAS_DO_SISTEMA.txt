@@ -138,6 +138,7 @@ C. Validação de Dados, Máscaras & Crachá Digital:
 - CPF: Validação de formato (000.000.000-00) e verificação de duplicidade no banco.
 - CEP: Integração automática com a API ViaCEP para preenchimento automático de Logradouro, Bairro, Cidade e Estado.
 - Crachá Digital & QR Code: Geração de QR Code 2D vetorizado (qrcode.react) e crachá corporativo com avatar, nome, CPF, cargo, registro e status do colaborador. O modal abre como um Pop-Up centralizado em primeiro plano (position: fixed, z-index: 999999) com fundo desfocado (.modal-backdrop), download em PNG e suporte a fechamento via tecla Esc.
+- Botão "X" de Fechar Modals: Padronizado em todos os modals (.btn-close) como um botão circular vermelho translúcido (#fb7185) com aura/brilho neon, transição de escala e rotação de 90° no hover.
 
 D. Busca e Filtro de Colaboradores:
 - Suporta busca unificada por Nome, CPF, Cargo, Cidade ou Nome Completo do Estado.
