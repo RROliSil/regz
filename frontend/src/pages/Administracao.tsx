@@ -810,8 +810,8 @@ export const Administracao: React.FC = () => {
       {/* MODAL DE CRIAÇÃO / EDIÇÃO DE PERFIL DE ACESSO (RBAC) */}
       {/* ======================================================== */}
       {modalPerfilOpen && (
-        <div className="modal-backdrop" onClick={() => setModalPerfilOpen(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '620px', padding: '24px' }}>
+        <div className="modal-backdrop">
+          <div className="modal-content" style={{ maxWidth: '620px', padding: '24px' }}>
             <div className="modal-header">
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>
                 {editingPerfilId ? 'EDITAR PERFIL (RBAC)' : 'CRIAR NOVO PERFIL DE ACESSO'}
