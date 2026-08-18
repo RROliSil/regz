@@ -94,7 +94,6 @@ export const Administracao: React.FC = () => {
   const [modalLicencaOpen, setModalLicencaOpen] = useState(false);
   const [newLicencaUsuarioId, setNewLicencaUsuarioId] = useState<string>('');
   const [newLicencaTipo, setNewLicencaTipo] = useState<string>('Enterprise');
-  const [newLicencaMaxColab, setNewLicencaMaxColab] = useState<number>(500);
   const [newLicencaValidade, setNewLicencaValidade] = useState<number>(30);
   const [submittingLicenca, setSubmittingLicenca] = useState(false);
   const [licencaSuccess, setLicencaSuccess] = useState<string | null>(null);
@@ -288,7 +287,6 @@ export const Administracao: React.FC = () => {
         body: JSON.stringify({
           usuario_id: newLicencaUsuarioId ? parseInt(newLicencaUsuarioId, 10) : null,
           tipo_licenca: newLicencaTipo,
-          max_colaboradores: newLicencaMaxColab,
           validade_dias: newLicencaValidade
         })
       });
@@ -976,8 +974,7 @@ export const Administracao: React.FC = () => {
                   <tr>
                     <th style={{ width: '250px' }}>Chave de Licença</th>
                     <th>Usuário Vinculado</th>
-                    <th style={{ width: '130px' }}>Plano</th>
-                    <th style={{ width: '140px' }}>Limite Colab.</th>
+                    <th style={{ width: '160px' }}>Plano</th>
                     <th style={{ width: '200px' }}>Validade / Vencimento</th>
                     <th style={{ width: '120px' }}>Status</th>
                     <th style={{ textAlign: 'center', width: '140px' }}>Ações</th>
@@ -986,13 +983,13 @@ export const Administracao: React.FC = () => {
                 <tbody>
                   {loadingLicencas ? (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', padding: '40px' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
                         <Loader2 className="spin" size={20} /> Carregando chaves de licença...
                       </td>
                     </tr>
                   ) : licencas.length === 0 ? (
                     <tr>
-                      <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
                         Nenhuma chave de licença encontrada.
                       </td>
                     </tr>
@@ -1025,17 +1022,23 @@ export const Administracao: React.FC = () => {
                           </div>
                         </td>
 
-                        <td>
-                          <span style={{ fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-                            <Award size={11} style={{ display: 'inline', marginRight: '4px' }} />
-                            {lic.tipo_licenca}
-                          </span>
-                        </td>
-
-                        <td>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                            Até {lic.max_colaboradores} colab.
-                          </span>
+                        <td style={{ whiteSpace: 'nowrap' }}>
+                          {lic.tipo_licenca === 'Trial' || lic.tipo_licenca === 'Dev / Trial' ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', background: 'rgba(20, 184, 166, 0.18)', color: '#2dd4bf', padding: '4px 10px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(20, 184, 166, 0.35)', whiteSpace: 'nowrap' }}>
+                              <Key size={13} style={{ flexShrink: 0 }} />
+                              Trial (30d)
+                            </span>
+                          ) : lic.tipo_licenca === 'Teste' ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', background: 'rgba(245, 158, 11, 0.18)', color: '#fbbf24', padding: '4px 10px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(245, 158, 11, 0.35)', whiteSpace: 'nowrap' }}>
+                              <Sliders size={13} style={{ flexShrink: 0 }} />
+                              Teste
+                            </span>
+                          ) : (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', background: 'rgba(99, 102, 241, 0.18)', color: '#a5b4fc', padding: '4px 10px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(99, 102, 241, 0.35)', whiteSpace: 'nowrap' }}>
+                              <Award size={13} style={{ flexShrink: 0 }} />
+                              Enterprise
+                            </span>
+                          )}
                         </td>
 
                         <td>
@@ -1442,50 +1445,49 @@ export const Administracao: React.FC = () => {
                 </label>
                 <select
                   value={newLicencaTipo}
-                  onChange={(e) => setNewLicencaTipo(e.target.value)}
+                  onChange={(e) => {
+                    const tipo = e.target.value;
+                    setNewLicencaTipo(tipo);
+                    if (tipo === 'Trial') setNewLicencaValidade(30);
+                    else if (tipo === 'Enterprise') setNewLicencaValidade(120);
+                    else if (tipo === 'Teste') setNewLicencaValidade(30);
+                  }}
                   className="custom-select"
                   disabled={submittingLicenca}
                   required
                 >
-                  <option value="Enterprise">Enterprise (Acesso Completo)</option>
-                  <option value="Profissional">Profissional (Recursos Avançados)</option>
-                  <option value="Básica">Básica (Padrão)</option>
-                  <option value="Dev / Trial">Dev / Avaliação (Trial)</option>
+                  <option value="Enterprise">Enterprise (Acesso Completo - 120d ou 365d)</option>
+                  <option value="Trial">Trial (Acesso Completo - 30d)</option>
+                  <option value="Teste">Teste (Tag de Avaliação Técnica)</option>
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div className="form-group">
-                  <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
-                    LIMITE DE COLABORADORES
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100000"
-                    value={newLicencaMaxColab}
-                    onChange={(e) => setNewLicencaMaxColab(parseInt(e.target.value, 10) || 100)}
-                    disabled={submittingLicenca}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
-                    DURAÇÃO DA LICENÇA *
-                  </label>
-                  <select
-                    value={newLicencaValidade}
-                    onChange={(e) => setNewLicencaValidade(parseInt(e.target.value, 10))}
-                    className="custom-select"
-                    disabled={submittingLicenca}
-                    required
-                  >
-                    <option value={30}>30 Dias (Padrão - Mensal)</option>
-                    <option value={120}>120 Dias (Trimestral)</option>
-                    <option value={365}>365 Dias (Anual / 1 Ano)</option>
-                  </select>
-                </div>
+              <div className="form-group">
+                <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
+                  DURAÇÃO DA LICENÇA *
+                </label>
+                <select
+                  value={newLicencaValidade}
+                  onChange={(e) => setNewLicencaValidade(parseInt(e.target.value, 10))}
+                  className="custom-select"
+                  disabled={submittingLicenca || newLicencaTipo === 'Trial'}
+                  required
+                >
+                  {newLicencaTipo === 'Trial' ? (
+                    <option value={30}>30 Dias (Fixo para Trial)</option>
+                  ) : newLicencaTipo === 'Enterprise' ? (
+                    <>
+                      <option value={120}>120 Dias (Enterprise - 4 Meses)</option>
+                      <option value={365}>365 Dias (Enterprise - 1 Ano)</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value={30}>30 Dias (Teste)</option>
+                      <option value={120}>120 Dias (Teste)</option>
+                      <option value={365}>365 Dias (Teste)</option>
+                    </>
+                  )}
+                </select>
               </div>
 
               <div className="modal-footer" style={{ marginTop: '24px', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
