@@ -161,7 +161,7 @@ G. Persistência de Preferências do Usuário (LocalStorage):
 
 H. Módulo de Relatórios & Exportações:
 - Seleção de relatório via Janela Dropdown unificada (Quadro de Colaboradores, Campos Personalizados, Distribuição Geográfica e Usuários/Perfis RBAC) com suporte visual padronizado aos 3 temas.
-- Botões de ação dispostos em linha (Seletor -> Atualizar -> Exportar Excel CSV -> PDF / Imprimir).
+- Botões de ação dispostos em linha (Seletor -> Botão Atualizar compacto só com ícone e animação de rotação 360° -> Exportar Excel CSV -> PDF / Imprimir).
 - Botão Exportar Excel (CSV) com fundo rgba(30,41,59,0.8) e borda verde no Modo Tema Padrão, fundo #1b1b1f no Modo Dark, e cores da tag Gestor de RH no Modo Claro.
 - Exportação em CSV/XLSX codificado com BOM UTF-8 (\uFEFF) para visualização imediata no Microsoft Excel sem desconfigurar acentos.
 - Impressão e PDF A4 Executivo via @media print ajustado para preencher 100% de uma folha A4 Retrato (margin: 10mm 12mm), ocultando elementos de interface (.no-print) e mantendo cabeçalho institucional e tabelas fluidas sem truncamento.

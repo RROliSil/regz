@@ -2123,6 +2123,28 @@ h1, h2, h3, h4, h5, h6 {
   border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
+/* Botão Compacto de Atualizar apenas com Ícone */
+.btn-icon-refresh {
+  padding: 10px 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Animação Rotação 360 Graus Fluida */
+.spin-360 {
+  animation: rotate360 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes rotate360 {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /* Botão Exportar Excel (CSV) em Relatórios - Modo Tema Padrão */
 .btn-export-excel {
   background: rgba(30, 41, 59, 0.8) !important;

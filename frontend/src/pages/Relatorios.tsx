@@ -55,6 +55,14 @@ export const Relatorios: React.FC = () => {
   const [campos, setCampos] = useState<CampoCustomizado[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isSpinning, setIsSpinning] = useState(false);
+
+  // Disparar rotação de 360 graus ao clicar
+  const handleAtualizarClique = () => {
+    setIsSpinning(true);
+    carregarDados();
+    setTimeout(() => setIsSpinning(false), 650);
+  };
 
   // Filtros
   const [search, setSearch] = useState('');
@@ -250,8 +258,8 @@ export const Relatorios: React.FC = () => {
             </select>
           </div>
 
-          <button onClick={carregarDados} className="btn-secondary btn-relatorio-sec" title="Atualizar Dados">
-            <RefreshCw size={16} className={loading ? "spin" : ""} /> Atualizar
+          <button onClick={handleAtualizarClique} className="btn-secondary btn-relatorio-sec btn-icon-refresh" title="Atualizar Dados">
+            <RefreshCw size={16} className={isSpinning || loading ? "spin-360" : ""} />
           </button>
           <button onClick={exportarCSV} className="btn-secondary btn-export-excel" title="Exportar Tabela para Excel/CSV">
             <FileSpreadsheet size={16} /> Exportar Excel (CSV)
