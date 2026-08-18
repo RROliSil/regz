@@ -2740,6 +2740,38 @@ select option,
   border-color: rgba(225, 29, 72, 0.5) !important;
 }
 
+/* Containers de Permissão na Página de Administração */
+.admin-perm-row {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--card-border);
+  transition: all 0.2s ease;
+}
+
+.admin-perm-row:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+[data-theme="light"] .admin-perm-row {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .admin-perm-row:hover {
+  border-color: #6366f1 !important;
+}
+
+[data-theme="light"] .admin-perm-row span {
+  color: #0f172a !important;
+}
+
+[data-theme="dark"] .admin-perm-row {
+  background: #141416 !important;
+  color: #f4f4f5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
 /* ======================================================== */
 /* CRACHÁ DIGITAL & QR CODE MODAL */
 /* ======================================================== */

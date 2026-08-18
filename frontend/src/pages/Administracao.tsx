@@ -881,7 +881,7 @@ export const Administracao: React.FC = () => {
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   {(['home', 'colaboradores', 'campos', 'administracao'] as Array<keyof PermissoesAba>).map((aba) => (
-                    <div key={aba} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.5)', padding: '10px 14px', borderRadius: '10px', border: '1px solid var(--card-border)' }}>
+                    <div key={aba} className="admin-perm-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderRadius: '10px' }}>
                       <span style={{ textTransform: 'capitalize', fontWeight: 600 }}>Aba {aba}</span>
                       <select
                         value={perfilPermissoes[aba]}

@@ -153,7 +153,7 @@ E. Seleção no Campo Cargo / Função (CBO):
 F. Design e Temas Visuais:
 - O sistema possui 3 temas distintos:
   1. Modo Padrão (Tema Navy Blue / Neon Azul).
-  2. Modo Claro [data-theme="light"] (Fundo branco, cartões com borda #868a93, texto dos rótulos de checkbox "Tornar este campo obrigatório" permanecem pretos #0f172a no hover).
+  2. Modo Claro [data-theme="light"] (Fundo branco, cartões com borda #868a93, texto dos rótulos de checkbox "Tornar este campo obrigatório" permanecem pretos #0f172a no hover, containers de permissão por aba da página Administração possuem fundo 100% branco puro #ffffff com borda sutil #cbd5e1).
   3. Modo Escuro [data-theme="dark"] (Fundo preto/cinza #121214 / #141416, cartões em #121214, botões inativos de Administração em #1b1b1f, botões da página Campos com brilho branco discreto box-shadow: 0 2px 8px rgba(255, 255, 255, 0.12), avatar do usuário sem brilho com box-shadow: none, badges de CBO em #141416 com texto branco e borda suave).
 
 G. Persistência de Preferências do Usuário (LocalStorage):
