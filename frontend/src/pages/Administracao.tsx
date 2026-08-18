@@ -198,7 +198,7 @@ export const Administracao: React.FC = () => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!resizingCol) return;
       const deltaX = e.clientX - startX;
-      const newWidth = Math.max(80, startWidth + deltaX);
+      const newWidth = Math.min(300, Math.max(70, startWidth + deltaX));
       setUserColumnWidths(prev => {
         const next = { ...prev, [resizingCol]: newWidth };
         if (usuario?.id) {
@@ -683,7 +683,7 @@ export const Administracao: React.FC = () => {
                     Exp.
                     <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'senha')} />
                   </th>
-                  <th style={{ width: '150px', minWidth: '150px', textAlign: 'center' }}>
+                  <th style={{ width: '150px', minWidth: '150px', maxWidth: '150px', textAlign: 'center', position: 'sticky', right: 0, zIndex: 10, background: '#0f172a' }}>
                     Ações
                   </th>
                 </tr>
@@ -791,7 +791,7 @@ export const Administracao: React.FC = () => {
                         );
                       })()}
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td style={{ width: '150px', minWidth: '150px', maxWidth: '150px', textAlign: 'center', position: 'sticky', right: 0, zIndex: 5, background: '#0f172a' }}>
                       {(() => {
                         const isRowSuperAdmin = !!(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz');
                         if (isRowSuperAdmin) {
