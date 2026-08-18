@@ -11,6 +11,15 @@ interface UserColumnWidths {
   acoes: number;
 }
 
+interface LicencaColumnWidths {
+  chave: number;
+  usuario: number;
+  plano: number;
+  validade: number;
+  status: number;
+  acoes: number;
+}
+
 export interface SystemModuleConfig {
   id: string;
   label: string;
@@ -138,6 +147,22 @@ export const Administracao: React.FC = () => {
     (userColumnWidths.acoes || 165);
 
   // Carregar larguras salvas do LocalStorage específicas do usuário logado
+  const [licencaColumnWidths, setLicencaColumnWidths] = useState<LicencaColumnWidths>({
+    chave: 260,
+    usuario: 220,
+    plano: 150,
+    validade: 150,
+    status: 120,
+    acoes: 165
+  });
+
+  const totalLicTableWidth = (licencaColumnWidths.chave || 260) +
+    (licencaColumnWidths.usuario || 220) +
+    (licencaColumnWidths.plano || 150) +
+    (licencaColumnWidths.validade || 150) +
+    (licencaColumnWidths.status || 120) +
+    (licencaColumnWidths.acoes || 165);
+
   useEffect(() => {
     if (usuario?.id) {
       const saved = localStorage.getItem(`regz_user_column_widths_${usuario.id}`);
@@ -148,10 +173,19 @@ export const Administracao: React.FC = () => {
           /* fallback para padrao */
         }
       }
+      const savedLic = localStorage.getItem(`regz_licenca_column_widths_${usuario.id}`);
+      if (savedLic) {
+        try {
+          setLicencaColumnWidths(JSON.parse(savedLic));
+        } catch (e) {
+          /* fallback para padrao */
+        }
+      }
     }
   }, [usuario?.id]);
 
   const [resizingCol, setResizingCol] = useState<keyof UserColumnWidths | null>(null);
+  const [resizingLicCol, setResizingLicCol] = useState<keyof LicencaColumnWidths | null>(null);
   const [startX, setStartX] = useState<number>(0);
   const [startWidth, setStartWidth] = useState<number>(0);
 
@@ -201,27 +235,45 @@ export const Administracao: React.FC = () => {
     setStartWidth(userColumnWidths[colKey]);
   };
 
+  const handleMouseDownResizeLic = (e: React.MouseEvent, colKey: keyof LicencaColumnWidths) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingLicCol(colKey);
+    setStartX(e.clientX);
+    setStartWidth(licencaColumnWidths[colKey]);
+  };
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!resizingCol) return;
-      const deltaX = e.clientX - startX;
-      const newWidth = Math.max(80, startWidth + deltaX);
-      setUserColumnWidths(prev => {
-        const next = { ...prev, [resizingCol]: newWidth };
-        if (usuario?.id) {
-          localStorage.setItem(`regz_user_column_widths_${usuario.id}`, JSON.stringify(next));
-        }
-        return next;
-      });
-    };
-
-    const handleMouseUp = () => {
       if (resizingCol) {
-        setResizingCol(null);
+        const deltaX = e.clientX - startX;
+        const newWidth = Math.max(80, startWidth + deltaX);
+        setUserColumnWidths(prev => {
+          const next = { ...prev, [resizingCol]: newWidth };
+          if (usuario?.id) {
+            localStorage.setItem(`regz_user_column_widths_${usuario.id}`, JSON.stringify(next));
+          }
+          return next;
+        });
+      } else if (resizingLicCol) {
+        const deltaX = e.clientX - startX;
+        const newWidth = Math.max(80, startWidth + deltaX);
+        setLicencaColumnWidths(prev => {
+          const next = { ...prev, [resizingLicCol]: newWidth };
+          if (usuario?.id) {
+            localStorage.setItem(`regz_licenca_column_widths_${usuario.id}`, JSON.stringify(next));
+          }
+          return next;
+        });
       }
     };
 
-    if (resizingCol) {
+    const handleMouseUp = () => {
+      if (resizingCol) setResizingCol(null);
+      if (resizingLicCol) setResizingLicCol(null);
+    };
+
+    if (resizingCol || resizingLicCol) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
     }
@@ -229,7 +281,7 @@ export const Administracao: React.FC = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [resizingCol, startX, startWidth, usuario?.id]);
+  }, [resizingCol, resizingLicCol, startX, startWidth, usuario?.id]);
 
   // Carregar dados da API
   const fetchUsuarios = async () => {
@@ -1035,15 +1087,32 @@ export const Administracao: React.FC = () => {
             </div>
 
             <div className="table-flex-wrapper" style={{ overflowX: 'auto' }}>
-              <table className="custom-table" style={{ width: '100%' }}>
+              <table className="custom-table" style={{ tableLayout: 'fixed', minWidth: `${totalLicTableWidth}px`, width: '100%' }}>
                 <thead>
                   <tr>
-                    <th style={{ width: '250px' }}>Chave de Licença</th>
-                    <th>Usuário Vinculado</th>
-                    <th style={{ width: '160px' }}>Plano</th>
-                    <th style={{ width: '140px' }}>Validade</th>
-                    <th style={{ width: '120px' }}>Status</th>
-                    <th style={{ textAlign: 'center', width: '160px', minWidth: '160px' }}>Ações</th>
+                    <th style={{ width: `${licencaColumnWidths.chave}px`, position: 'relative' }}>
+                      Chave de Licença
+                      <div className="resizer" onMouseDown={(e) => handleMouseDownResizeLic(e, 'chave')} />
+                    </th>
+                    <th style={{ width: `${licencaColumnWidths.usuario}px`, position: 'relative' }}>
+                      Usuário Vinculado
+                      <div className="resizer" onMouseDown={(e) => handleMouseDownResizeLic(e, 'usuario')} />
+                    </th>
+                    <th style={{ width: `${licencaColumnWidths.plano}px`, position: 'relative' }}>
+                      Plano
+                      <div className="resizer" onMouseDown={(e) => handleMouseDownResizeLic(e, 'plano')} />
+                    </th>
+                    <th style={{ width: `${licencaColumnWidths.validade}px`, position: 'relative' }}>
+                      Validade
+                      <div className="resizer" onMouseDown={(e) => handleMouseDownResizeLic(e, 'validade')} />
+                    </th>
+                    <th style={{ width: `${licencaColumnWidths.status}px`, position: 'relative' }}>
+                      Status
+                      <div className="resizer" onMouseDown={(e) => handleMouseDownResizeLic(e, 'status')} />
+                    </th>
+                    <th className="col-acoes" style={{ textAlign: 'center', width: `${licencaColumnWidths.acoes || 165}px`, minWidth: '165px' }}>
+                      Ações
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1065,7 +1134,7 @@ export const Administracao: React.FC = () => {
 
                     return (
                       <tr key={lic.id}>
-                        <td>
+                        <td style={{ width: `${licencaColumnWidths.chave}px` }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <code style={{ fontFamily: 'monospace', fontSize: '0.88rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', padding: '4px 8px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.25)', fontWeight: 700 }}>
                               {visibleKeys[lic.id] && isUserAdminTag ? lic.chave : 'REGZ-2026-••••-••••-••••'}
@@ -1092,14 +1161,14 @@ export const Administracao: React.FC = () => {
                           </div>
                         </td>
 
-                        <td>
+                        <td style={{ width: `${licencaColumnWidths.usuario}px` }}>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{lic.usuario_nome}</span>
                             <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{lic.usuario_email}</span>
                           </div>
                         </td>
 
-                        <td style={{ whiteSpace: 'nowrap' }}>
+                        <td style={{ width: `${licencaColumnWidths.plano}px`, whiteSpace: 'nowrap' }}>
                           {lic.tipo_licenca === 'Trial' || lic.tipo_licenca === 'Dev / Trial' ? (
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', background: 'rgba(20, 184, 166, 0.18)', color: '#2dd4bf', padding: '4px 10px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(20, 184, 166, 0.35)', whiteSpace: 'nowrap' }}>
                               <Key size={13} style={{ flexShrink: 0 }} />
@@ -1113,7 +1182,7 @@ export const Administracao: React.FC = () => {
                           )}
                         </td>
 
-                        <td>
+                        <td style={{ width: `${licencaColumnWidths.validade}px` }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                             <span style={{ fontSize: '0.82rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <Calendar size={13} color="var(--text-dim)" />
@@ -1125,7 +1194,7 @@ export const Administracao: React.FC = () => {
                           </div>
                         </td>
 
-                        <td>
+                        <td style={{ width: `${licencaColumnWidths.status}px` }}>
                           {isSuspensa ? (
                             <span style={{ fontSize: '0.78rem', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
                               Suspensa
@@ -1141,7 +1210,7 @@ export const Administracao: React.FC = () => {
                           )}
                         </td>
 
-                        <td style={{ textAlign: 'center', width: '160px', minWidth: '160px', whiteSpace: 'nowrap' }}>
+                        <td className="col-acoes" style={{ textAlign: 'center', width: `${licencaColumnWidths.acoes || 165}px`, minWidth: '165px', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
                             <button
                               onClick={() => {
