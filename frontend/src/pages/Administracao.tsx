@@ -127,8 +127,15 @@ export const Administracao: React.FC = () => {
     perfil: 140,
     licenca: 220,
     senha: 180,
-    acoes: 140
+    acoes: 165
   });
+
+  const totalUserTableWidth = (userColumnWidths.nome || 200) +
+    (userColumnWidths.email || 200) +
+    (userColumnWidths.perfil || 140) +
+    (userColumnWidths.licenca || 220) +
+    (userColumnWidths.senha || 180) +
+    (userColumnWidths.acoes || 165);
 
   // Carregar larguras salvas do LocalStorage específicas do usuário logado
   useEffect(() => {
@@ -660,7 +667,7 @@ export const Administracao: React.FC = () => {
           </div>
 
           <div className="table-flex-wrapper" style={{ overflowX: 'auto' }}>
-            <table className="custom-table" style={{ tableLayout: 'fixed', width: '100%' }}>
+            <table className="custom-table" style={{ tableLayout: 'fixed', minWidth: `${totalUserTableWidth}px`, width: '100%' }}>
               <thead>
                 <tr>
                   <th style={{ width: `${userColumnWidths.nome}px`, position: 'relative' }}>
@@ -683,7 +690,7 @@ export const Administracao: React.FC = () => {
                     Exp.
                     <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'senha')} />
                   </th>
-                  <th className="col-acoes" style={{ textAlign: 'center' }}>
+                  <th className="col-acoes" style={{ textAlign: 'center', width: `${userColumnWidths.acoes || 165}px`, minWidth: '165px' }}>
                     Ações
                   </th>
                 </tr>
@@ -791,7 +798,7 @@ export const Administracao: React.FC = () => {
                         );
                       })()}
                     </td>
-                    <td style={{ textAlign: 'center' }}>
+                    <td style={{ textAlign: 'center', width: `${userColumnWidths.acoes || 165}px`, minWidth: '165px' }}>
                       {(() => {
                         const isRowSuperAdmin = !!(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz');
                         if (isRowSuperAdmin) {
