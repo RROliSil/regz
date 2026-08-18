@@ -2386,58 +2386,141 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ======================================================== */
-/* MÓDULO DE RELATÓRIOS & SUPORTE A IMPRESSÃO / PDF */
+/* MÓDULO DE RELATÓRIOS & SUPORTE A IMPRESSÃO / PDF (A4) */
 /* ======================================================== */
 .pdf-header-only {
   display: none;
 }
 
 @media print {
-  body {
-    background: #ffffff !important;
-    color: #000000 !important;
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
   }
 
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    font-size: 10pt !important;
+  }
+
+  .no-print,
   .sidebar,
   .sidebar-toggle-btn,
   .relatorio-card,
   .glass-panel:not(.printable-report-area),
   button,
   .search-box,
-  .nav-section-label {
+  .nav-section-label,
+  .sidebar-footer,
+  .app-layout > *:not(.main-viewport) {
     display: none !important;
   }
 
   .app-layout {
     display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .main-viewport {
     margin-left: 0 !important;
+    margin-top: 0 !important;
     padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .relatorios-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .printable-report-area {
     background: #ffffff !important;
-    color: #000000 !important;
+    color: #0f172a !important;
     box-shadow: none !important;
     border: none !important;
     padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .pdf-header-only {
     display: block !important;
+    margin-bottom: 20px !important;
+    border-bottom: 2.5px solid #4f46e5 !important;
+    padding-bottom: 10px !important;
+    width: 100% !important;
+  }
+
+  .pdf-header-only h2 {
+    font-size: 16pt !important;
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    margin: 0 !important;
+  }
+
+  .pdf-header-only p {
+    font-size: 10pt !important;
+    color: #475569 !important;
+    margin: 4px 0 !important;
+  }
+
+  .pdf-header-only span {
+    font-size: 8.5pt !important;
+    color: #64748b !important;
+  }
+
+  .table-flex-wrapper {
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .custom-table {
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    border-collapse: collapse !important;
+    font-size: 9.5pt !important;
   }
 
   .custom-table th {
     background: #f1f5f9 !important;
     color: #0f172a !important;
     border-bottom: 2px solid #cbd5e1 !important;
+    border-right: none !important;
+    padding: 8px 10px !important;
+    text-align: left !important;
+    font-weight: 700 !important;
   }
 
   .custom-table td {
-    color: #000000 !important;
+    color: #1e293b !important;
     border-bottom: 1px solid #e2e8f0 !important;
+    border-right: none !important;
+    padding: 8px 10px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+
+  .badge-perfil, .cargo-badge {
+    border: 1px solid #cbd5e1 !important;
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    padding: 2px 6px !important;
+    font-size: 8.5pt !important;
   }
 }
 

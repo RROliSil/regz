@@ -2,10 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
   FileBarChart,
-  Users,
-  Sliders,
-  MapPin,
-  ShieldCheck,
   Printer,
   Search,
   Filter,
@@ -217,8 +213,8 @@ export const Relatorios: React.FC = () => {
 
   return (
     <div className="relatorios-container" style={{ padding: '28px 32px', width: '100%', boxSizing: 'border-box' }}>
-      {/* Cabeçalho da Página */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px', flexWrap: 'wrap', gap: '16px' }}>
+      {/* Cabeçalho da Página (Oculto na Impressão) */}
+      <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px' }}>
             <FileBarChart size={32} color="#6366f1" /> Painel de Relatórios & Exportações
@@ -228,113 +224,46 @@ export const Relatorios: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Seletor Dropdown de Tipo de Relatório */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--card-bg)', padding: '6px 14px', borderRadius: '12px', border: '1px solid var(--accent-purple)' }}>
+            <FileBarChart size={18} color="#818cf8" />
+            <select
+              value={tipo}
+              onChange={e => setTipo(e.target.value as TipoRelatorio)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-main)',
+                fontSize: '0.92rem',
+                fontWeight: 700,
+                outline: 'none',
+                cursor: 'pointer',
+                paddingRight: '8px'
+              }}
+            >
+              <option value="headcount">📋 Quadro de Colaboradores (Headcount)</option>
+              <option value="campos">🧩 Campos Personalizados</option>
+              <option value="geo">🗺️ Distribuição Geográfica (Cidades & UFs)</option>
+              <option value="rbac">🔒 Usuários e Perfis (RBAC)</option>
+            </select>
+          </div>
+
           <button onClick={carregarDados} className="btn-secondary" title="Atualizar Dados">
             <RefreshCw size={16} className={loading ? "spin" : ""} /> Atualizar
           </button>
           <button onClick={exportarCSV} className="btn-secondary" style={{ border: '1px solid rgba(52, 211, 153, 0.4)', color: '#34d399' }} title="Exportar Tabela para Excel/CSV">
             <FileSpreadsheet size={16} /> Exportar Excel (CSV)
           </button>
-          <button onClick={imprimirPDF} className="btn-primary" title="Imprimir ou Salvar em PDF">
+          <button onClick={imprimirPDF} className="btn-primary" title="Imprimir ou Salvar em PDF A4">
             <Printer size={16} /> Gerar PDF / Imprimir
           </button>
         </div>
       </div>
 
-      {/* Grid de Seleção do Tipo de Relatório */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '28px' }}>
-        <div
-          onClick={() => setTipo('headcount')}
-          className={`relatorio-card ${tipo === 'headcount' ? 'selected' : ''}`}
-          style={{
-            background: tipo === 'headcount' ? 'rgba(99, 102, 241, 0.18)' : 'var(--card-bg)',
-            border: tipo === 'headcount' ? '2px solid #6366f1' : '1px solid var(--card-border)',
-            borderRadius: '16px',
-            padding: '20px',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            boxShadow: tipo === 'headcount' ? '0 0 16px rgba(99, 102, 241, 0.25)' : 'none'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <Users size={22} color={tipo === 'headcount' ? '#818cf8' : 'var(--text-muted)'} />
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Quadro de Colaboradores</h3>
-          </div>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-            Visão geral de colaboradores, cargos CBO, status ativo/inativo e contatos.
-          </p>
-        </div>
-
-        <div
-          onClick={() => setTipo('campos')}
-          className={`relatorio-card ${tipo === 'campos' ? 'selected' : ''}`}
-          style={{
-            background: tipo === 'campos' ? 'rgba(56, 189, 248, 0.18)' : 'var(--card-bg)',
-            border: tipo === 'campos' ? '2px solid #38bdf8' : '1px solid var(--card-border)',
-            borderRadius: '16px',
-            padding: '20px',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            boxShadow: tipo === 'campos' ? '0 0 16px rgba(56, 189, 248, 0.25)' : 'none'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <Sliders size={22} color={tipo === 'campos' ? '#38bdf8' : 'var(--text-muted)'} />
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Campos Personalizados</h3>
-          </div>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-            Auditoria e respostas de todos os campos customizados cadastrados no sistema.
-          </p>
-        </div>
-
-        <div
-          onClick={() => setTipo('geo')}
-          className={`relatorio-card ${tipo === 'geo' ? 'selected' : ''}`}
-          style={{
-            background: tipo === 'geo' ? 'rgba(52, 211, 153, 0.18)' : 'var(--card-bg)',
-            border: tipo === 'geo' ? '2px solid #34d399' : '1px solid var(--card-border)',
-            borderRadius: '16px',
-            padding: '20px',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            boxShadow: tipo === 'geo' ? '0 0 16px rgba(52, 211, 153, 0.25)' : 'none'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <MapPin size={22} color={tipo === 'geo' ? '#34d399' : 'var(--text-muted)'} />
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Distribuição Geográfica</h3>
-          </div>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-            Mapeamento regional e contagem de equipes por município e estado (UF).
-          </p>
-        </div>
-
-        <div
-          onClick={() => setTipo('rbac')}
-          className={`relatorio-card ${tipo === 'rbac' ? 'selected' : ''}`}
-          style={{
-            background: tipo === 'rbac' ? 'rgba(251, 113, 133, 0.18)' : 'var(--card-bg)',
-            border: tipo === 'rbac' ? '2px solid #fb7185' : '1px solid var(--card-border)',
-            borderRadius: '16px',
-            padding: '20px',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            boxShadow: tipo === 'rbac' ? '0 0 16px rgba(251, 113, 133, 0.25)' : 'none'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-            <ShieldCheck size={22} color={tipo === 'rbac' ? '#fb7185' : 'var(--text-muted)'} />
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700 }}>Usuários e Perfis (RBAC)</h3>
-          </div>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-            Relatório de auditoria dos usuários do sistema, perfis e matriz de permissões.
-          </p>
-        </div>
-      </div>
-
-      {/* Painel de Filtros */}
+      {/* Painel de Filtros (Oculto na Impressão) */}
       {tipo !== 'rbac' && (
-        <div className="glass-panel" style={{ padding: '18px 24px', borderRadius: '16px', marginBottom: '24px' }}>
+        <div className="glass-panel no-print" style={{ padding: '18px 24px', borderRadius: '16px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '220px' }} className="search-box">
               <Search size={18} color="var(--text-muted)" />
