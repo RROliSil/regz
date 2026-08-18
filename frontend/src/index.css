@@ -2772,6 +2772,51 @@ select option,
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
 }
 
+/* Matriz de Permissões RBAC (Modal) */
+.rbac-matrix-box {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+[data-theme="light"] .rbac-matrix-box {
+  border-color: #cbd5e1 !important;
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .rbac-matrix-box table tr {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .rbac-matrix-box table thead tr {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .rbac-matrix-box table tbody tr {
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .rbac-matrix-box table th {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .rbac-matrix-box table td {
+  color: #0f172a !important;
+}
+
+[data-theme="dark"] .rbac-matrix-box {
+  background: #141416 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .rbac-matrix-box table thead tr {
+  background: #1b1b1f !important;
+  border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .rbac-matrix-box table tbody tr {
+  background: #141416 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+}
+
 /* ======================================================== */
 /* CRACHÁ DIGITAL & QR CODE MODAL */
 /* ======================================================== */
