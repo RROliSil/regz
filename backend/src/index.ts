@@ -204,7 +204,6 @@ const initDb = async () => {
         chave VARCHAR(100) NOT NULL UNIQUE,
         usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
         tipo_licenca VARCHAR(50) DEFAULT 'Enterprise',
-        max_colaboradores INT DEFAULT 500,
         data_ativacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         data_expiracao TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days'),
         status VARCHAR(20) DEFAULT 'Ativa',
@@ -212,14 +211,18 @@ const initDb = async () => {
       );
     `);
 
+    // Garantir remoção da coluna max_colaboradores caso ainda exista no banco
+    await pool.query(`
+      ALTER TABLE chaves_licenca DROP COLUMN IF EXISTS max_colaboradores;
+    `);
+
     // Se a tabela de licenças estiver vazia para algum usuário, criar chaves automáticas (30 dias)
     await pool.query(`
-      INSERT INTO chaves_licenca (chave, usuario_id, tipo_licenca, max_colaboradores, data_expiracao, status)
+      INSERT INTO chaves_licenca (chave, usuario_id, tipo_licenca, data_expiracao, status)
       SELECT 
         'REGZ-2026-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)) || '-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)) || '-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)),
         u.id,
         'Enterprise',
-        500,
         (CURRENT_TIMESTAMP + INTERVAL '30 days'),
         'Ativa'
       FROM usuarios u
@@ -904,7 +907,7 @@ app.post('/api/usuarios/:id/renovar-senha', async (req: Request, res: Response) 
 app.get('/api/licencas', async (req: Request, res: Response) => {
   try {
     const query = `
-      SELECT l.id, l.chave, l.usuario_id, l.tipo_licenca, l.max_colaboradores,
+      SELECT l.id, l.chave, l.usuario_id, l.tipo_licenca,
              l.data_ativacao, l.data_expiracao, l.status, l.criado_em,
              u.nome as usuario_nome, u.email as usuario_email,
              CEIL(EXTRACT(EPOCH FROM (l.data_expiracao - CURRENT_TIMESTAMP)) / 86400)::int as dias_restantes
@@ -920,7 +923,6 @@ app.get('/api/licencas', async (req: Request, res: Response) => {
       usuario_nome: l.usuario_nome || 'Não Vinculado',
       usuario_email: l.usuario_email || '-',
       tipo_licenca: l.tipo_licenca,
-      max_colaboradores: l.max_colaboradores,
       data_ativacao: l.data_ativacao,
       data_expiracao: l.data_expiracao,
       status: l.status,
@@ -935,23 +937,22 @@ app.get('/api/licencas', async (req: Request, res: Response) => {
 
 // Gerar nova chave de licença
 app.post('/api/licencas', async (req: Request, res: Response) => {
-  const { usuario_id, tipo_licenca, max_colaboradores, validade_dias } = req.body;
+  const { usuario_id, tipo_licenca, validade_dias } = req.body;
 
   try {
     const randomHex = () => Math.random().toString(36).substring(2, 6).toUpperCase();
     const chaveGerada = `REGZ-2026-${randomHex()}-${randomHex()}-${randomHex()}`;
-    const diasValidade = validade_dias ? parseInt(validade_dias, 10) : 365;
+    const diasValidade = validade_dias ? parseInt(validade_dias, 10) : 30;
 
     const query = `
-      INSERT INTO chaves_licenca (chave, usuario_id, tipo_licenca, max_colaboradores, data_expiracao, status)
-      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP + ($5 || ' days')::interval, 'Ativa')
+      INSERT INTO chaves_licenca (chave, usuario_id, tipo_licenca, data_expiracao, status)
+      VALUES ($1, $2, $3, CURRENT_TIMESTAMP + ($4 || ' days')::interval, 'Ativa')
       RETURNING *
     `;
     const result = await pool.query(query, [
       chaveGerada,
       usuario_id || null,
       tipo_licenca || 'Enterprise',
-      max_colaboradores || 500,
       diasValidade
     ]);
 

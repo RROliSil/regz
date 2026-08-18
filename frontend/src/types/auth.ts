@@ -42,7 +42,7 @@ export interface Licenca {
   usuario_nome?: string;
   usuario_email?: string;
   tipo_licenca: string;
-  max_colaboradores: number;
+  max_colaboradores?: number;
   data_ativacao: string;
   data_expiracao: string;
   status: 'Ativa' | 'Expirada' | 'Suspensa';
