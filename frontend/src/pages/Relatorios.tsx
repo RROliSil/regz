@@ -253,7 +253,7 @@ export const Relatorios: React.FC = () => {
           <button onClick={carregarDados} className="btn-secondary btn-relatorio-sec" title="Atualizar Dados">
             <RefreshCw size={16} className={loading ? "spin" : ""} /> Atualizar
           </button>
-          <button onClick={exportarCSV} className="btn-secondary btn-relatorio-sec" style={{ border: '1px solid rgba(52, 211, 153, 0.4)', color: '#34d399' }} title="Exportar Tabela para Excel/CSV">
+          <button onClick={exportarCSV} className="btn-secondary btn-export-excel" title="Exportar Tabela para Excel/CSV">
             <FileSpreadsheet size={16} /> Exportar Excel (CSV)
           </button>
           <button onClick={imprimirPDF} className="btn-primary" title="Imprimir ou Salvar em PDF A4">

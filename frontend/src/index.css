@@ -2123,6 +2123,47 @@ h1, h2, h3, h4, h5, h6 {
   border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
+/* Botão Exportar Excel (CSV) em Relatórios - Regras por Tema */
+.btn-export-excel,
+[data-theme="dark"] .btn-export-excel {
+  background: #1b1b1f !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.4) !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-export-excel:hover,
+[data-theme="dark"] .btn-export-excel:hover {
+  background: #242429 !important;
+  color: #34d399 !important;
+  border-color: rgba(52, 211, 153, 0.6) !important;
+}
+
+.btn-export-excel svg,
+[data-theme="dark"] .btn-export-excel svg {
+  color: #34d399 !important;
+}
+
+/* Modo Claro ([data-theme="light"]): Mesma Regra da Tag Gestor de RH */
+[data-theme="light"] .btn-export-excel {
+  background: var(--badge-rh-bg) !important;
+  color: var(--badge-rh-text) !important;
+  border: 1px solid var(--badge-rh-border) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .btn-export-excel:hover {
+  background: rgba(16, 185, 129, 0.22) !important;
+  color: var(--badge-rh-text) !important;
+  border-color: rgba(16, 185, 129, 0.5) !important;
+}
+
+[data-theme="light"] .btn-export-excel svg {
+  color: var(--badge-rh-text) !important;
+}
+
 [data-theme="dark"] .sidebar-user-avatar {
   background: #141416 !important;
   color: #ffffff !important;
