@@ -977,7 +977,7 @@ export const Administracao: React.FC = () => {
                     <th style={{ width: '160px' }}>Plano</th>
                     <th style={{ width: '200px' }}>Validade / Vencimento</th>
                     <th style={{ width: '120px' }}>Status</th>
-                    <th style={{ textAlign: 'center', width: '140px' }}>Ações</th>
+                    <th style={{ textAlign: 'center', width: '160px', minWidth: '160px' }}>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1028,11 +1028,6 @@ export const Administracao: React.FC = () => {
                               <Key size={13} style={{ flexShrink: 0 }} />
                               Trial (30d)
                             </span>
-                          ) : lic.tipo_licenca === 'Teste' ? (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', background: 'rgba(245, 158, 11, 0.18)', color: '#fbbf24', padding: '4px 10px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(245, 158, 11, 0.35)', whiteSpace: 'nowrap' }}>
-                              <Sliders size={13} style={{ flexShrink: 0 }} />
-                              Teste
-                            </span>
                           ) : (
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', background: 'rgba(99, 102, 241, 0.18)', color: '#a5b4fc', padding: '4px 10px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(99, 102, 241, 0.35)', whiteSpace: 'nowrap' }}>
                               <Award size={13} style={{ flexShrink: 0 }} />
@@ -1069,24 +1064,31 @@ export const Administracao: React.FC = () => {
                           )}
                         </td>
 
-                        <td style={{ textAlign: 'center' }}>
-                          <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'center' }}>
+                        <td style={{ textAlign: 'center', width: '160px', minWidth: '160px', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
                             <button
                               onClick={() => {
                                 if (!podeEditar || !isUserAdminTag) return;
-                                const opcao = window.prompt("Escolha o prazo de renovação em dias:\nDigite 30 (30 dias), 120 (120 dias) ou 365 (1 ano)", "30");
-                                if (!opcao) return;
-                                const diasNum = parseInt(opcao, 10);
-                                if ([30, 120, 365].includes(diasNum)) {
-                                  handleRenovarLicenca(lic.id, diasNum);
+                                const isTrialLic = lic.tipo_licenca === 'Trial' || lic.tipo_licenca === 'Dev / Trial';
+                                if (isTrialLic) {
+                                  if (window.confirm("Renovar licença Trial por +30 dias?")) {
+                                    handleRenovarLicenca(lic.id, 30);
+                                  }
                                 } else {
-                                  alert("Prazo inválido. Escolha 30, 120 ou 365 dias.");
+                                  const opcao = window.prompt("Escolha o prazo de renovação para licença Enterprise:\nDigite 120 (120 dias - 4 Meses) ou 365 (365 dias - 1 Ano)", "120");
+                                  if (!opcao) return;
+                                  const diasNum = parseInt(opcao, 10);
+                                  if ([120, 365].includes(diasNum)) {
+                                    handleRenovarLicenca(lic.id, diasNum);
+                                  } else {
+                                    alert("Prazo inválido. Escolha 120 ou 365 dias.");
+                                  }
                                 }
                               }}
                               className="btn-action map"
                               disabled={!podeEditar || !isUserAdminTag}
                               style={{ opacity: (podeEditar && isUserAdminTag) ? 1 : 0.4, cursor: (podeEditar && isUserAdminTag) ? 'pointer' : 'not-allowed' }}
-                              title={isUserAdminTag ? "Renovar Licença (30, 120 ou 365 dias)" : "Apenas perfis com a TAG de Administrador podem gerenciar chaves de licença"}
+                              title={isUserAdminTag ? "Renovar Licença (120 ou 365 dias)" : "Apenas perfis com a TAG de Administrador podem gerenciar chaves de licença"}
                             >
                               <RefreshCw size={14} />
                             </button>
@@ -1450,7 +1452,6 @@ export const Administracao: React.FC = () => {
                     setNewLicencaTipo(tipo);
                     if (tipo === 'Trial') setNewLicencaValidade(30);
                     else if (tipo === 'Enterprise') setNewLicencaValidade(120);
-                    else if (tipo === 'Teste') setNewLicencaValidade(30);
                   }}
                   className="custom-select"
                   disabled={submittingLicenca}
@@ -1458,7 +1459,6 @@ export const Administracao: React.FC = () => {
                 >
                   <option value="Enterprise">Enterprise (Acesso Completo - 120d ou 365d)</option>
                   <option value="Trial">Trial (Acesso Completo - 30d)</option>
-                  <option value="Teste">Teste (Tag de Avaliação Técnica)</option>
                 </select>
               </div>
 
@@ -1475,16 +1475,10 @@ export const Administracao: React.FC = () => {
                 >
                   {newLicencaTipo === 'Trial' ? (
                     <option value={30}>30 Dias (Fixo para Trial)</option>
-                  ) : newLicencaTipo === 'Enterprise' ? (
+                  ) : (
                     <>
                       <option value={120}>120 Dias (Enterprise - 4 Meses)</option>
                       <option value={365}>365 Dias (Enterprise - 1 Ano)</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value={30}>30 Dias (Teste)</option>
-                      <option value={120}>120 Dias (Teste)</option>
-                      <option value={365}>365 Dias (Teste)</option>
                     </>
                   )}
                 </select>
