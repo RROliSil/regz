@@ -855,44 +855,56 @@ export const Administracao: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
-                <label className="checkbox-label" style={{ margin: 0, fontWeight: 700 }}>
-                  <input
-                    type="checkbox"
-                    checked={perfilAtivo}
-                    onChange={(e) => setPerfilAtivo(e.target.checked)}
-                    disabled={submittingPerfil}
-                  />
-                  <span>PERFIL ATIVO</span>
-                </label>
+              {(() => {
+                const isAdminProfile = perfilIsAdmin || (editingPerfilId !== null && perfis.find(p => p.id === editingPerfilId)?.is_admin);
 
-                <label className="checkbox-label" style={{
-                  margin: 0,
-                  padding: '10px 14px',
-                  borderRadius: '10px',
-                  background: perfilIsAdmin ? 'rgba(99, 102, 241, 0.15)' : 'rgba(15, 23, 42, 0.4)',
-                  border: perfilIsAdmin ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid var(--card-border)',
-                  transition: 'all 0.2s ease'
-                }}>
-                  <input
-                    type="checkbox"
-                    checked={perfilIsAdmin}
-                    onChange={(e) => {
-                      const isAdminChecked = e.target.checked;
-                      setPerfilIsAdmin(isAdminChecked);
-                      if (isAdminChecked) {
-                        const fullPerms: Record<string, 'escrita'> = {};
-                        SYSTEM_MODULES.forEach(m => { fullPerms[m.id] = 'escrita'; });
-                        setPerfilPermissoes(fullPerms);
-                      }
-                    }}
-                    disabled={submittingPerfil || (editingPerfilId !== null && perfis.find(p => p.id === editingPerfilId)?.is_admin)}
-                  />
-                  <span style={{ fontWeight: 700, color: perfilIsAdmin ? '#818cf8' : 'var(--text-muted)' }}>
-                    ACESSO TOTAL (ADMINISTRADOR TI)
-                  </span>
-                </label>
-              </div>
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+                    <label className="checkbox-label" style={{ margin: 0, fontWeight: 700, opacity: isAdminProfile ? 0.6 : 1, cursor: isAdminProfile ? 'not-allowed' : 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={isAdminProfile ? true : perfilAtivo}
+                        onChange={(e) => {
+                          if (!isAdminProfile) {
+                            setPerfilAtivo(e.target.checked);
+                          }
+                        }}
+                        disabled={submittingPerfil || isAdminProfile}
+                        style={{ cursor: isAdminProfile ? 'not-allowed' : 'pointer' }}
+                      />
+                      <span>PERFIL ATIVO {isAdminProfile ? '(Obrigatório para Admin)' : ''}</span>
+                    </label>
+
+                    <label className="checkbox-label" style={{
+                      margin: 0,
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      background: perfilIsAdmin ? 'rgba(99, 102, 241, 0.15)' : 'rgba(15, 23, 42, 0.4)',
+                      border: perfilIsAdmin ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid var(--card-border)',
+                      transition: 'all 0.2s ease'
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={perfilIsAdmin}
+                        onChange={(e) => {
+                          const isAdminChecked = e.target.checked;
+                          setPerfilIsAdmin(isAdminChecked);
+                          if (isAdminChecked) {
+                            setPerfilAtivo(true);
+                            const fullPerms: Record<string, 'escrita'> = {};
+                            SYSTEM_MODULES.forEach(m => { fullPerms[m.id] = 'escrita'; });
+                            setPerfilPermissoes(fullPerms);
+                          }
+                        }}
+                        disabled={submittingPerfil || (editingPerfilId !== null && perfis.find(p => p.id === editingPerfilId)?.is_admin)}
+                      />
+                      <span style={{ fontWeight: 700, color: perfilIsAdmin ? '#818cf8' : 'var(--text-muted)' }}>
+                        ACESSO TOTAL (ADMINISTRADOR TI)
+                      </span>
+                    </label>
+                  </div>
+                );
+              })()}
 
               {/* MATRIZ DE PERMISSÕES POR MÓDULO */}
               <div style={{ marginTop: '20px' }}>
