@@ -2123,10 +2123,9 @@ h1, h2, h3, h4, h5, h6 {
   border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
-/* Botão Exportar Excel (CSV) em Relatórios - Regras por Tema */
-.btn-export-excel,
-[data-theme="dark"] .btn-export-excel {
-  background: #1b1b1f !important;
+/* Botão Exportar Excel (CSV) em Relatórios - Modo Tema Padrão */
+.btn-export-excel {
+  background: rgba(30, 41, 59, 0.8) !important;
   color: #34d399 !important;
   border: 1px solid rgba(52, 211, 153, 0.4) !important;
   display: inline-flex;
@@ -2134,14 +2133,29 @@ h1, h2, h3, h4, h5, h6 {
   gap: 8px;
 }
 
-.btn-export-excel:hover,
+.btn-export-excel:hover {
+  background: rgba(51, 65, 85, 0.8) !important;
+  color: #34d399 !important;
+  border-color: rgba(52, 211, 153, 0.6) !important;
+}
+
+.btn-export-excel svg {
+  color: #34d399 !important;
+}
+
+/* Modo Tema Escuro ([data-theme="dark"]) */
+[data-theme="dark"] .btn-export-excel {
+  background: #1b1b1f !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.4) !important;
+}
+
 [data-theme="dark"] .btn-export-excel:hover {
   background: #242429 !important;
   color: #34d399 !important;
   border-color: rgba(52, 211, 153, 0.6) !important;
 }
 
-.btn-export-excel svg,
 [data-theme="dark"] .btn-export-excel svg {
   color: #34d399 !important;
 }
