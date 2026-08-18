@@ -31,6 +31,8 @@ export interface Usuario {
   chave_licenca?: string | null;
   tipo_licenca?: string;
   status_licenca?: string;
+  licenca_expirada?: boolean;
+  dias_restantes_licenca?: number;
 }
 
 export interface Licenca {

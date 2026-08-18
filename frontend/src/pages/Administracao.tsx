@@ -44,6 +44,7 @@ import { useAuth } from '../context/AuthContext';
 export const Administracao: React.FC = () => {
   const { usuario, temPermissao } = useAuth();
   const podeEditar = temPermissao('administracao', 'escrita');
+  const isUserAdminTag = !!usuario?.perfil?.is_admin;
 
   const [subTab, setSubTab] = useState<'usuarios' | 'perfis' | 'licencas'>('usuarios');
 
@@ -94,7 +95,7 @@ export const Administracao: React.FC = () => {
   const [newLicencaUsuarioId, setNewLicencaUsuarioId] = useState<string>('');
   const [newLicencaTipo, setNewLicencaTipo] = useState<string>('Enterprise');
   const [newLicencaMaxColab, setNewLicencaMaxColab] = useState<number>(500);
-  const [newLicencaValidade, setNewLicencaValidade] = useState<number>(365);
+  const [newLicencaValidade, setNewLicencaValidade] = useState<number>(30);
   const [submittingLicenca, setSubmittingLicenca] = useState(false);
   const [licencaSuccess, setLicencaSuccess] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -306,15 +307,20 @@ export const Administracao: React.FC = () => {
     }
   };
 
-  const handleRenovarLicenca = async (id: number) => {
+  const handleRenovarLicenca = async (id: number, dias: number = 30) => {
+    if (!isUserAdminTag) {
+      alert('Apenas perfis com a TAG de Administrador podem renovar chaves de licença.');
+      return;
+    }
+
     try {
       const res = await fetch(`/api/licencas/${id}/renovar`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dias: 365 })
+        body: JSON.stringify({ dias })
       });
       if (res.ok) {
-        setLicencaSuccess('Prazo da chave de licença renovado por +365 dias com sucesso!');
+        setLicencaSuccess(`Prazo da chave de licença renovado por +${dias} dias com sucesso!`);
         fetchLicencas();
         fetchUsuarios();
         setTimeout(() => setLicencaSuccess(null), 4000);
@@ -954,11 +960,11 @@ export const Administracao: React.FC = () => {
               </div>
 
               <button
-                onClick={() => podeEditar && setModalLicencaOpen(true)}
+                onClick={() => podeEditar && isUserAdminTag && setModalLicencaOpen(true)}
                 className="btn-primary"
-                disabled={!podeEditar}
-                style={{ fontSize: '0.88rem', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
-                title={podeEditar ? 'Gerar Nova Licença' : 'Ação desativada: Seu perfil permite apenas visualização'}
+                disabled={!podeEditar || !isUserAdminTag}
+                style={{ fontSize: '0.88rem', opacity: (podeEditar && isUserAdminTag) ? 1 : 0.5, cursor: (podeEditar && isUserAdminTag) ? 'pointer' : 'not-allowed' }}
+                title={isUserAdminTag ? 'Gerar Nova Licença' : 'Apenas perfis com a TAG de Administrador podem gerenciar chaves de licença'}
               >
                 <Plus size={16} /> Gerar Nova Licença
               </button>
@@ -1063,36 +1069,46 @@ export const Administracao: React.FC = () => {
                         <td style={{ textAlign: 'center' }}>
                           <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'center' }}>
                             <button
-                              onClick={() => podeEditar && handleRenovarLicenca(lic.id)}
+                              onClick={() => {
+                                if (!podeEditar || !isUserAdminTag) return;
+                                const opcao = window.prompt("Escolha o prazo de renovação em dias:\nDigite 30 (30 dias), 120 (120 dias) ou 365 (1 ano)", "30");
+                                if (!opcao) return;
+                                const diasNum = parseInt(opcao, 10);
+                                if ([30, 120, 365].includes(diasNum)) {
+                                  handleRenovarLicenca(lic.id, diasNum);
+                                } else {
+                                  alert("Prazo inválido. Escolha 30, 120 ou 365 dias.");
+                                }
+                              }}
                               className="btn-action map"
-                              disabled={!podeEditar}
-                              style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
-                              title={podeEditar ? "Renovar Licença por +365 dias" : "Ação desativada: Seu perfil permite apenas visualização"}
+                              disabled={!podeEditar || !isUserAdminTag}
+                              style={{ opacity: (podeEditar && isUserAdminTag) ? 1 : 0.4, cursor: (podeEditar && isUserAdminTag) ? 'pointer' : 'not-allowed' }}
+                              title={isUserAdminTag ? "Renovar Licença (30, 120 ou 365 dias)" : "Apenas perfis com a TAG de Administrador podem gerenciar chaves de licença"}
                             >
                               <RefreshCw size={14} />
                             </button>
 
                             <button
-                              onClick={() => podeEditar && handleToggleStatusLicenca(lic.id, lic.status)}
+                              onClick={() => podeEditar && isUserAdminTag && handleToggleStatusLicenca(lic.id, lic.status)}
                               className="btn-action"
-                              disabled={!podeEditar}
+                              disabled={!podeEditar || !isUserAdminTag}
                               style={{
                                 background: lic.status === 'Ativa' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(52, 211, 153, 0.15)',
                                 color: lic.status === 'Ativa' ? '#fbbf24' : '#34d399',
-                                opacity: podeEditar ? 1 : 0.4,
-                                cursor: podeEditar ? 'pointer' : 'not-allowed'
+                                opacity: (podeEditar && isUserAdminTag) ? 1 : 0.4,
+                                cursor: (podeEditar && isUserAdminTag) ? 'pointer' : 'not-allowed'
                               }}
-                              title={podeEditar ? (lic.status === 'Ativa' ? 'Suspender Licença' : 'Ativar Licença') : 'Ação desativada: Seu perfil permite apenas visualização'}
+                              title={isUserAdminTag ? (lic.status === 'Ativa' ? 'Suspender Licença' : 'Ativar Licença') : 'Apenas perfis com a TAG de Administrador podem gerenciar chaves de licença'}
                             >
                               {lic.status === 'Ativa' ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
                             </button>
 
                             <button
-                              onClick={() => podeEditar && handleDeleteLicenca(lic.id, lic.chave)}
+                              onClick={() => podeEditar && isUserAdminTag && handleDeleteLicenca(lic.id, lic.chave)}
                               className="btn-action delete"
-                              disabled={!podeEditar}
-                              style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
-                              title={podeEditar ? "Excluir Licença" : "Ação desativada: Seu perfil permite apenas visualização"}
+                              disabled={!podeEditar || !isUserAdminTag}
+                              style={{ opacity: (podeEditar && isUserAdminTag) ? 1 : 0.4, cursor: (podeEditar && isUserAdminTag) ? 'pointer' : 'not-allowed' }}
+                              title={isUserAdminTag ? "Excluir Licença" : "Apenas perfis com a TAG de Administrador podem gerenciar chaves de licença"}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -1456,17 +1472,19 @@ export const Administracao: React.FC = () => {
 
                 <div className="form-group">
                   <label style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-dim)' }}>
-                    VALIDADE (DIAS)
+                    DURAÇÃO DA LICENÇA *
                   </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="3650"
+                  <select
                     value={newLicencaValidade}
-                    onChange={(e) => setNewLicencaValidade(parseInt(e.target.value, 10) || 365)}
+                    onChange={(e) => setNewLicencaValidade(parseInt(e.target.value, 10))}
+                    className="custom-select"
                     disabled={submittingLicenca}
                     required
-                  />
+                  >
+                    <option value={30}>30 Dias (Padrão - Mensal)</option>
+                    <option value={120}>120 Dias (Trimestral)</option>
+                    <option value={365}>365 Dias (Anual / 1 Ano)</option>
+                  </select>
                 </div>
               </div>
 

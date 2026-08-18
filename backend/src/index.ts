@@ -197,7 +197,7 @@ const initDb = async () => {
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_atualizada_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
     `);
 
-    // Tabela de Chaves de Licença
+    // Tabela de Chaves de Licença (Validade Inicial Padrão = 30 Dias)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS chaves_licenca (
         id SERIAL PRIMARY KEY,
@@ -206,25 +206,26 @@ const initDb = async () => {
         tipo_licenca VARCHAR(50) DEFAULT 'Enterprise',
         max_colaboradores INT DEFAULT 500,
         data_ativacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        data_expiracao TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '365 days'),
+        data_expiracao TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days'),
         status VARCHAR(20) DEFAULT 'Ativa',
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
-    // Se a tabela de licenças estiver vazia para algum usuário, criar chaves automáticas
+    // Se a tabela de licenças estiver vazia para algum usuário, criar chaves automáticas (30 dias)
     await pool.query(`
-      INSERT INTO chaves_licenca (chave, usuario_id, tipo_licenca, max_colaboradores, status)
+      INSERT INTO chaves_licenca (chave, usuario_id, tipo_licenca, max_colaboradores, data_expiracao, status)
       SELECT 
         'REGZ-2026-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)) || '-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)) || '-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)),
         u.id,
         'Enterprise',
         500,
+        (CURRENT_TIMESTAMP + INTERVAL '30 days'),
         'Ativa'
       FROM usuarios u
       WHERE NOT EXISTS (SELECT 1 FROM chaves_licenca l WHERE l.usuario_id = u.id);
     `);
-    console.log('✅ Migração de chaves de licença e expiração de senhas de 30 dias concluída!');
+    console.log('✅ Migração de chaves de licença com validade padrão de 30 dias concluída!');
 
     // 3. Tabela de Cargos CBO
     await pool.query(`
@@ -465,9 +466,12 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
   try {
     const query = `
       SELECT u.id, u.nome, u.email, u.senha_hash, u.ativo, u.perfil_id,
-             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes
+             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
+             l.status as licenca_status, l.data_expiracao as licenca_expiracao,
+             CEIL(EXTRACT(EPOCH FROM (l.data_expiracao - CURRENT_TIMESTAMP)) / 86400)::int as dias_restantes_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
+      LEFT JOIN chaves_licenca l ON l.usuario_id = u.id
       WHERE LOWER(u.email) = LOWER($1)
     `;
     const result = await pool.query(query, [email.trim()]);
@@ -495,6 +499,10 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
       permissoes: usuario.permissoes || { home: 'escrita', colaboradores: 'escrita', campos: 'escrita', administracao: 'escrita' }
     };
 
+    const diasRestantesLic = typeof usuario.dias_restantes_licenca === 'number' ? usuario.dias_restantes_licenca : 30;
+    const licencaStatus = usuario.licenca_status || 'Ativa';
+    const licencaExpirada = diasRestantesLic <= 0 || licencaStatus !== 'Ativa';
+
     const token = jwt.sign(
       { id: usuario.id, email: usuario.email, perfil_id: usuario.perfil_id },
       JWT_SECRET,
@@ -508,7 +516,10 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         nome: usuario.nome,
         email: usuario.email,
         ativo: usuario.ativo,
-        perfil
+        perfil,
+        licenca_expirada: licencaExpirada,
+        dias_restantes_licenca: diasRestantesLic,
+        status_licenca: licencaStatus
       }
     });
   } catch (error: any) {
@@ -528,9 +539,12 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
     const decoded: any = jwt.verify(token, JWT_SECRET);
     const query = `
       SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id,
-             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes
+             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
+             l.status as licenca_status, l.data_expiracao as licenca_expiracao,
+             CEIL(EXTRACT(EPOCH FROM (l.data_expiracao - CURRENT_TIMESTAMP)) / 86400)::int as dias_restantes_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
+      LEFT JOIN chaves_licenca l ON l.usuario_id = u.id
       WHERE u.id = $1
     `;
     const result = await pool.query(query, [decoded.id]);
@@ -548,13 +562,20 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
       permissoes: usuario.permissoes || { home: 'escrita', colaboradores: 'escrita', campos: 'escrita', administracao: 'escrita' }
     };
 
+    const diasRestantesLic = typeof usuario.dias_restantes_licenca === 'number' ? usuario.dias_restantes_licenca : 30;
+    const licencaStatus = usuario.licenca_status || 'Ativa';
+    const licencaExpirada = diasRestantesLic <= 0 || licencaStatus !== 'Ativa';
+
     res.json({
       usuario: {
         id: usuario.id,
         nome: usuario.nome,
         email: usuario.email,
         ativo: usuario.ativo,
-        perfil
+        perfil,
+        licenca_expirada: licencaExpirada,
+        dias_restantes_licenca: diasRestantesLic,
+        status_licenca: licencaStatus
       }
     });
   } catch (error: any) {

@@ -73,8 +73,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const temPermissao = (aba: keyof PermissoesAba, nivelExigido: 'leitura' | 'escrita' = 'leitura'): boolean => {
     if (!usuario || !usuario.perfil) return false;
+
+    // Se a licença estiver expirada ou inativa/suspensa, revoga a permissão de escrita (Modo Somente Leitura forçado)
+    if (usuario.licenca_expirada && nivelExigido === 'escrita') {
+      return false;
+    }
     
-    // Administrador possui acesso total a tudo
+    // Administrador possui acesso total a tudo (quando a licença estiver ativa)
     if (usuario.perfil.is_admin) return true;
 
     const nivelAba = usuario.perfil.permissoes?.[aba] || (aba === 'relatorios' ? 'leitura' : 'sem_acesso');
