@@ -1041,7 +1041,7 @@ export const Administracao: React.FC = () => {
                     <th style={{ width: '250px' }}>Chave de Licença</th>
                     <th>Usuário Vinculado</th>
                     <th style={{ width: '160px' }}>Plano</th>
-                    <th style={{ width: '200px' }}>Validade</th>
+                    <th style={{ width: '140px' }}>Validade</th>
                     <th style={{ width: '120px' }}>Status</th>
                     <th style={{ textAlign: 'center', width: '160px', minWidth: '160px' }}>Ações</th>
                   </tr>
