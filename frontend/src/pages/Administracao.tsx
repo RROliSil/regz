@@ -683,7 +683,7 @@ export const Administracao: React.FC = () => {
                     Exp.
                     <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'senha')} />
                   </th>
-                  <th style={{ width: '150px', minWidth: '150px', maxWidth: '150px', textAlign: 'center', position: 'sticky', right: 0, zIndex: 10, background: '#0f172a' }}>
+                  <th style={{ width: '150px', minWidth: '150px', maxWidth: '150px', textAlign: 'center', position: 'sticky', right: 0, zIndex: 10, background: 'rgba(15, 23, 42, 0.95)' }}>
                     Ações
                   </th>
                 </tr>
@@ -791,7 +791,7 @@ export const Administracao: React.FC = () => {
                         );
                       })()}
                     </td>
-                    <td style={{ width: '150px', minWidth: '150px', maxWidth: '150px', textAlign: 'center', position: 'sticky', right: 0, zIndex: 5, background: '#0f172a' }}>
+                    <td style={{ width: '150px', minWidth: '150px', maxWidth: '150px', textAlign: 'center', position: 'sticky', right: 0, zIndex: 5, background: 'rgba(15, 23, 42, 0.95)' }}>
                       {(() => {
                         const isRowSuperAdmin = !!(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz');
                         if (isRowSuperAdmin) {
@@ -1034,7 +1034,7 @@ export const Administracao: React.FC = () => {
                     <th style={{ width: '250px' }}>Chave de Licença</th>
                     <th>Usuário Vinculado</th>
                     <th style={{ width: '160px' }}>Plano</th>
-                    <th style={{ width: '200px' }}>Validade / Vencimento</th>
+                    <th style={{ width: '200px' }}>Validade</th>
                     <th style={{ width: '120px' }}>Status</th>
                     <th style={{ textAlign: 'center', width: '160px', minWidth: '160px' }}>Ações</th>
                   </tr>
