@@ -192,10 +192,12 @@ const initDb = async () => {
     `);
     console.log('✅ Migração de vínculo de perfis de usuários executada!');
 
-    // Migration SQL: Expiração de Senha (30 dias) e Chave de Licença vinculada
+    // Migration SQL: Expiração de Senha (30 dias), Chave de Licença e Super Admin
     await pool.query(`
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_atualizada_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS chave_licenca VARCHAR(100);
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN DEFAULT false;
+      UPDATE usuarios SET is_super_admin = true WHERE LOWER(email) = 'admin@regz.app' OR nome = 'Administrador Regz';
     `);
 
     // Tabela de Chaves de Licença (Validade Inicial Padrão = 30 Dias)
@@ -503,13 +505,13 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
       permissoes: usuario.permissoes || { home: 'escrita', colaboradores: 'escrita', campos: 'escrita', administracao: 'escrita' }
     };
 
-    // EXCEÇÃO EXCLUSIVA PARA O USUÁRIO ADMIN REGZ (is_admin === true)
-    const isAdminUser = !!usuario.is_admin;
+    // EXCEÇÃO EXCLUSIVA PARA O USUÁRIO SUPER ADMIN REGZ (is_super_admin ou admin@regz.app)
+    const isSuperAdmin = !!(usuario.is_super_admin || (usuario.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario.nome === 'Administrador Regz');
     const temChaveVinculada = !!(usuario.chave_licenca || usuario.licenca_chave);
-    const diasRestantesLic = isAdminUser ? 999 : (typeof usuario.dias_restantes_licenca === 'number' ? usuario.dias_restantes_licenca : 0);
-    const licencaStatus = isAdminUser ? 'Ativa (Isento - Admin)' : (usuario.licenca_status || (temChaveVinculada ? 'Ativa' : 'Sem Licença'));
-    const semLicenca = !isAdminUser && !temChaveVinculada;
-    const licencaExpirada = !isAdminUser && (semLicenca || diasRestantesLic <= 0 || usuario.licenca_status === 'Suspensa' || usuario.licenca_status === 'Expirada');
+    const diasRestantesLic = isSuperAdmin ? 999 : (typeof usuario.dias_restantes_licenca === 'number' ? usuario.dias_restantes_licenca : 0);
+    const licencaStatus = isSuperAdmin ? 'Ativa (Isento - Super Admin)' : (usuario.licenca_status || (temChaveVinculada ? 'Ativa' : 'Sem Licença'));
+    const semLicenca = !isSuperAdmin && !temChaveVinculada;
+    const licencaExpirada = !isSuperAdmin && (semLicenca || diasRestantesLic <= 0 || usuario.licenca_status === 'Suspensa' || usuario.licenca_status === 'Expirada');
 
     const token = jwt.sign(
       { id: usuario.id, email: usuario.email, perfil_id: usuario.perfil_id },
@@ -524,6 +526,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         nome: usuario.nome,
         email: usuario.email,
         ativo: usuario.ativo,
+        is_super_admin: isSuperAdmin,
         chave_licenca: usuario.chave_licenca || usuario.licenca_chave || null,
         perfil,
         sem_licenca: semLicenca,
@@ -548,7 +551,7 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
   try {
     const decoded: any = jwt.verify(token, JWT_SECRET);
     const query = `
-      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca,
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca, u.is_super_admin,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
              l.chave as licenca_chave, l.status as licenca_status, l.data_expiracao as licenca_expiracao,
              CEIL(EXTRACT(EPOCH FROM (l.data_expiracao - CURRENT_TIMESTAMP)) / 86400)::int as dias_restantes_licenca
@@ -572,13 +575,13 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
       permissoes: usuario.permissoes || { home: 'escrita', colaboradores: 'escrita', campos: 'escrita', administracao: 'escrita' }
     };
 
-    // EXCEÇÃO EXCLUSIVA PARA O USUÁRIO ADMIN REGZ (is_admin === true)
-    const isAdminUser = !!usuario.is_admin;
+    // EXCEÇÃO EXCLUSIVA PARA O USUÁRIO SUPER ADMIN REGZ (is_super_admin ou admin@regz.app)
+    const isSuperAdmin = !!(usuario.is_super_admin || (usuario.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario.nome === 'Administrador Regz');
     const temChaveVinculada = !!(usuario.chave_licenca || usuario.licenca_chave);
-    const diasRestantesLic = isAdminUser ? 999 : (typeof usuario.dias_restantes_licenca === 'number' ? usuario.dias_restantes_licenca : 0);
-    const licencaStatus = isAdminUser ? 'Ativa (Isento - Admin)' : (usuario.licenca_status || (temChaveVinculada ? 'Ativa' : 'Sem Licença'));
-    const semLicenca = !isAdminUser && !temChaveVinculada;
-    const licencaExpirada = !isAdminUser && (semLicenca || diasRestantesLic <= 0 || usuario.licenca_status === 'Suspensa' || usuario.licenca_status === 'Expirada');
+    const diasRestantesLic = isSuperAdmin ? 999 : (typeof usuario.dias_restantes_licenca === 'number' ? usuario.dias_restantes_licenca : 0);
+    const licencaStatus = isSuperAdmin ? 'Ativa (Isento - Super Admin)' : (usuario.licenca_status || (temChaveVinculada ? 'Ativa' : 'Sem Licença'));
+    const semLicenca = !isSuperAdmin && !temChaveVinculada;
+    const licencaExpirada = !isSuperAdmin && (semLicenca || diasRestantesLic <= 0 || usuario.licenca_status === 'Suspensa' || usuario.licenca_status === 'Expirada');
 
     res.json({
       usuario: {
@@ -586,6 +589,7 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
         nome: usuario.nome,
         email: usuario.email,
         ativo: usuario.ativo,
+        is_super_admin: isSuperAdmin,
         chave_licenca: usuario.chave_licenca || usuario.licenca_chave || null,
         perfil,
         sem_licenca: semLicenca,
@@ -725,31 +729,33 @@ app.delete('/api/perfis-acesso/:id', checkPermission('administracao'), async (re
 app.get('/api/usuarios', async (req: Request, res: Response) => {
   try {
     const query = `
-      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em, u.senha_atualizada_em,
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em, u.senha_atualizada_em, u.chave_licenca, u.is_super_admin,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
              (30 - FLOOR(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - COALESCE(u.senha_atualizada_em, u.criado_em))) / 86400))::int as dias_para_expirar,
-             l.chave as chave_licenca, l.tipo_licenca, l.status as status_licenca
+             l.chave as licenca_chave, l.tipo_licenca, l.status as status_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
-      LEFT JOIN chaves_licenca l ON l.usuario_id = u.id
+      LEFT JOIN chaves_licenca l ON (l.chave = u.chave_licenca OR l.usuario_id = u.id)
       ORDER BY u.id ASC
     `;
     const result = await pool.query(query);
     const usuariosFormatados = result.rows.map(u => {
       const diasRestantes = typeof u.dias_para_expirar === 'number' ? u.dias_para_expirar : 30;
+      const isSuperAdmin = !!(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz');
       return {
         id: u.id,
         nome: u.nome,
         email: u.email,
         ativo: u.ativo,
         perfil_id: u.perfil_id,
+        is_super_admin: isSuperAdmin,
         criado_em: u.criado_em,
         senha_atualizada_em: u.senha_atualizada_em || u.criado_em,
         dias_para_expirar: diasRestantes,
         senha_expirada: diasRestantes <= 0,
-        chave_licenca: u.chave_licenca || null,
-        tipo_licenca: u.tipo_licenca || 'Enterprise',
-        status_licenca: u.status_licenca || 'Ativa',
+        chave_licenca: u.chave_licenca || u.licenca_chave || null,
+        tipo_licenca: isSuperAdmin ? 'Super Admin (Isento)' : (u.tipo_licenca || null),
+        status_licenca: isSuperAdmin ? 'Ativa (Isento)' : (u.status_licenca || 'Ativa'),
         perfil: u.perfil_id ? {
           id: u.perfil_id,
           nome: u.perfil_nome,

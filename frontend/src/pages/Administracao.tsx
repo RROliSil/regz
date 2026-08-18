@@ -45,9 +45,16 @@ import { useAuth } from '../context/AuthContext';
 export const Administracao: React.FC = () => {
   const { usuario, temPermissao } = useAuth();
   const podeEditar = temPermissao('administracao', 'escrita');
+  const isSuperAdmin = !!(usuario?.is_super_admin || (usuario?.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario?.nome === 'Administrador Regz');
   const isUserAdminTag = !!usuario?.perfil?.is_admin;
 
   const [subTab, setSubTab] = useState<'usuarios' | 'perfis' | 'licencas'>('usuarios');
+
+  useEffect(() => {
+    if (subTab === 'licencas' && !isSuperAdmin) {
+      setSubTab('usuarios');
+    }
+  }, [subTab, isSuperAdmin]);
 
   // Helper para renderizar a Badge de Perfil com cores tematicas (Admin com brilho, outros sem brilho)
   const renderPerfilBadge = (nome: string, isAdmin?: boolean) => {
@@ -601,13 +608,15 @@ export const Administracao: React.FC = () => {
         >
           <Shield size={18} /> Perfis de Acesso & Permissões ({perfis.length})
         </button>
-        <button
-          onClick={() => setSubTab('licencas')}
-          className={subTab === 'licencas' ? 'btn-primary' : 'btn-secondary admin-subtab-btn'}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-        >
-          <Key size={18} color={subTab === 'licencas' ? '#ffffff' : '#38bdf8'} /> Chaves de Licença ({licencas.length})
-        </button>
+        {isSuperAdmin && (
+          <button
+            onClick={() => setSubTab('licencas')}
+            className={subTab === 'licencas' ? 'btn-primary' : 'btn-secondary admin-subtab-btn'}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+          >
+            <Key size={18} color={subTab === 'licencas' ? '#ffffff' : '#38bdf8'} /> Chaves de Licença ({licencas.length})
+          </button>
+        )}
       </div>
 
       {licencaSuccess && (
@@ -703,11 +712,11 @@ export const Administracao: React.FC = () => {
                     </td>
                     <td>
                       {(() => {
-                        const pObj = u.perfil || perfis.find(p => p.id === u.perfil_id);
-                        if (pObj?.is_admin) {
+                        const isRowSuperAdmin = !!(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz');
+                        if (isRowSuperAdmin) {
                           return (
                             <span style={{ fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                              ✨ Isento (Admin)
+                              ✨ Isento (Super Admin)
                             </span>
                           );
                         }
@@ -785,9 +794,8 @@ export const Administracao: React.FC = () => {
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       {(() => {
-                        const pObj = u.perfil || perfis.find(p => p.id === u.perfil_id);
-                        const isUserAdminTotal = pObj?.is_admin || pObj?.nome === 'Administrador Total';
-                        if (isUserAdminTotal) {
+                        const isRowSuperAdmin = !!(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz');
+                        if (isRowSuperAdmin) {
                           return (
                             <span style={{ fontSize: '0.88rem', color: 'var(--text-dim)', fontWeight: 600 }}>
                               -

@@ -33,6 +33,7 @@ export interface Usuario {
   status_licenca?: string;
   licenca_expirada?: boolean;
   sem_licenca?: boolean;
+  is_super_admin?: boolean;
   dias_restantes_licenca?: number;
 }
 
