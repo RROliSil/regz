@@ -3216,3 +3216,16 @@ select option,
   color: #a1a1aa !important;
 }
 
+[data-theme="dark"] .renovar-modal-card .btn-secondary,
+[data-theme="dark"] .modal-footer .btn-secondary {
+  background: #141416 !important;
+  color: #f4f4f5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-theme="dark"] .renovar-modal-card .btn-secondary:hover:not(:disabled),
+[data-theme="dark"] .modal-footer .btn-secondary:hover:not(:disabled) {
+  background: #1e1e24 !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
