@@ -683,13 +683,17 @@ export const SuperAdmin: React.FC = () => {
       {/* ======================================================== */}
       {selectedEmpresaLicencas && (
         <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: '880px', width: '94%', background: '#0f172a', border: '1px solid rgba(56, 189, 248, 0.4)' }}>
-            <div className="modal-header">
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Key size={24} color="#38bdf8" />
+          <div className="modal-content" style={{ maxWidth: '1400px', width: '96vw', maxHeight: '92vh', background: '#0f172a', border: '1px solid rgba(56, 189, 248, 0.4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div className="modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '10px', borderRadius: '12px', color: '#38bdf8' }}>
+                  <Key size={26} />
+                </div>
                 <div>
-                  <h3 style={{ color: '#ffffff', margin: 0 }}>Gerenciador de Licenças Master - {selectedEmpresaLicencas.nome_fantasia}</h3>
-                  <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{selectedEmpresaLicencas.razao_social} ({selectedEmpresaLicencas.cnpj})</span>
+                  <h3 style={{ color: '#ffffff', margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
+                    Gerenciador de Licenças Master - {selectedEmpresaLicencas.nome_fantasia}
+                  </h3>
+                  <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>{selectedEmpresaLicencas.razao_social} ({selectedEmpresaLicencas.cnpj})</span>
                 </div>
               </div>
               <button onClick={() => setSelectedEmpresaLicencas(null)} className="btn-close">
@@ -697,20 +701,23 @@ export const SuperAdmin: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(30, 41, 59, 0.6)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
-                <span style={{ fontSize: '0.88rem', color: '#f8fafc', fontWeight: 600 }}>
-                  Chaves de Licença Emitidas para esta Empresa ({empresaLicencas.length})
-                </span>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(30, 41, 59, 0.6)', padding: '14px 20px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Shield size={20} color="#38bdf8" />
+                  <span style={{ fontSize: '0.95rem', color: '#f8fafc', fontWeight: 700 }}>
+                    Chaves de Licença Master Emitidas para esta Empresa ({empresaLicencas.length})
+                  </span>
+                </div>
                 <button
                   onClick={() => {
                     setNewLicencaEmpresaId(String(selectedEmpresaLicencas.id));
                     setModalLicencaOpen(true);
                   }}
                   className="btn-primary"
-                  style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '10px 18px', fontSize: '0.88rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}
                 >
-                  <Plus size={15} /> Emitir Nova Chave de Licença Master
+                  <Plus size={18} /> Emitir Nova Chave de Licença Master
                 </button>
               </div>
 
@@ -867,13 +874,15 @@ export const SuperAdmin: React.FC = () => {
       {/* ======================================================== */}
       {selectedEmpresaUsuarios && (
         <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: '800px', width: '92%', background: '#0f172a', border: '1px solid rgba(99, 102, 241, 0.4)' }}>
-            <div className="modal-header">
+          <div className="modal-content" style={{ maxWidth: '1200px', width: '94vw', maxHeight: '90vh', background: '#0f172a', border: '1px solid rgba(99, 102, 241, 0.4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div className="modal-header" style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Users size={22} color="#818cf8" />
+                <div style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '10px', borderRadius: '12px', color: '#818cf8' }}>
+                  <Users size={24} />
+                </div>
                 <div>
-                  <h3 style={{ color: '#ffffff', margin: 0 }}>Colaboradores Cadastrados - {selectedEmpresaUsuarios.nome_fantasia}</h3>
-                  <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{selectedEmpresaUsuarios.razao_social} ({selectedEmpresaUsuarios.cnpj})</span>
+                  <h3 style={{ color: '#ffffff', margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Colaboradores Cadastrados - {selectedEmpresaUsuarios.nome_fantasia}</h3>
+                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{selectedEmpresaUsuarios.razao_social} ({selectedEmpresaUsuarios.cnpj})</span>
                 </div>
               </div>
               <button onClick={() => setSelectedEmpresaUsuarios(null)} className="btn-close">
@@ -881,7 +890,7 @@ export const SuperAdmin: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
               {loadingEmpresaUsuarios ? (
                 <div style={{ textAlign: 'center', padding: '30px' }}>
                   <Loader2 className="spin" size={24} color="#818cf8" style={{ margin: '0 auto' }} />
