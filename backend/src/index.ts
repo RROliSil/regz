@@ -1076,26 +1076,67 @@ app.post('/api/licencas', async (req: Request, res: Response) => {
   }
 });
 
-// Renovar prazo da licença por +365 dias (ou dias customizados)
+// Renovar prazo ou alterar tipo da licença
 app.put('/api/licencas/:id/renovar', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { dias } = req.body;
+  const { dias, tipo_licenca, redefinir } = req.body;
   const diasAdicionais = dias ? parseInt(dias, 10) : 365;
 
   try {
-    const query = `
-      UPDATE chaves_licenca
-      SET data_expiracao = GREATEST(data_expiracao, CURRENT_TIMESTAMP) + ($1 || ' days')::interval,
-          status = 'Ativa'
-      WHERE id = $2
-      RETURNING *
-    `;
-    const result = await pool.query(query, [diasAdicionais, id]);
+    let query: string;
+    let params: any[];
+
+    if (tipo_licenca) {
+      if (redefinir) {
+        query = `
+          UPDATE chaves_licenca
+          SET data_expiracao = CURRENT_TIMESTAMP + ($1 || ' days')::interval,
+              tipo_licenca = $2,
+              status = 'Ativa'
+          WHERE id = $3
+          RETURNING *
+        `;
+        params = [diasAdicionais, tipo_licenca, id];
+      } else {
+        query = `
+          UPDATE chaves_licenca
+          SET data_expiracao = GREATEST(data_expiracao, CURRENT_TIMESTAMP) + ($1 || ' days')::interval,
+              tipo_licenca = $2,
+              status = 'Ativa'
+          WHERE id = $3
+          RETURNING *
+        `;
+        params = [diasAdicionais, tipo_licenca, id];
+      }
+    } else {
+      if (redefinir) {
+        query = `
+          UPDATE chaves_licenca
+          SET data_expiracao = CURRENT_TIMESTAMP + ($1 || ' days')::interval,
+              status = 'Ativa'
+          WHERE id = $2
+          RETURNING *
+        `;
+        params = [diasAdicionais, id];
+      } else {
+        query = `
+          UPDATE chaves_licenca
+          SET data_expiracao = GREATEST(data_expiracao, CURRENT_TIMESTAMP) + ($1 || ' days')::interval,
+              status = 'Ativa'
+          WHERE id = $2
+          RETURNING *
+        `;
+        params = [diasAdicionais, id];
+      }
+    }
+
+    const result = await pool.query(query, params);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Licença não encontrada' });
     }
 
+    await syncDatabaseLicenses();
     res.json(result.rows[0]);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao renovar chave de licença' });

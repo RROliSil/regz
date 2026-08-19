@@ -189,6 +189,12 @@ export const Administracao: React.FC = () => {
   const [startX, setStartX] = useState<number>(0);
   const [startWidth, setStartWidth] = useState<number>(0);
 
+  // Modal de Renovação/Alteração de Licença
+  const [modalRenovarOpen, setModalRenovarOpen] = useState(false);
+  const [selectedLicencaRenovar, setSelectedLicencaRenovar] = useState<Licenca | null>(null);
+  const [renovarOpcao, setRenovarOpcao] = useState<'renovar_30' | 'upgrade_120' | 'upgrade_365' | 'downgrade_trial' | 'add_120' | 'add_365'>('renovar_30');
+  const [submittingRenovar, setSubmittingRenovar] = useState(false);
+
   // Form de Usuário
   const [userNome, setUserNome] = useState('');
   const [userEmail, setUserEmail] = useState('');
@@ -382,26 +388,64 @@ export const Administracao: React.FC = () => {
     }
   };
 
-  const handleRenovarLicenca = async (id: number, dias: number = 30) => {
+  const handleOpenModalRenovar = (lic: Licenca) => {
     if (!isUserAdminTag) {
       alert('Apenas perfis com a TAG de Administrador podem renovar chaves de licença.');
       return;
     }
+    setSelectedLicencaRenovar(lic);
+    const isTrial = lic.tipo_licenca === 'Trial' || lic.tipo_licenca === 'Dev / Trial';
+    setRenovarOpcao(isTrial ? 'renovar_30' : 'add_120');
+    setModalRenovarOpen(true);
+  };
+
+  const handleConfirmarRenovacao = async () => {
+    if (!selectedLicencaRenovar) return;
+    setSubmittingRenovar(true);
 
     try {
-      const res = await fetch(`/api/licencas/${id}/renovar`, {
+      let dias = 30;
+      let tipo_licenca: string | undefined = undefined;
+      let redefinir = false;
+
+      if (renovarOpcao === 'renovar_30') {
+        dias = 30;
+        tipo_licenca = 'Trial';
+      } else if (renovarOpcao === 'upgrade_120') {
+        dias = 120;
+        tipo_licenca = 'Enterprise';
+      } else if (renovarOpcao === 'upgrade_365') {
+        dias = 365;
+        tipo_licenca = 'Enterprise';
+      } else if (renovarOpcao === 'downgrade_trial') {
+        dias = 30;
+        tipo_licenca = 'Trial';
+        redefinir = true;
+      } else if (renovarOpcao === 'add_120') {
+        dias = 120;
+        tipo_licenca = 'Enterprise';
+      } else if (renovarOpcao === 'add_365') {
+        dias = 365;
+        tipo_licenca = 'Enterprise';
+      }
+
+      const res = await fetch(`/api/licencas/${selectedLicencaRenovar.id}/renovar`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dias })
+        body: JSON.stringify({ dias, tipo_licenca, redefinir })
       });
       if (res.ok) {
-        setLicencaSuccess(`Prazo da chave de licença renovado por +${dias} dias com sucesso!`);
+        setLicencaSuccess(`Licença de ${selectedLicencaRenovar.usuario_nome || 'Usuário'} atualizada com sucesso!`);
+        setModalRenovarOpen(false);
+        setSelectedLicencaRenovar(null);
         fetchLicencas();
         fetchUsuarios();
         setTimeout(() => setLicencaSuccess(null), 4000);
       }
     } catch (err) {
       console.error('Erro ao renovar licença:', err);
+    } finally {
+      setSubmittingRenovar(false);
     }
   };
 
@@ -1213,28 +1257,11 @@ export const Administracao: React.FC = () => {
                         <td className="col-acoes" style={{ textAlign: 'center', width: `${licencaColumnWidths.acoes || 165}px`, minWidth: '165px', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
                             <button
-                              onClick={() => {
-                                if (!podeEditar || !isUserAdminTag) return;
-                                const isTrialLic = lic.tipo_licenca === 'Trial' || lic.tipo_licenca === 'Dev / Trial';
-                                if (isTrialLic) {
-                                  if (window.confirm("Renovar licença Trial por +30 dias?")) {
-                                    handleRenovarLicenca(lic.id, 30);
-                                  }
-                                } else {
-                                  const opcao = window.prompt("Escolha o prazo de renovação para licença Enterprise:\nDigite 120 (120 dias - 4 Meses) ou 365 (365 dias - 1 Ano)", "120");
-                                  if (!opcao) return;
-                                  const diasNum = parseInt(opcao, 10);
-                                  if ([120, 365].includes(diasNum)) {
-                                    handleRenovarLicenca(lic.id, diasNum);
-                                  } else {
-                                    alert("Prazo inválido. Escolha 120 ou 365 dias.");
-                                  }
-                                }
-                              }}
+                              onClick={() => podeEditar && isUserAdminTag && handleOpenModalRenovar(lic)}
                               className="btn-action map"
                               disabled={!podeEditar || !isUserAdminTag}
                               style={{ opacity: (podeEditar && isUserAdminTag) ? 1 : 0.4, cursor: (podeEditar && isUserAdminTag) ? 'pointer' : 'not-allowed' }}
-                              title={isUserAdminTag ? "Renovar Licença (120 ou 365 dias)" : "Apenas perfis com a TAG de Administrador podem gerenciar chaves de licença"}
+                              title={isUserAdminTag ? "Renovar / Alterar Licença" : "Apenas perfis com a TAG de Administrador podem gerenciar chaves de licença"}
                             >
                               <RefreshCw size={14} />
                             </button>
@@ -1656,6 +1683,236 @@ export const Administracao: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal de Renovação / Alteração de Licença */}
+      {modalRenovarOpen && selectedLicencaRenovar && (
+        <div className="modal-overlay" style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', zIndex: 99999 }}>
+          <div className="modal-card" style={{ maxWidth: '520px', width: '100%', background: '#0f172a', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)' }}>
+            
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '10px', borderRadius: '10px', display: 'flex' }}>
+                  <RefreshCw size={20} color="#a5b4fc" />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>Renovar / Alterar Licença</h3>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Gerencie o plano e prazo de validade da chave</span>
+                </div>
+              </div>
+              <button onClick={() => setModalRenovarOpen(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '12px', padding: '14px 16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Usuário Vinculado:</span>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>{selectedLicencaRenovar.usuario_nome || 'Não Vinculado'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Plano Atual:</span>
+                {selectedLicencaRenovar.tipo_licenca === 'Trial' || selectedLicencaRenovar.tipo_licenca === 'Dev / Trial' ? (
+                  <span style={{ fontSize: '0.78rem', background: 'rgba(20, 184, 166, 0.18)', color: '#2dd4bf', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(20, 184, 166, 0.35)' }}>
+                    Trial (30d)
+                  </span>
+                ) : (
+                  <span style={{ fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.18)', color: '#a5b4fc', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(99, 102, 241, 0.35)' }}>
+                    Enterprise
+                  </span>
+                )}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Validade Atual:</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)' }}>
+                  {new Date(selectedLicencaRenovar.data_expiracao).toLocaleDateString('pt-BR')} ({selectedLicencaRenovar.dias_restantes} dias faltantes)
+                </span>
+              </div>
+            </div>
+
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '12px' }}>
+              Selecione a Ação de Renovação / Alteração:
+            </label>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '24px' }}>
+              {(selectedLicencaRenovar.tipo_licenca === 'Trial' || selectedLicencaRenovar.tipo_licenca === 'Dev / Trial') ? (
+                <>
+                  <div 
+                    onClick={() => setRenovarOpcao('renovar_30')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '10px',
+                      border: renovarOpcao === 'renovar_30' ? '2px solid #2dd4bf' : '1px solid rgba(255, 255, 255, 0.08)',
+                      background: renovarOpcao === 'renovar_30' ? 'rgba(20, 184, 166, 0.12)' : 'rgba(30, 41, 59, 0.4)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <input type="radio" checked={renovarOpcao === 'renovar_30'} onChange={() => setRenovarOpcao('renovar_30')} style={{ cursor: 'pointer' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#2dd4bf', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <RefreshCw size={14} /> Renovar +30 Dias (Manter Plano Trial)
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                        Adiciona +30 dias ao prazo de validade mantendo o plano Trial.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div 
+                    onClick={() => setRenovarOpcao('upgrade_120')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '10px',
+                      border: renovarOpcao === 'upgrade_120' ? '2px solid #a5b4fc' : '1px solid rgba(255, 255, 255, 0.08)',
+                      background: renovarOpcao === 'upgrade_120' ? 'rgba(99, 102, 241, 0.12)' : 'rgba(30, 41, 59, 0.4)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <input type="radio" checked={renovarOpcao === 'upgrade_120'} onChange={() => setRenovarOpcao('upgrade_120')} style={{ cursor: 'pointer' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Award size={14} /> Upgrade para Plano Enterprise (+120 Dias / 4 Meses)
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                        Converte a licença para Enterprise e adiciona 120 dias de validade.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div 
+                    onClick={() => setRenovarOpcao('upgrade_365')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '10px',
+                      border: renovarOpcao === 'upgrade_365' ? '2px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)',
+                      background: renovarOpcao === 'upgrade_365' ? 'rgba(56, 189, 248, 0.12)' : 'rgba(30, 41, 59, 0.4)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <input type="radio" checked={renovarOpcao === 'upgrade_365'} onChange={() => setRenovarOpcao('upgrade_365')} style={{ cursor: 'pointer' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Award size={14} /> Upgrade para Plano Enterprise (+365 Dias / 1 Ano)
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                        Converte a licença para Enterprise e adiciona 365 dias (1 ano) de validade.
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div 
+                    onClick={() => setRenovarOpcao('downgrade_trial')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '10px',
+                      border: renovarOpcao === 'downgrade_trial' ? '2px solid #2dd4bf' : '1px solid rgba(255, 255, 255, 0.08)',
+                      background: renovarOpcao === 'downgrade_trial' ? 'rgba(20, 184, 166, 0.12)' : 'rgba(30, 41, 59, 0.4)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <input type="radio" checked={renovarOpcao === 'downgrade_trial'} onChange={() => setRenovarOpcao('downgrade_trial')} style={{ cursor: 'pointer' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#2dd4bf', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Key size={14} /> Converter para Plano Trial (30 Dias)
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                        Altera a licença para o plano Trial e redefine o prazo para 30 dias a partir de hoje.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div 
+                    onClick={() => setRenovarOpcao('add_120')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '10px',
+                      border: renovarOpcao === 'add_120' ? '2px solid #a5b4fc' : '1px solid rgba(255, 255, 255, 0.08)',
+                      background: renovarOpcao === 'add_120' ? 'rgba(99, 102, 241, 0.12)' : 'rgba(30, 41, 59, 0.4)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <input type="radio" checked={renovarOpcao === 'add_120'} onChange={() => setRenovarOpcao('add_120')} style={{ cursor: 'pointer' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <RefreshCw size={14} /> Adicionar +120 Dias ao Plano Enterprise (4 Meses)
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                        Estende a validade da licença Enterprise por mais 120 dias.
+                      </div>
+                    </div>
+                  </div>
+
+                  <div 
+                    onClick={() => setRenovarOpcao('add_365')}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '10px',
+                      border: renovarOpcao === 'add_365' ? '2px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)',
+                      background: renovarOpcao === 'add_365' ? 'rgba(56, 189, 248, 0.12)' : 'rgba(30, 41, 59, 0.4)',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <input type="radio" checked={renovarOpcao === 'add_365'} onChange={() => setRenovarOpcao('add_365')} style={{ cursor: 'pointer' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Award size={14} /> Adicionar +365 Dias ao Plano Enterprise (1 Ano)
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                        Estende a validade da licença Enterprise por mais 365 dias (1 ano completo).
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+              <button
+                onClick={() => setModalRenovarOpen(false)}
+                className="btn-secondary"
+                disabled={submittingRenovar}
+                style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem' }}
+              >
+                CANCELAR
+              </button>
+              <button
+                onClick={handleConfirmarRenovacao}
+                className="btn-primary"
+                disabled={submittingRenovar}
+                style={{ padding: '8px 20px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                {submittingRenovar ? <Loader2 className="spin" size={16} /> : <Check size={16} />}
+                CONFIRMAR RENOVAÇÃO
+              </button>
+            </div>
+
           </div>
         </div>
       )}
