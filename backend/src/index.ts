@@ -808,7 +808,7 @@ app.delete('/api/perfis-acesso/:id', checkPermission('administracao'), async (re
 // ROTAS DE GESTÃO DE USUÁRIOS (ADMIN PAINEL)
 // ==========================================
 
-// Listar todos os usuários com dados do perfil e expiração de senha
+// Listar todos os usuários com dados do perfil, expiração de senha e validade da licença
 app.get('/api/usuarios', async (req: Request, res: Response) => {
   try {
     await syncDatabaseLicenses();
@@ -816,7 +816,8 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
       SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em, u.senha_atualizada_em, u.chave_licenca, u.is_super_admin,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
              (30 - (CURRENT_DATE - COALESCE(u.senha_atualizada_em, u.criado_em)::date))::int as dias_para_expirar,
-             l.chave as licenca_chave, l.tipo_licenca, l.status as status_licenca
+             l.chave as licenca_chave, l.tipo_licenca, l.status as status_licenca,
+             (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
       LEFT JOIN chaves_licenca l ON (l.chave = u.chave_licenca OR l.usuario_id = u.id)
@@ -824,8 +825,10 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
     `;
     const result = await pool.query(query);
     const usuariosFormatados = result.rows.map(u => {
-      const diasRestantes = typeof u.dias_para_expirar === 'number' ? u.dias_para_expirar : 30;
+      const diasRestantesSenha = typeof u.dias_para_expirar === 'number' ? u.dias_para_expirar : 30;
       const isSuperAdmin = !!(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz');
+      const diasRestantesLicenca = typeof u.dias_restantes_licenca === 'number' ? u.dias_restantes_licenca : null;
+
       return {
         id: u.id,
         nome: u.nome,
@@ -835,8 +838,9 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
         is_super_admin: isSuperAdmin,
         criado_em: u.criado_em,
         senha_atualizada_em: u.senha_atualizada_em || u.criado_em,
-        dias_para_expirar: diasRestantes,
-        senha_expirada: diasRestantes <= 0,
+        dias_para_expirar: diasRestantesSenha,
+        dias_restantes_licenca: diasRestantesLicenca,
+        senha_expirada: diasRestantesSenha <= 0,
         chave_licenca: u.chave_licenca || u.licenca_chave || null,
         tipo_licenca: isSuperAdmin ? 'Super Admin (Isento)' : (u.tipo_licenca || null),
         status_licenca: isSuperAdmin ? 'Ativa (Isento)' : (u.status_licenca || 'Ativa'),

@@ -463,19 +463,6 @@ export const Administracao: React.FC = () => {
     fetchEmpresas();
   }, []);
 
-  const handleRenovarSenha = async (usuarioId: number) => {
-    try {
-      const res = await fetch(`/api/usuarios/${usuarioId}/renovar-senha`, { method: 'POST' });
-      if (res.ok) {
-        setUserSuccess('Validade da senha renovada por mais 30 dias com sucesso!');
-        fetchUsuarios();
-        setTimeout(() => setUserSuccess(''), 4000);
-      }
-    } catch (err) {
-      console.error('Erro ao renovar senha:', err);
-    }
-  };
-
   const handleCopyKey = (chave: string) => {
     navigator.clipboard.writeText(chave);
     setCopiedKey(chave);
@@ -987,7 +974,7 @@ export const Administracao: React.FC = () => {
           className={subTab === 'usuarios' ? 'btn-primary' : 'btn-secondary admin-subtab-btn'}
           style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
         >
-          <Users size={18} /> Usuários do Sistema ({usuarios.length})
+          <Users size={18} /> Usuários do Sistema ({usuarios.filter(u => !(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz')).length})
         </button>
         <button
           onClick={() => setSubTab('perfis')}
@@ -1042,7 +1029,9 @@ export const Administracao: React.FC = () => {
           <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', zIndex: 100 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Users size={20} color="#5e5eee" />
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>Usuários Cadastrados ({usuarios.length})</h3>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>
+                Usuários Cadastrados ({usuarios.filter(u => !(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz')).length})
+              </h3>
             </div>
 
             <button
@@ -1077,7 +1066,7 @@ export const Administracao: React.FC = () => {
                     <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'licenca')} />
                   </th>
                   <th style={{ width: `${userColumnWidths.senha}px`, position: 'relative' }}>
-                    Exp.
+                    Validade
                     <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'senha')} />
                   </th>
                   <th className="col-acoes" style={{ textAlign: 'center', width: `${userColumnWidths.acoes || 165}px`, minWidth: '165px' }}>
@@ -1092,7 +1081,9 @@ export const Administracao: React.FC = () => {
                       <Loader2 className="spin" size={20} /> Carregando usuários...
                     </td>
                   </tr>
-                ) : usuarios.map((u) => (
+                ) : usuarios
+                  .filter(u => !(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz'))
+                  .map((u) => (
                   <tr key={u.id}>
                     <td>
                       <span className="usuario-nome">{u.nome}</span>
@@ -1142,47 +1133,26 @@ export const Administracao: React.FC = () => {
                     </td>
                     <td>
                       {(() => {
-                        const dias = typeof u.dias_para_expirar === 'number' ? u.dias_para_expirar : 30;
+                        const dias = typeof u.dias_restantes_licenca === 'number'
+                          ? u.dias_restantes_licenca
+                          : (typeof u.dias_para_expirar === 'number' ? u.dias_para_expirar : 30);
+
                         if (dias <= 0) {
                           return (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                                🔴 ({dias}d)
-                              </span>
-                              {podeEditar && (
-                                <button
-                                  onClick={() => handleRenovarSenha(u.id)}
-                                  className="btn-action map"
-                                  title="Renovar Validade da Senha por +30 Dias"
-                                  style={{ padding: '3px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                >
-                                  <RefreshCw size={12} /> +30d
-                                </button>
-                              )}
-                            </div>
+                            <span style={{ fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }} title={`Licença expirada há ${Math.abs(dias)}d`}>
+                              🔴 ({dias}d)
+                            </span>
                           );
                         }
                         if (dias <= 5) {
                           return (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '0.78rem', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                                🟡 ({dias}d)
-                              </span>
-                              {podeEditar && (
-                                <button
-                                  onClick={() => handleRenovarSenha(u.id)}
-                                  className="btn-action map"
-                                  title="Renovar Validade por +30 Dias"
-                                  style={{ padding: '3px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                >
-                                  <RefreshCw size={12} /> +30d
-                                </button>
-                              )}
-                            </div>
+                            <span style={{ fontSize: '0.78rem', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, whiteSpace: 'nowrap' }} title={`Expira em ${dias} dias`}>
+                              🟡 ({dias}d)
+                            </span>
                           );
                         }
                         return (
-                          <span style={{ fontSize: '0.78rem', background: 'rgba(52, 211, 153, 0.12)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.25)', padding: '3px 8px', borderRadius: '6px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          <span style={{ fontSize: '0.78rem', background: 'rgba(52, 211, 153, 0.12)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.25)', padding: '3px 8px', borderRadius: '6px', fontWeight: 600, whiteSpace: 'nowrap' }} title={`Expira em ${dias} dias`}>
                             🟢 ({dias}d)
                           </span>
                         );
