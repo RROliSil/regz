@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Usuario, PerfilAcesso, Licenca } from '../types/auth';
-import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX, Home, Sliders, ShieldCheck, FileBarChart, Settings, Briefcase, X, Key, Copy, RefreshCw, Calendar, Award, CheckCircle2, XCircle, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX, Home, Sliders, ShieldCheck, FileBarChart, Settings, Briefcase, X, Key, Copy, RefreshCw, Calendar, Award, CheckCircle2, XCircle, AlertTriangle, Eye, EyeOff, Building2, MapPin, Palette, Upload } from 'lucide-react';
 
 interface UserColumnWidths {
   nome: number;
@@ -16,6 +16,40 @@ interface LicencaColumnWidths {
   usuario: number;
   plano: number;
   validade: number;
+  status: number;
+  acoes: number;
+}
+
+export interface Empresa {
+  id: number;
+  razao_social: string;
+  nome_fantasia: string;
+  cnpj: string;
+  cep?: string;
+  logradouro?: string;
+  numero?: string;
+  complemento?: string;
+  bairro?: string;
+  cidade?: string;
+  estado?: string;
+  logo_url?: string;
+  cor_primaria?: string;
+  cor_secundaria?: string;
+  cor_destaque?: string;
+  status: string;
+  total_usuarios?: number;
+  licencas_ativas?: number;
+  total_licencas?: number;
+  criado_em: string;
+}
+
+interface EmpresaColumnWidths {
+  logo: number;
+  empresa: number;
+  cnpj: number;
+  local: number;
+  cores: number;
+  licencas: number;
   status: number;
   acoes: number;
 }
@@ -57,10 +91,10 @@ export const Administracao: React.FC = () => {
   const isSuperAdmin = !!(usuario?.is_super_admin || (usuario?.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario?.nome === 'Administrador Regz');
   const isUserAdminTag = !!usuario?.perfil?.is_admin;
 
-  const [subTab, setSubTab] = useState<'usuarios' | 'perfis' | 'licencas'>('usuarios');
+  const [subTab, setSubTab] = useState<'usuarios' | 'perfis' | 'licencas' | 'empresas'>('usuarios');
 
   useEffect(() => {
-    if (subTab === 'licencas' && !isSuperAdmin) {
+    if ((subTab === 'licencas' || subTab === 'empresas') && !isSuperAdmin) {
       setSubTab('usuarios');
     }
   }, [subTab, isSuperAdmin]);
@@ -116,6 +150,37 @@ export const Administracao: React.FC = () => {
   const [licencaSuccess, setLicencaSuccess] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
+  // Estados de Empresas (Super Admin)
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [loadingEmpresas, setLoadingEmpresas] = useState(true);
+  const [modalEmpresaOpen, setModalEmpresaOpen] = useState(false);
+  const [editingEmpresaId, setEditingEmpresaId] = useState<number | null>(null);
+
+  const [empresaRazaoSocial, setEmpresaRazaoSocial] = useState('');
+  const [empresaNomeFantasia, setEmpresaNomeFantasia] = useState('');
+  const [empresaCnpj, setEmpresaCnpj] = useState('');
+  const [empresaCep, setEmpresaCep] = useState('');
+  const [empresaLogradouro, setEmpresaLogradouro] = useState('');
+  const [empresaNumero, setEmpresaNumero] = useState('');
+  const [empresaComplemento, setEmpresaComplemento] = useState('');
+  const [empresaBairro, setEmpresaBairro] = useState('');
+  const [empresaCidade, setEmpresaCidade] = useState('');
+  const [empresaEstado, setEmpresaEstado] = useState('');
+  const [empresaLogoUrl, setEmpresaLogoUrl] = useState('');
+  const [empresaCorPrimaria, setEmpresaCorPrimaria] = useState('#6366f1');
+  const [empresaCorSecundaria, setEmpresaCorSecundaria] = useState('#38bdf8');
+  const [empresaCorDestaque, setEmpresaCorDestaque] = useState('#34d399');
+  const [empresaStatus, setEmpresaStatus] = useState('Ativa');
+  const [buscandoCepEmpresa, setBuscandoCepEmpresa] = useState(false);
+  const [cepErrorEmpresa, setCepErrorEmpresa] = useState('');
+  const [submittingEmpresa, setSubmittingEmpresa] = useState(false);
+
+  // Modal Licenças da Empresa
+  const [modalEmpresaLicencasOpen, setModalEmpresaLicencasOpen] = useState(false);
+  const [selectedEmpresaLicencas, setSelectedEmpresaLicencas] = useState<Empresa | null>(null);
+  const [empresaLicencasList, setEmpresaLicencasList] = useState<Licenca[]>([]);
+  const [loadingEmpresaLicencas, setLoadingEmpresaLicencas] = useState(false);
+
   // Listener para fechar modais exclusivamente ao pressionar a tecla ESC
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -162,6 +227,26 @@ export const Administracao: React.FC = () => {
     (licencaColumnWidths.validade || 150) +
     (licencaColumnWidths.status || 120) +
     (licencaColumnWidths.acoes || 165);
+
+  const [empresaColumnWidths, setEmpresaColumnWidths] = useState<EmpresaColumnWidths>({
+    logo: 70,
+    empresa: 220,
+    cnpj: 160,
+    local: 220,
+    cores: 140,
+    licencas: 130,
+    status: 110,
+    acoes: 165
+  });
+
+  const totalEmpresaTableWidth = (empresaColumnWidths.logo || 70) +
+    (empresaColumnWidths.empresa || 220) +
+    (empresaColumnWidths.cnpj || 160) +
+    (empresaColumnWidths.local || 220) +
+    (empresaColumnWidths.cores || 140) +
+    (empresaColumnWidths.licencas || 130) +
+    (empresaColumnWidths.status || 110) +
+    (empresaColumnWidths.acoes || 165);
 
   useEffect(() => {
     if (usuario?.id) {
@@ -232,6 +317,8 @@ export const Administracao: React.FC = () => {
     setVisibleKeys(prev => ({ ...prev, [licId]: !prev[licId] }));
   };
 
+  const [resizingEmpCol, setResizingEmpCol] = useState<keyof EmpresaColumnWidths | null>(null);
+
   // Arraste de Redimensionamento de Colunas
   const handleMouseDownResize = (e: React.MouseEvent, colKey: keyof UserColumnWidths) => {
     e.preventDefault();
@@ -247,6 +334,14 @@ export const Administracao: React.FC = () => {
     setResizingLicCol(colKey);
     setStartX(e.clientX);
     setStartWidth(licencaColumnWidths[colKey]);
+  };
+
+  const handleMouseDownResizeEmp = (e: React.MouseEvent, colKey: keyof EmpresaColumnWidths) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingEmpCol(colKey);
+    setStartX(e.clientX);
+    setStartWidth(empresaColumnWidths[colKey]);
   };
 
   useEffect(() => {
@@ -271,15 +366,26 @@ export const Administracao: React.FC = () => {
           }
           return next;
         });
+      } else if (resizingEmpCol) {
+        const deltaX = e.clientX - startX;
+        const newWidth = Math.max(70, startWidth + deltaX);
+        setEmpresaColumnWidths(prev => {
+          const next = { ...prev, [resizingEmpCol]: newWidth };
+          if (usuario?.id) {
+            localStorage.setItem(`regz_empresa_column_widths_${usuario.id}`, JSON.stringify(next));
+          }
+          return next;
+        });
       }
     };
 
     const handleMouseUp = () => {
       if (resizingCol) setResizingCol(null);
       if (resizingLicCol) setResizingLicCol(null);
+      if (resizingEmpCol) setResizingEmpCol(null);
     };
 
-    if (resizingCol || resizingLicCol) {
+    if (resizingCol || resizingLicCol || resizingEmpCol) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
     }
@@ -287,7 +393,7 @@ export const Administracao: React.FC = () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [resizingCol, resizingLicCol, startX, startWidth, usuario?.id]);
+  }, [resizingCol, resizingLicCol, resizingEmpCol, startX, startWidth, usuario?.id]);
 
   // Carregar dados da API
   const fetchUsuarios = async () => {
@@ -329,9 +435,24 @@ export const Administracao: React.FC = () => {
         setLicencas(data);
       }
     } catch (err) {
-      console.error('Erro ao buscar licenças:', err);
+      console.error('Erro ao buscar chaves de licença:', err);
     } finally {
       setLoadingLicencas(false);
+    }
+  };
+
+  const fetchEmpresas = async () => {
+    setLoadingEmpresas(true);
+    try {
+      const res = await fetch('/api/empresas');
+      if (res.ok) {
+        const data = await res.json();
+        setEmpresas(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar empresas:', err);
+    } finally {
+      setLoadingEmpresas(false);
     }
   };
 
@@ -339,6 +460,7 @@ export const Administracao: React.FC = () => {
     fetchUsuarios();
     fetchPerfis();
     fetchLicencas();
+    fetchEmpresas();
   }, []);
 
   const handleRenovarSenha = async (usuarioId: number) => {
@@ -666,7 +788,7 @@ export const Administracao: React.FC = () => {
   };
 
   const handleDeletePerfil = async (id: number, nome: string) => {
-    if (confirm(`Deseja realmente excluir o perfil "${nome}"?`)) {
+    if (window.confirm(`Deseja realmente excluir o perfil "${nome}"?`)) {
       try {
         const res = await fetch(`/api/perfis-acesso/${id}`, { method: 'DELETE' });
         const data = await res.json();
@@ -678,6 +800,180 @@ export const Administracao: React.FC = () => {
       } catch (err) {
         alert('Erro ao excluir perfil');
       }
+    }
+  };
+
+  // Handlers de Gestão de Empresas (Super Admin)
+  const handleOpenCreateEmpresa = () => {
+    setEditingEmpresaId(null);
+    setEmpresaRazaoSocial('');
+    setEmpresaNomeFantasia('');
+    setEmpresaCnpj('');
+    setEmpresaCep('');
+    setEmpresaLogradouro('');
+    setEmpresaNumero('');
+    setEmpresaComplemento('');
+    setEmpresaBairro('');
+    setEmpresaCidade('');
+    setEmpresaEstado('');
+    setEmpresaLogoUrl('');
+    setEmpresaCorPrimaria('#6366f1');
+    setEmpresaCorSecundaria('#38bdf8');
+    setEmpresaCorDestaque('#34d399');
+    setEmpresaStatus('Ativa');
+    setCepErrorEmpresa('');
+    setModalEmpresaOpen(true);
+  };
+
+  const handleOpenEditEmpresa = (emp: Empresa) => {
+    setEditingEmpresaId(emp.id);
+    setEmpresaRazaoSocial(emp.razao_social || '');
+    setEmpresaNomeFantasia(emp.nome_fantasia || '');
+    setEmpresaCnpj(emp.cnpj || '');
+    setEmpresaCep(emp.cep || '');
+    setEmpresaLogradouro(emp.logradouro || '');
+    setEmpresaNumero(emp.numero || '');
+    setEmpresaComplemento(emp.complemento || '');
+    setEmpresaBairro(emp.bairro || '');
+    setEmpresaCidade(emp.cidade || '');
+    setEmpresaEstado(emp.estado || '');
+    setEmpresaLogoUrl(emp.logo_url || '');
+    setEmpresaCorPrimaria(emp.cor_primaria || '#6366f1');
+    setEmpresaCorSecundaria(emp.cor_secundaria || '#38bdf8');
+    setEmpresaCorDestaque(emp.cor_destaque || '#34d399');
+    setEmpresaStatus(emp.status || 'Ativa');
+    setCepErrorEmpresa('');
+    setModalEmpresaOpen(true);
+  };
+
+  const handleCepEmpresaChange = async (val: string) => {
+    const formattedCep = val.replace(/\D/g, '').replace(/^(\d{5})(\d)/, '$1-$2').substring(0, 9);
+    setEmpresaCep(formattedCep);
+    setCepErrorEmpresa('');
+
+    const rawDigits = val.replace(/\D/g, '');
+    if (rawDigits.length === 8) {
+      setBuscandoCepEmpresa(true);
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${rawDigits}/json/`);
+        const data = await res.json();
+        if (data.erro) {
+          setCepErrorEmpresa('CEP não encontrado');
+        } else {
+          setEmpresaLogradouro(data.logradouro || '');
+          setEmpresaBairro(data.bairro || '');
+          setEmpresaCidade(data.localidade || '');
+          setEmpresaEstado(data.uf || '');
+        }
+      } catch (err) {
+        console.error('Erro ao buscar CEP:', err);
+      } finally {
+        setBuscandoCepEmpresa(false);
+      }
+    }
+  };
+
+  const handleCnpjChange = (val: string) => {
+    const digits = val.replace(/\D/g, '').substring(0, 14);
+    const formatted = digits
+      .replace(/^(\d{2})(\d)/, '$1.$2')
+      .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+      .replace(/\.(\d{3})(\d)/, '.$1/$2')
+      .replace(/(\d{4})(\d)/, '$1-$2');
+    setEmpresaCnpj(formatted);
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        alert('A imagem da logo deve ter no máximo 2MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setEmpresaLogoUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveEmpresa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmittingEmpresa(true);
+
+    try {
+      const payload = {
+        razao_social: empresaRazaoSocial,
+        nome_fantasia: empresaNomeFantasia,
+        cnpj: empresaCnpj,
+        cep: empresaCep,
+        logradouro: empresaLogradouro,
+        numero: empresaNumero,
+        complemento: empresaComplemento,
+        bairro: empresaBairro,
+        cidade: empresaCidade,
+        estado: empresaEstado,
+        logo_url: empresaLogoUrl,
+        cor_primaria: empresaCorPrimaria,
+        cor_secundaria: empresaCorSecundaria,
+        cor_destaque: empresaCorDestaque,
+        status: empresaStatus
+      };
+
+      const url = editingEmpresaId ? `/api/empresas/${editingEmpresaId}` : '/api/empresas';
+      const method = editingEmpresaId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        setLicencaSuccess(editingEmpresaId ? 'Empresa atualizada com sucesso!' : 'Nova empresa cadastrada com sucesso!');
+        setModalEmpresaOpen(false);
+        fetchEmpresas();
+        setTimeout(() => setLicencaSuccess(null), 4000);
+      } else {
+        const errData = await res.json();
+        alert(errData.error || 'Erro ao salvar empresa');
+      }
+    } catch (err) {
+      console.error('Erro ao salvar empresa:', err);
+    } finally {
+      setSubmittingEmpresa(false);
+    }
+  };
+
+  const handleDeleteEmpresa = async (id: number, nome: string) => {
+    if (!window.confirm(`Tem certeza que deseja excluir a empresa "${nome}"?`)) return;
+    try {
+      const res = await fetch(`/api/empresas/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setLicencaSuccess('Empresa removida com sucesso!');
+        fetchEmpresas();
+        setTimeout(() => setLicencaSuccess(null), 4000);
+      }
+    } catch (err) {
+      console.error('Erro ao excluir empresa:', err);
+    }
+  };
+
+  const handleOpenEmpresaLicencas = async (emp: Empresa) => {
+    setSelectedEmpresaLicencas(emp);
+    setLoadingEmpresaLicencas(true);
+    setModalEmpresaLicencasOpen(true);
+    try {
+      const res = await fetch(`/api/empresas/${emp.id}/licencas`);
+      if (res.ok) {
+        const data = await res.json();
+        setEmpresaLicencasList(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar licenças da empresa:', err);
+    } finally {
+      setLoadingEmpresaLicencas(false);
     }
   };
 
@@ -712,13 +1008,22 @@ export const Administracao: React.FC = () => {
           <Shield size={18} /> Perfis de Acesso & Permissões ({perfis.length})
         </button>
         {isSuperAdmin && (
-          <button
-            onClick={() => setSubTab('licencas')}
-            className={subTab === 'licencas' ? 'btn-primary' : 'btn-secondary admin-subtab-btn'}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-          >
-            <Key size={18} color={subTab === 'licencas' ? '#ffffff' : '#38bdf8'} /> Chaves de Licença ({licencas.length})
-          </button>
+          <>
+            <button
+              onClick={() => setSubTab('empresas')}
+              className={subTab === 'empresas' ? 'btn-primary' : 'btn-secondary admin-subtab-btn'}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Building2 size={18} color={subTab === 'empresas' ? '#ffffff' : '#818cf8'} /> Empresas (Super Admin) ({empresas.length})
+            </button>
+            <button
+              onClick={() => setSubTab('licencas')}
+              className={subTab === 'licencas' ? 'btn-primary' : 'btn-secondary admin-subtab-btn'}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              <Key size={18} color={subTab === 'licencas' ? '#ffffff' : '#38bdf8'} /> Chaves de Licença ({licencas.length})
+            </button>
+          </>
         )}
       </div>
 
@@ -1303,6 +1608,212 @@ export const Administracao: React.FC = () => {
       )}
 
       {/* ======================================================== */}
+      {/* ABA DE EMPRESAS (TENANTS - SUPER ADMIN) */}
+      {/* ======================================================== */}
+      {subTab === 'empresas' && isSuperAdmin && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* Cards de Métricas de Empresas */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+            <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '16px' }}>
+              <div style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '14px', borderRadius: '12px', color: '#818cf8' }}>
+                <Building2 size={24} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase' }}>TOTAL DE EMPRESAS</span>
+                <h3 style={{ margin: '4px 0 0 0', fontSize: '1.6rem', fontWeight: 800 }}>{empresas.length}</h3>
+              </div>
+            </div>
+
+            <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '16px' }}>
+              <div style={{ background: 'rgba(52, 211, 153, 0.15)', padding: '14px', borderRadius: '12px', color: '#34d399' }}>
+                <CheckCircle2 size={24} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase' }}>LICENÇAS ATIVAS PLATAFORMA</span>
+                <h3 style={{ margin: '4px 0 0 0', fontSize: '1.6rem', fontWeight: 800 }}>
+                  {empresas.reduce((acc, emp) => acc + (emp.licencas_ativas || 0), 0)}
+                </h3>
+              </div>
+            </div>
+
+            <div className="stat-card" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '20px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '16px' }}>
+              <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '14px', borderRadius: '12px', color: '#38bdf8' }}>
+                <Award size={24} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase' }}>EMPRESAS ATIVAS</span>
+                <h3 style={{ margin: '4px 0 0 0', fontSize: '1.6rem', fontWeight: 800 }}>
+                  {empresas.filter(e => e.status === 'Ativa').length}
+                </h3>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabela de Empresas */}
+          <div className="custom-table-container" style={{ position: 'relative', overflowX: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-color)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Building2 size={20} color="#818cf8" />
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Gestão Multi-Empresas ({empresas.length})</h3>
+              </div>
+              <button
+                onClick={handleOpenCreateEmpresa}
+                className="btn-primary"
+                style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <Plus size={16} /> Cadastrar Nova Empresa
+              </button>
+            </div>
+
+            <div className="table-flex-wrapper" style={{ overflowX: 'auto', width: '100%' }}>
+              <table className="custom-table" style={{ width: '100%', minWidth: `${totalEmpresaTableWidth}px`, borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: `${empresaColumnWidths.logo}px`, position: 'relative' }}>Logo</th>
+                    <th style={{ width: `${empresaColumnWidths.empresa}px`, position: 'relative' }}>
+                      Empresa / Razão Social
+                      <div className="resizer" onMouseDown={(e) => handleMouseDownResizeEmp(e, 'empresa')} />
+                    </th>
+                    <th style={{ width: `${empresaColumnWidths.cnpj}px`, position: 'relative' }}>
+                      CNPJ
+                      <div className="resizer" onMouseDown={(e) => handleMouseDownResizeEmp(e, 'cnpj')} />
+                    </th>
+                    <th style={{ width: `${empresaColumnWidths.local}px`, position: 'relative' }}>
+                      Local / Endereço
+                      <div className="resizer" onMouseDown={(e) => handleMouseDownResizeEmp(e, 'local')} />
+                    </th>
+                    <th style={{ width: `${empresaColumnWidths.cores}px`, position: 'relative' }}>
+                      Tema (3 Cores)
+                      <div className="resizer" onMouseDown={(e) => handleMouseDownResizeEmp(e, 'cores')} />
+                    </th>
+                    <th style={{ width: `${empresaColumnWidths.licencas}px`, position: 'relative' }}>
+                      Licenças
+                      <div className="resizer" onMouseDown={(e) => handleMouseDownResizeEmp(e, 'licencas')} />
+                    </th>
+                    <th style={{ width: `${empresaColumnWidths.status}px`, position: 'relative' }}>
+                      Status
+                      <div className="resizer" onMouseDown={(e) => handleMouseDownResizeEmp(e, 'status')} />
+                    </th>
+                    <th className="col-acoes" style={{ textAlign: 'center', width: `${empresaColumnWidths.acoes || 165}px`, minWidth: '165px' }}>
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingEmpresas ? (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>
+                        <Loader2 className="spin" size={24} color="#818cf8" style={{ margin: '0 auto' }} />
+                        <span style={{ display: 'block', marginTop: '8px', color: 'var(--text-dim)' }}>Carregando empresas...</span>
+                      </td>
+                    </tr>
+                  ) : empresas.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
+                        Nenhuma empresa cadastrada. Clique em "+ Cadastrar Nova Empresa" para começar.
+                      </td>
+                    </tr>
+                  ) : (
+                    empresas.map((emp) => (
+                      <tr key={emp.id}>
+                        <td style={{ width: `${empresaColumnWidths.logo}px`, textAlign: 'center' }}>
+                          {emp.logo_url ? (
+                            <img src={emp.logo_url} alt={emp.nome_fantasia} className="empresa-logo-avatar" style={{ objectFit: 'cover' }} />
+                          ) : (
+                            <div className="empresa-logo-avatar" style={{ background: emp.cor_primaria || '#6366f1', color: '#ffffff' }}>
+                              {(emp.nome_fantasia || 'E').substring(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                        </td>
+
+                        <td style={{ width: `${empresaColumnWidths.empresa}px` }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: 700, fontSize: '0.9rem' }}>{emp.nome_fantasia}</span>
+                            <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>{emp.razao_social}</span>
+                          </div>
+                        </td>
+
+                        <td style={{ width: `${empresaColumnWidths.cnpj}px`, fontFamily: 'monospace', fontWeight: 600, fontSize: '0.85rem' }}>
+                          {emp.cnpj}
+                        </td>
+
+                        <td style={{ width: `${empresaColumnWidths.local}px` }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', fontSize: '0.8rem' }}>
+                            <span style={{ fontWeight: 600 }}>{emp.cidade ? `${emp.cidade} - ${emp.estado}` : 'Sem endereço'}</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                              {emp.logradouro ? `${emp.logradouro}, ${emp.numero || 'S/N'}` : ''} {emp.cep ? `(${emp.cep})` : ''}
+                            </span>
+                          </div>
+                        </td>
+
+                        <td style={{ width: `${empresaColumnWidths.cores}px` }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span className="empresa-color-dot" style={{ background: emp.cor_primaria || '#6366f1' }} title={`Primária: ${emp.cor_primaria || '#6366f1'}`} />
+                            <span className="empresa-color-dot" style={{ background: emp.cor_secundaria || '#38bdf8' }} title={`Secundária: ${emp.cor_secundaria || '#38bdf8'}`} />
+                            <span className="empresa-color-dot" style={{ background: emp.cor_destaque || '#34d399' }} title={`Destaque: ${emp.cor_destaque || '#34d399'}`} />
+                          </div>
+                        </td>
+
+                        <td style={{ width: `${empresaColumnWidths.licencas}px` }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.15)', color: '#a5b4fc', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                            <Key size={12} /> {emp.licencas_ativas || 0} Ativas ({emp.total_licencas || 0} Total)
+                          </span>
+                        </td>
+
+                        <td style={{ width: `${empresaColumnWidths.status}px` }}>
+                          <span style={{
+                            fontSize: '0.78rem',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            background: emp.status === 'Ativa' ? 'rgba(52, 211, 153, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                            color: emp.status === 'Ativa' ? '#34d399' : '#f87171',
+                            border: emp.status === 'Ativa' ? '1px solid rgba(52, 211, 153, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)'
+                          }}>
+                            {emp.status}
+                          </span>
+                        </td>
+
+                        <td className="col-acoes" style={{ textAlign: 'center', width: `${empresaColumnWidths.acoes || 165}px`, minWidth: '165px' }}>
+                          <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
+                            <button
+                              onClick={() => handleOpenEditEmpresa(emp)}
+                              className="btn-action map"
+                              title="Editar Empresa"
+                            >
+                              <Edit size={14} />
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenEmpresaLicencas(emp)}
+                              className="btn-action"
+                              style={{ background: 'rgba(99, 102, 241, 0.18)', color: '#a5b4fc' }}
+                              title="Gerenciar Licenças da Empresa"
+                            >
+                              <Key size={14} />
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteEmpresa(emp.id, emp.nome_fantasia)}
+                              className="btn-action delete"
+                              title="Excluir Empresa"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
       {/* MODAL DE CADASTRO DE USUÁRIO */}
       {/* ======================================================== */}
       {modalUserOpen && (
@@ -1853,6 +2364,347 @@ export const Administracao: React.FC = () => {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+      {/* ======================================================== */}
+      {/* MODAL DE CADASTRO / EDIÇÃO DE EMPRESA */}
+      {/* ======================================================== */}
+      {modalEmpresaOpen && (
+        <div className="modal-backdrop">
+          <div className="modal-content" style={{ maxWidth: '680px', width: '90%' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Building2 size={22} color="#818cf8" />
+                <h3>{editingEmpresaId ? 'Editar Empresa' : 'Cadastrar Nova Empresa (Super Admin)'}</h3>
+              </div>
+              <button onClick={() => setModalEmpresaOpen(false)} className="btn-close">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEmpresa} className="modal-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="form-group">
+                  <label>Razão Social *</label>
+                  <input
+                    type="text"
+                    value={empresaRazaoSocial}
+                    onChange={(e) => setEmpresaRazaoSocial(e.target.value)}
+                    placeholder="Ex: Empresa Exemplo LTDA"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Nome Fantasia *</label>
+                  <input
+                    type="text"
+                    value={empresaNomeFantasia}
+                    onChange={(e) => setEmpresaNomeFantasia(e.target.value)}
+                    placeholder="Ex: Empresa Exemplo"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div className="form-group">
+                  <label>CNPJ *</label>
+                  <input
+                    type="text"
+                    value={empresaCnpj}
+                    onChange={(e) => handleCnpjChange(e.target.value)}
+                    placeholder="00.000.000/0000-00"
+                    maxLength={18}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Status da Empresa</label>
+                  <select value={empresaStatus} onChange={(e) => setEmpresaStatus(e.target.value)}>
+                    <option value="Ativa">Ativa (Acesso Liberado)</option>
+                    <option value="Inativa">Inativa (Bloqueada)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Seção Endereço com Busca CEP ViaCEP */}
+              <div style={{ background: 'var(--bg-hover)', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontWeight: 700, fontSize: '0.9rem', color: '#818cf8' }}>
+                  <MapPin size={16} /> Endereço & Localização (ViaCEP)
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr 100px', gap: '12px', marginBottom: '12px' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label>CEP</label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        value={empresaCep}
+                        onChange={(e) => handleCepEmpresaChange(e.target.value)}
+                        placeholder="00000-000"
+                        maxLength={9}
+                      />
+                      {buscandoCepEmpresa && (
+                        <Loader2 className="spin" size={14} style={{ position: 'absolute', right: '10px', top: '12px', color: '#818cf8' }} />
+                      )}
+                    </div>
+                    {cepErrorEmpresa && <span style={{ fontSize: '0.72rem', color: '#f87171', marginTop: '2px', display: 'block' }}>{cepErrorEmpresa}</span>}
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label>Logradouro / Rua</label>
+                    <input
+                      type="text"
+                      value={empresaLogradouro}
+                      onChange={(e) => setEmpresaLogradouro(e.target.value)}
+                      placeholder="Ex: Av. Paulista"
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label>Número</label>
+                    <input
+                      type="text"
+                      value={empresaNumero}
+                      onChange={(e) => setEmpresaNumero(e.target.value)}
+                      placeholder="1000"
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 80px', gap: '12px' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label>Bairro</label>
+                    <input
+                      type="text"
+                      value={empresaBairro}
+                      onChange={(e) => setEmpresaBairro(e.target.value)}
+                      placeholder="Bairro"
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label>Cidade</label>
+                    <input
+                      type="text"
+                      value={empresaCidade}
+                      onChange={(e) => setEmpresaCidade(e.target.value)}
+                      placeholder="Cidade"
+                    />
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label>UF</label>
+                    <input
+                      type="text"
+                      value={empresaEstado}
+                      onChange={(e) => setEmpresaEstado(e.target.value.toUpperCase())}
+                      placeholder="SP"
+                      maxLength={2}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção Logotipo */}
+              <div className="form-group">
+                <label>Logotipo da Empresa</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  {empresaLogoUrl ? (
+                    <img src={empresaLogoUrl} alt="Logo Preview" style={{ width: '48px', height: '48px', borderRadius: '10px', objectFit: 'cover', border: '1px solid var(--border-color)' }} />
+                  ) : (
+                    <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: empresaCorPrimaria, color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                      {(empresaNomeFantasia || 'E').substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
+
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <input
+                      type="text"
+                      value={empresaLogoUrl}
+                      onChange={(e) => setEmpresaLogoUrl(e.target.value)}
+                      placeholder="Cole a URL do logotipo da empresa ou selecione abaixo"
+                      style={{ fontSize: '0.82rem' }}
+                    />
+                    <label className="btn-secondary" style={{ padding: '6px 12px', fontSize: '0.78rem', width: 'fit-content', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Upload size={13} /> Fazer Upload de Imagem
+                      <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seção Personalização do Tema (Paleta de 3 Cores) */}
+              <div style={{ background: 'var(--bg-hover)', padding: '14px 16px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontWeight: 700, fontSize: '0.9rem', color: '#38bdf8' }}>
+                  <Palette size={16} /> Paleta de Cores do Cliente (Tema Personalizado)
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '0.78rem' }}>Cor Primária</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="color"
+                        value={empresaCorPrimaria}
+                        onChange={(e) => setEmpresaCorPrimaria(e.target.value)}
+                        style={{ width: '36px', height: '36px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'transparent' }}
+                      />
+                      <input
+                        type="text"
+                        value={empresaCorPrimaria}
+                        onChange={(e) => setEmpresaCorPrimaria(e.target.value)}
+                        style={{ fontSize: '0.82rem', fontFamily: 'monospace' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '0.78rem' }}>Cor Secundária</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="color"
+                        value={empresaCorSecundaria}
+                        onChange={(e) => setEmpresaCorSecundaria(e.target.value)}
+                        style={{ width: '36px', height: '36px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'transparent' }}
+                      />
+                      <input
+                        type="text"
+                        value={empresaCorSecundaria}
+                        onChange={(e) => setEmpresaCorSecundaria(e.target.value)}
+                        style={{ fontSize: '0.82rem', fontFamily: 'monospace' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label style={{ fontSize: '0.78rem' }}>Cor Destaque</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="color"
+                        value={empresaCorDestaque}
+                        onChange={(e) => setEmpresaCorDestaque(e.target.value)}
+                        style={{ width: '36px', height: '36px', border: 'none', borderRadius: '8px', cursor: 'pointer', background: 'transparent' }}
+                      />
+                      <input
+                        type="text"
+                        value={empresaCorDestaque}
+                        onChange={(e) => setEmpresaCorDestaque(e.target.value)}
+                        style={{ fontSize: '0.82rem', fontFamily: 'monospace' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Theme Preview Box */}
+                <div style={{ background: 'var(--bg-card)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '8px' }}>
+                    Pré-Visualização do Tema do Cliente
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button type="button" style={{ background: empresaCorPrimaria, color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '8px', fontWeight: 700, fontSize: '0.8rem', cursor: 'default' }}>
+                      Botão Primário
+                    </button>
+                    <span style={{ background: `${empresaCorSecundaria}25`, color: empresaCorSecundaria, border: `1px solid ${empresaCorSecundaria}50`, padding: '4px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 700 }}>
+                      Badge Secundária
+                    </span>
+                    <span style={{ color: empresaCorDestaque, fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <CheckCircle2 size={14} /> Destaque Ativo
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setModalEmpresaOpen(false)}
+                  className="btn-secondary"
+                  disabled={submittingEmpresa}
+                  style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem' }}
+                >
+                  CANCELAR
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={submittingEmpresa}
+                  style={{ padding: '8px 20px', borderRadius: '8px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  {submittingEmpresa ? <Loader2 className="spin" size={16} /> : <Check size={16} />}
+                  {editingEmpresaId ? 'SALVAR ALTERAÇÕES' : 'CADASTRAR EMPRESA'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL DE LICENÇAS DA EMPRESA */}
+      {/* ======================================================== */}
+      {modalEmpresaLicencasOpen && selectedEmpresaLicencas && (
+        <div className="modal-backdrop">
+          <div className="modal-content" style={{ maxWidth: '640px', width: '90%' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Key size={20} color="#818cf8" />
+                <h3>Licenças da Empresa - {selectedEmpresaLicencas.nome_fantasia}</h3>
+              </div>
+              <button onClick={() => setModalEmpresaLicencasOpen(false)} className="btn-close">
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {loadingEmpresaLicencas ? (
+                <div style={{ textAlign: 'center', padding: '30px' }}>
+                  <Loader2 className="spin" size={24} color="#818cf8" style={{ margin: '0 auto' }} />
+                  <span style={{ display: 'block', marginTop: '8px', color: 'var(--text-dim)' }}>Carregando licenças da empresa...</span>
+                </div>
+              ) : empresaLicencasList.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-dim)' }}>
+                  Nenhuma chave de licença vinculada a esta empresa.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '350px', overflowY: 'auto' }}>
+                  {empresaLicencasList.map((lic) => (
+                    <div key={lic.id} style={{ background: 'var(--bg-hover)', padding: '12px 14px', borderRadius: '10px', border: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.85rem', color: '#818cf8' }}>{lic.chave}</span>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>
+                          Usuário: {lic.usuario_nome ? `${lic.usuario_nome} (${lic.usuario_email})` : 'Não Atribuído'}
+                        </span>
+                        <span style={{ fontSize: '0.74rem', color: lic.dias_restantes < 0 ? '#f87171' : 'var(--text-dim)' }}>
+                          Validade: {new Date(lic.data_expiracao).toLocaleDateString('pt-BR')} ({lic.dias_restantes < 0 ? 'Expirada' : `${lic.dias_restantes} dias restantes`})
+                        </span>
+                      </div>
+                      <span style={{
+                        fontSize: '0.78rem',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontWeight: 700,
+                        background: lic.status === 'Ativa' ? 'rgba(52, 211, 153, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                        color: lic.status === 'Ativa' ? '#34d399' : '#f87171'
+                      }}>
+                        {lic.status}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '12px', borderTop: '1px solid var(--border-color)' }}>
+              <button
+                onClick={() => setModalEmpresaLicencasOpen(false)}
+                className="btn-secondary"
+                style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem' }}
+              >
+                FECHAR
+              </button>
+            </div>
           </div>
         </div>
       )}

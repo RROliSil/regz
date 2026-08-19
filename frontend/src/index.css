@@ -3229,3 +3229,41 @@ select option,
   border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
+/* Estilos para a Gestão Multi-Empresas (Super Admin) */
+.empresa-color-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  display: inline-block;
+  cursor: pointer;
+}
+
+[data-theme="light"] .empresa-color-dot {
+  border-color: #cbd5e1;
+}
+
+.empresa-theme-preview-card {
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease-in-out;
+}
+
+.empresa-logo-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+

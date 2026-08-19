@@ -264,6 +264,46 @@ const initDb = async () => {
     await syncDatabaseLicenses();
     console.log('✅ Migração e sincronização estrita de chaves de licença no banco de dados concluída!');
 
+    // 2.1 Tabela de Empresas (Tenants Multi-Empresas & Personalização)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS empresas (
+        id SERIAL PRIMARY KEY,
+        razao_social VARCHAR(255) NOT NULL,
+        nome_fantasia VARCHAR(255) NOT NULL,
+        cnpj VARCHAR(20) UNIQUE NOT NULL,
+        cep VARCHAR(10),
+        logradouro VARCHAR(255),
+        numero VARCHAR(50),
+        complemento VARCHAR(255),
+        bairro VARCHAR(100),
+        cidade VARCHAR(100),
+        estado VARCHAR(2),
+        logo_url TEXT,
+        cor_primaria VARCHAR(7) DEFAULT '#6366f1',
+        cor_secundaria VARCHAR(7) DEFAULT '#38bdf8',
+        cor_destaque VARCHAR(7) DEFAULT '#34d399',
+        status VARCHAR(20) DEFAULT 'Ativa',
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE SET NULL;
+      ALTER TABLE chaves_licenca ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE SET NULL;
+    `);
+
+    const countEmpresas = await pool.query('SELECT COUNT(*) FROM empresas');
+    if (parseInt(countEmpresas.rows[0].count, 10) === 0) {
+      const resultEmpresa = await pool.query(`
+        INSERT INTO empresas (razao_social, nome_fantasia, cnpj, cep, logradouro, numero, bairro, cidade, estado, cor_primaria, cor_secundaria, cor_destaque, status)
+        VALUES ('Regz Tecnologia da Informação LTDA', 'Regz Gestão de Pessoas', '00.000.000/0001-00', '01001-000', 'Praça da Sé', '100', 'Sé', 'São Paulo', 'SP', '#6366f1', '#38bdf8', '#34d399', 'Ativa')
+        RETURNING id
+      `);
+      const matrizId = resultEmpresa.rows[0]?.id;
+      if (matrizId) {
+        await pool.query('UPDATE usuarios SET empresa_id = $1 WHERE empresa_id IS NULL', [matrizId]);
+        await pool.query('UPDATE chaves_licenca SET empresa_id = $1 WHERE empresa_id IS NULL', [matrizId]);
+      }
+      console.log('✅ Empresa Matriz inicial criada e vinculada aos usuários!');
+    }
+
     // 3. Tabela de Cargos CBO
     await pool.query(`
       CREATE TABLE IF NOT EXISTS cargos (
@@ -1182,6 +1222,140 @@ app.delete('/api/licencas/:id', async (req: Request, res: Response) => {
     res.json({ message: 'Licença excluída com sucesso' });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao excluir chave de licença' });
+  }
+});
+
+// ==========================================
+// ROTAS DE GESTÃO DE EMPRESAS (SUPER ADMIN)
+// ==========================================
+
+// Listar todas as empresas com estatísticas
+app.get('/api/empresas', async (req: Request, res: Response) => {
+  try {
+    const query = `
+      SELECT e.*,
+             COUNT(DISTINCT u.id)::int as total_usuarios,
+             COUNT(DISTINCT l.id) FILTER (WHERE l.status = 'Ativa')::int as licencas_ativas,
+             COUNT(DISTINCT l.id)::int as total_licencas
+      FROM empresas e
+      LEFT JOIN usuarios u ON u.empresa_id = e.id
+      LEFT JOIN chaves_licenca l ON (l.empresa_id = e.id OR l.usuario_id = u.id)
+      GROUP BY e.id
+      ORDER BY e.id DESC
+    `;
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar empresas' });
+  }
+});
+
+// Criar nova empresa
+app.post('/api/empresas', async (req: Request, res: Response) => {
+  const {
+    razao_social, nome_fantasia, cnpj,
+    cep, logradouro, numero, complemento, bairro, cidade, estado,
+    logo_url, cor_primaria, cor_secundaria, cor_destaque, status
+  } = req.body;
+
+  if (!razao_social || !nome_fantasia || !cnpj) {
+    return res.status(400).json({ error: 'Razão social, nome fantasia e CNPJ são obrigatórios' });
+  }
+
+  try {
+    const query = `
+      INSERT INTO empresas (
+        razao_social, nome_fantasia, cnpj,
+        cep, logradouro, numero, complemento, bairro, cidade, estado,
+        logo_url, cor_primaria, cor_secundaria, cor_destaque, status
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      razao_social, nome_fantasia, cnpj,
+      cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null,
+      logo_url || null,
+      cor_primaria || '#6366f1',
+      cor_secundaria || '#38bdf8',
+      cor_destaque || '#34d399',
+      status || 'Ativa'
+    ]);
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao criar empresa' });
+  }
+});
+
+// Editar empresa
+app.put('/api/empresas/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const {
+    razao_social, nome_fantasia, cnpj,
+    cep, logradouro, numero, complemento, bairro, cidade, estado,
+    logo_url, cor_primaria, cor_secundaria, cor_destaque, status
+  } = req.body;
+
+  try {
+    const query = `
+      UPDATE empresas
+      SET razao_social = $1, nome_fantasia = $2, cnpj = $3,
+          cep = $4, logradouro = $5, numero = $6, complemento = $7, bairro = $8, cidade = $9, estado = $10,
+          logo_url = $11, cor_primaria = $12, cor_secundaria = $13, cor_destaque = $14, status = $15
+      WHERE id = $16
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      razao_social, nome_fantasia, cnpj,
+      cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null,
+      logo_url || null,
+      cor_primaria || '#6366f1',
+      cor_secundaria || '#38bdf8',
+      cor_destaque || '#34d399',
+      status || 'Ativa',
+      id
+    ]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Empresa não encontrada' });
+    }
+    res.json(result.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao atualizar empresa' });
+  }
+});
+
+// Excluir empresa
+app.delete('/api/empresas/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM empresas WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Empresa não encontrada' });
+    }
+    res.json({ message: 'Empresa removida com sucesso' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao excluir empresa' });
+  }
+});
+
+// Listar licenças de uma empresa
+app.get('/api/empresas/:id/licencas', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const query = `
+      SELECT l.id, l.chave, l.usuario_id, l.tipo_licenca, l.data_ativacao, l.data_expiracao, l.status,
+             (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes,
+             u.nome as usuario_nome, u.email as usuario_email
+      FROM chaves_licenca l
+      LEFT JOIN usuarios u ON l.usuario_id = u.id
+      WHERE l.empresa_id = $1 OR u.empresa_id = $1
+      ORDER BY l.id DESC
+    `;
+    const result = await pool.query(query, [id]);
+    res.json(result.rows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar licenças da empresa' });
   }
 });
 
