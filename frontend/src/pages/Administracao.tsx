@@ -692,17 +692,6 @@ export const Administracao: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (id: number, nome: string) => {
-    if (confirm(`Deseja realmente remover permanentemente o usuário "${nome}"?`)) {
-      try {
-        const res = await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
-        if (res.ok) fetchUsuarios();
-      } catch (err) {
-        alert('Erro ao remover usuário');
-      }
-    }
-  };
-
   // Handlers de Perfis
   const handleOpenNewPerfil = () => {
     setEditingPerfilId(null);
@@ -1233,15 +1222,6 @@ export const Administracao: React.FC = () => {
                               title={podeEditar ? "Editar Usuário" : "Ação desativada: Seu perfil permite apenas visualização"}
                             >
                               <Edit size={14} />
-                            </button>
-                            <button
-                              onClick={() => podeEditar && handleDeleteUser(u.id, u.nome)}
-                              className="btn-action delete"
-                              disabled={!podeEditar}
-                              style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
-                              title={podeEditar ? "Excluir Usuário" : "Ação desativada: Seu perfil permite apenas visualização"}
-                            >
-                              <Trash2 size={14} />
                             </button>
                           </div>
                         );
@@ -1885,23 +1865,6 @@ export const Administracao: React.FC = () => {
                     </option>
                   ))}
                 </select>
-              </div>
-
-              <div className="form-group">
-                <label style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Key size={14} color="#38bdf8" /> Chave de Licença (Vínculo)
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ex: REGZ-2026-F9A8-12B4-90C3"
-                  value={userChaveLicenca}
-                  onChange={(e) => setUserChaveLicenca(e.target.value)}
-                  disabled={submittingUser}
-                  style={{ fontFamily: 'monospace', color: '#38bdf8' }}
-                />
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '4px', display: 'block' }}>
-                  Informe a chave de licença ativa vinculada a este usuário (Usuários Administradores são isentos).
-                </span>
               </div>
 
               <div className="form-group">
