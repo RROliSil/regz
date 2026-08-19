@@ -1387,6 +1387,41 @@ app.get('/api/empresas/:id/licencas', async (req: Request, res: Response) => {
   }
 });
 
+// Listar usuários de uma empresa específica
+app.get('/api/empresas/:id/usuarios', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const query = `
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em, u.chave_licenca, u.is_super_admin,
+             p.nome as perfil_nome, p.is_admin,
+             l.chave as licenca_chave, l.tipo_licenca, l.status as status_licenca,
+             (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes_licenca
+      FROM usuarios u
+      LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
+      LEFT JOIN chaves_licenca l ON (l.chave = u.chave_licenca OR l.usuario_id = u.id)
+      WHERE u.empresa_id = $1 OR ($1 = '1' AND u.empresa_id IS NULL)
+      ORDER BY u.id ASC
+    `;
+    const result = await pool.query(query, [id]);
+    const usuariosFormatados = result.rows.map(u => ({
+      id: u.id,
+      nome: u.nome,
+      email: u.email,
+      ativo: u.ativo,
+      perfil_id: u.perfil_id,
+      perfil_nome: u.perfil_nome,
+      is_admin: !!u.is_admin,
+      chave_licenca: u.chave_licenca || u.licenca_chave || null,
+      tipo_licenca: u.tipo_licenca || 'Enterprise',
+      status_licenca: u.status_licenca || 'Ativa',
+      dias_restantes_licenca: typeof u.dias_restantes_licenca === 'number' ? u.dias_restantes_licenca : 30
+    }));
+    res.json(usuariosFormatados);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar usuários da empresa' });
+  }
+});
+
 // Excluir usuário
 app.delete('/api/usuarios/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
