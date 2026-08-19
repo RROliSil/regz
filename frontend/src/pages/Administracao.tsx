@@ -1688,8 +1688,8 @@ export const Administracao: React.FC = () => {
       )}
       {/* Modal de Renovação / Alteração de Licença */}
       {modalRenovarOpen && selectedLicencaRenovar && (
-        <div className="modal-overlay" style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', zIndex: 99999 }}>
-          <div className="modal-card" style={{ maxWidth: '520px', width: '100%', background: '#0f172a', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '24px', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6)' }}>
+        <div className="renovar-modal-backdrop">
+          <div className="renovar-modal-card">
             
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -1697,7 +1697,7 @@ export const Administracao: React.FC = () => {
                   <RefreshCw size={20} color="#a5b4fc" />
                 </div>
                 <div>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)' }}>Renovar / Alterar Licença</h3>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Renovar / Alterar Licença</h3>
                   <span style={{ fontSize: '0.78rem', color: 'var(--text-dim)' }}>Gerencie o plano e prazo de validade da chave</span>
                 </div>
               </div>
@@ -1706,13 +1706,13 @@ export const Administracao: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '12px', padding: '14px 16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Usuário Vinculado:</span>
-                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)' }}>{selectedLicencaRenovar.usuario_nome || 'Não Vinculado'}</span>
+            <div className="renovar-info-box">
+              <div className="renovar-info-row">
+                <span className="renovar-info-label">Usuário Vinculado:</span>
+                <span className="renovar-info-val">{selectedLicencaRenovar.usuario_nome || 'Não Vinculado'}</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Plano Atual:</span>
+              <div className="renovar-info-row">
+                <span className="renovar-info-label">Plano Atual:</span>
                 {selectedLicencaRenovar.tipo_licenca === 'Trial' || selectedLicencaRenovar.tipo_licenca === 'Dev / Trial' ? (
                   <span style={{ fontSize: '0.78rem', background: 'rgba(20, 184, 166, 0.18)', color: '#2dd4bf', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, border: '1px solid rgba(20, 184, 166, 0.35)' }}>
                     Trial (30d)
@@ -1723,15 +1723,15 @@ export const Administracao: React.FC = () => {
                   </span>
                 )}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.82rem', color: 'var(--text-dim)' }}>Validade Atual:</span>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)' }}>
+              <div className="renovar-info-row">
+                <span className="renovar-info-label">Validade Atual:</span>
+                <span className="renovar-info-val" style={{ fontSize: '0.82rem', fontWeight: 600 }}>
                   {new Date(selectedLicencaRenovar.data_expiracao).toLocaleDateString('pt-BR')} ({selectedLicencaRenovar.dias_restantes} dias faltantes)
                 </span>
               </div>
             </div>
 
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '12px' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, marginBottom: '12px' }}>
               Selecione a Ação de Renovação / Alteração:
             </label>
 
@@ -1740,24 +1740,14 @@ export const Administracao: React.FC = () => {
                 <>
                   <div 
                     onClick={() => setRenovarOpcao('renovar_30')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 14px',
-                      borderRadius: '10px',
-                      border: renovarOpcao === 'renovar_30' ? '2px solid #2dd4bf' : '1px solid rgba(255, 255, 255, 0.08)',
-                      background: renovarOpcao === 'renovar_30' ? 'rgba(20, 184, 166, 0.12)' : 'rgba(30, 41, 59, 0.4)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
+                    className={`renovar-option-card ${renovarOpcao === 'renovar_30' ? 'selected-teal' : ''}`}
                   >
                     <input type="radio" checked={renovarOpcao === 'renovar_30'} onChange={() => setRenovarOpcao('renovar_30')} style={{ cursor: 'pointer' }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#2dd4bf', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div className="renovar-option-title teal" style={{ color: '#2dd4bf' }}>
                         <RefreshCw size={14} /> Renovar +30 Dias (Manter Plano Trial)
                       </div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                      <div className="renovar-option-desc">
                         Adiciona +30 dias ao prazo de validade mantendo o plano Trial.
                       </div>
                     </div>
@@ -1765,24 +1755,14 @@ export const Administracao: React.FC = () => {
 
                   <div 
                     onClick={() => setRenovarOpcao('upgrade_120')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 14px',
-                      borderRadius: '10px',
-                      border: renovarOpcao === 'upgrade_120' ? '2px solid #a5b4fc' : '1px solid rgba(255, 255, 255, 0.08)',
-                      background: renovarOpcao === 'upgrade_120' ? 'rgba(99, 102, 241, 0.12)' : 'rgba(30, 41, 59, 0.4)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
+                    className={`renovar-option-card ${renovarOpcao === 'upgrade_120' ? 'selected-indigo' : ''}`}
                   >
                     <input type="radio" checked={renovarOpcao === 'upgrade_120'} onChange={() => setRenovarOpcao('upgrade_120')} style={{ cursor: 'pointer' }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div className="renovar-option-title indigo" style={{ color: '#a5b4fc' }}>
                         <Award size={14} /> Upgrade para Plano Enterprise (+120 Dias / 4 Meses)
                       </div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                      <div className="renovar-option-desc">
                         Converte a licença para Enterprise e adiciona 120 dias de validade.
                       </div>
                     </div>
@@ -1790,24 +1770,14 @@ export const Administracao: React.FC = () => {
 
                   <div 
                     onClick={() => setRenovarOpcao('upgrade_365')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 14px',
-                      borderRadius: '10px',
-                      border: renovarOpcao === 'upgrade_365' ? '2px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)',
-                      background: renovarOpcao === 'upgrade_365' ? 'rgba(56, 189, 248, 0.12)' : 'rgba(30, 41, 59, 0.4)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
+                    className={`renovar-option-card ${renovarOpcao === 'upgrade_365' ? 'selected-sky' : ''}`}
                   >
                     <input type="radio" checked={renovarOpcao === 'upgrade_365'} onChange={() => setRenovarOpcao('upgrade_365')} style={{ cursor: 'pointer' }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div className="renovar-option-title sky" style={{ color: '#38bdf8' }}>
                         <Award size={14} /> Upgrade para Plano Enterprise (+365 Dias / 1 Ano)
                       </div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                      <div className="renovar-option-desc">
                         Converte a licença para Enterprise e adiciona 365 dias (1 ano) de validade.
                       </div>
                     </div>
@@ -1817,24 +1787,14 @@ export const Administracao: React.FC = () => {
                 <>
                   <div 
                     onClick={() => setRenovarOpcao('downgrade_trial')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 14px',
-                      borderRadius: '10px',
-                      border: renovarOpcao === 'downgrade_trial' ? '2px solid #2dd4bf' : '1px solid rgba(255, 255, 255, 0.08)',
-                      background: renovarOpcao === 'downgrade_trial' ? 'rgba(20, 184, 166, 0.12)' : 'rgba(30, 41, 59, 0.4)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
+                    className={`renovar-option-card ${renovarOpcao === 'downgrade_trial' ? 'selected-teal' : ''}`}
                   >
                     <input type="radio" checked={renovarOpcao === 'downgrade_trial'} onChange={() => setRenovarOpcao('downgrade_trial')} style={{ cursor: 'pointer' }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#2dd4bf', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div className="renovar-option-title teal" style={{ color: '#2dd4bf' }}>
                         <Key size={14} /> Converter para Plano Trial (30 Dias)
                       </div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                      <div className="renovar-option-desc">
                         Altera a licença para o plano Trial e redefine o prazo para 30 dias a partir de hoje.
                       </div>
                     </div>
@@ -1842,24 +1802,14 @@ export const Administracao: React.FC = () => {
 
                   <div 
                     onClick={() => setRenovarOpcao('add_120')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 14px',
-                      borderRadius: '10px',
-                      border: renovarOpcao === 'add_120' ? '2px solid #a5b4fc' : '1px solid rgba(255, 255, 255, 0.08)',
-                      background: renovarOpcao === 'add_120' ? 'rgba(99, 102, 241, 0.12)' : 'rgba(30, 41, 59, 0.4)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
+                    className={`renovar-option-card ${renovarOpcao === 'add_120' ? 'selected-indigo' : ''}`}
                   >
                     <input type="radio" checked={renovarOpcao === 'add_120'} onChange={() => setRenovarOpcao('add_120')} style={{ cursor: 'pointer' }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div className="renovar-option-title indigo" style={{ color: '#a5b4fc' }}>
                         <RefreshCw size={14} /> Adicionar +120 Dias ao Plano Enterprise (4 Meses)
                       </div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                      <div className="renovar-option-desc">
                         Estende a validade da licença Enterprise por mais 120 dias.
                       </div>
                     </div>
@@ -1867,24 +1817,14 @@ export const Administracao: React.FC = () => {
 
                   <div 
                     onClick={() => setRenovarOpcao('add_365')}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 14px',
-                      borderRadius: '10px',
-                      border: renovarOpcao === 'add_365' ? '2px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.08)',
-                      background: renovarOpcao === 'add_365' ? 'rgba(56, 189, 248, 0.12)' : 'rgba(30, 41, 59, 0.4)',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
+                    className={`renovar-option-card ${renovarOpcao === 'add_365' ? 'selected-sky' : ''}`}
                   >
                     <input type="radio" checked={renovarOpcao === 'add_365'} onChange={() => setRenovarOpcao('add_365')} style={{ cursor: 'pointer' }} />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div className="renovar-option-title sky" style={{ color: '#38bdf8' }}>
                         <Award size={14} /> Adicionar +365 Dias ao Plano Enterprise (1 Ano)
                       </div>
-                      <div style={{ fontSize: '0.76rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                      <div className="renovar-option-desc">
                         Estende a validade da licença Enterprise por mais 365 dias (1 ano completo).
                       </div>
                     </div>

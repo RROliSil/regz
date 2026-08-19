@@ -2992,3 +2992,227 @@ select option,
   margin-top: 8px;
 }
 
+/* Modal de Renovação / Alteração de Licença - Suporte Multi-tema (Padrão, Claro, Escuro) */
+.renovar-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(2, 6, 23, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.renovar-modal-card {
+  max-width: 520px;
+  width: 100%;
+  background: #0f172a;
+  color: var(--text-main);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  animation: modalScaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.renovar-info-box {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.renovar-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.renovar-info-label {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+.renovar-info-val {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.renovar-option-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(30, 41, 59, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.renovar-option-card:hover {
+  transform: translateY(-1px);
+}
+
+.renovar-option-card.selected-teal {
+  border: 2px solid #2dd4bf !important;
+  background: rgba(20, 184, 166, 0.12) !important;
+}
+
+.renovar-option-card.selected-indigo {
+  border: 2px solid #a5b4fc !important;
+  background: rgba(99, 102, 241, 0.12) !important;
+}
+
+.renovar-option-card.selected-sky {
+  border: 2px solid #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.12) !important;
+}
+
+.renovar-option-desc {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+/* === TEMA CLARO ([data-theme="light"]) === */
+[data-theme="light"] .renovar-modal-backdrop {
+  background: rgba(15, 23, 42, 0.45) !important;
+}
+
+[data-theme="light"] .renovar-modal-card {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .renovar-modal-card h3 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .renovar-modal-card label {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .renovar-info-box {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .renovar-info-label {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .renovar-info-val {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .renovar-option-card {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .renovar-option-card:hover {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] .renovar-option-card.selected-teal {
+  background: rgba(20, 184, 166, 0.14) !important;
+  border-color: #0d9488 !important;
+}
+
+[data-theme="light"] .renovar-option-card.selected-indigo {
+  background: rgba(99, 102, 241, 0.14) !important;
+  border-color: #4f46e5 !important;
+}
+
+[data-theme="light"] .renovar-option-card.selected-sky {
+  background: rgba(56, 189, 248, 0.14) !important;
+  border-color: #0284c7 !important;
+}
+
+[data-theme="light"] .renovar-option-card .renovar-option-title.teal {
+  color: #0f766e !important;
+}
+
+[data-theme="light"] .renovar-option-card .renovar-option-title.indigo {
+  color: #4338ca !important;
+}
+
+[data-theme="light"] .renovar-option-card .renovar-option-title.sky {
+  color: #0369a1 !important;
+}
+
+[data-theme="light"] .renovar-option-desc {
+  color: #475569 !important;
+}
+
+/* === TEMA ESCURO ([data-theme="dark"]) === */
+[data-theme="dark"] .renovar-modal-backdrop {
+  background: rgba(0, 0, 0, 0.75) !important;
+}
+
+[data-theme="dark"] .renovar-modal-card {
+  background: #1b1b1f !important;
+  color: #f4f4f5 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7) !important;
+}
+
+[data-theme="dark"] .renovar-modal-card h3 {
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .renovar-modal-card label {
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .renovar-info-box {
+  background: #242429 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .renovar-info-label {
+  color: #a1a1aa !important;
+}
+
+[data-theme="dark"] .renovar-info-val {
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .renovar-option-card {
+  background: #242429 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .renovar-option-card:hover {
+  background: #2d2d34 !important;
+}
+
+[data-theme="dark"] .renovar-option-desc {
+  color: #a1a1aa !important;
+}
+
