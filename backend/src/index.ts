@@ -506,7 +506,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
       SELECT u.id, u.nome, u.email, u.senha_hash, u.ativo, u.perfil_id, u.chave_licenca,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
              l.chave as licenca_chave, l.status as licenca_status, l.data_expiracao as licenca_expiracao,
-             CEIL(EXTRACT(EPOCH FROM (l.data_expiracao - CURRENT_TIMESTAMP)) / 86400)::int as dias_restantes_licenca
+             (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
       LEFT JOIN chaves_licenca l ON (l.chave = u.chave_licenca OR l.usuario_id = u.id)
@@ -587,7 +587,7 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
       SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca, u.is_super_admin,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
              l.chave as licenca_chave, l.status as licenca_status, l.data_expiracao as licenca_expiracao,
-             CEIL(EXTRACT(EPOCH FROM (l.data_expiracao - CURRENT_TIMESTAMP)) / 86400)::int as dias_restantes_licenca
+             (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
       LEFT JOIN chaves_licenca l ON (l.chave = u.chave_licenca OR l.usuario_id = u.id)
@@ -765,7 +765,7 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
     const query = `
       SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em, u.senha_atualizada_em, u.chave_licenca, u.is_super_admin,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
-             (30 - FLOOR(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - COALESCE(u.senha_atualizada_em, u.criado_em))) / 86400))::int as dias_para_expirar,
+             (30 - (CURRENT_DATE - COALESCE(u.senha_atualizada_em, u.criado_em)::date))::int as dias_para_expirar,
              l.chave as licenca_chave, l.tipo_licenca, l.status as status_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
@@ -1019,7 +1019,7 @@ app.get('/api/licencas', async (req: Request, res: Response) => {
       SELECT l.id, l.chave, l.usuario_id, l.tipo_licenca,
              l.data_ativacao, l.data_expiracao, l.status, l.criado_em,
              u.nome as usuario_nome, u.email as usuario_email,
-             CEIL(EXTRACT(EPOCH FROM (l.data_expiracao - CURRENT_TIMESTAMP)) / 86400)::int as dias_restantes
+             (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes
       FROM chaves_licenca l
       LEFT JOIN usuarios u ON l.usuario_id = u.id
       ORDER BY l.id DESC
