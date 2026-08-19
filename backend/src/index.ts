@@ -264,7 +264,7 @@ const initDb = async () => {
     await syncDatabaseLicenses();
     console.log('✅ Migração e sincronização estrita de chaves de licença no banco de dados concluída!');
 
-    // 2.1 Tabela de Empresas (Tenants Multi-Empresas & Personalização)
+    // 2.1 Tabela de Empresas (Tenants Multi-Empresas & Personalização & Conexão DB Próprio)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS empresas (
         id SERIAL PRIMARY KEY,
@@ -283,8 +283,18 @@ const initDb = async () => {
         cor_secundaria VARCHAR(7) DEFAULT '#38bdf8',
         cor_destaque VARCHAR(7) DEFAULT '#34d399',
         status VARCHAR(20) DEFAULT 'Ativa',
+        db_host VARCHAR(255),
+        db_port INT DEFAULT 5432,
+        db_user VARCHAR(100),
+        db_pass VARCHAR(255),
+        db_name VARCHAR(100),
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_host VARCHAR(255);
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_port INT DEFAULT 5432;
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_user VARCHAR(100);
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_pass VARCHAR(255);
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_name VARCHAR(100);
       ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE SET NULL;
       ALTER TABLE chaves_licenca ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE SET NULL;
     `);
@@ -1255,7 +1265,8 @@ app.post('/api/empresas', async (req: Request, res: Response) => {
   const {
     razao_social, nome_fantasia, cnpj,
     cep, logradouro, numero, complemento, bairro, cidade, estado,
-    logo_url, cor_primaria, cor_secundaria, cor_destaque, status
+    logo_url, cor_primaria, cor_secundaria, cor_destaque, status,
+    db_host, db_port, db_user, db_pass, db_name
   } = req.body;
 
   if (!razao_social || !nome_fantasia || !cnpj) {
@@ -1267,9 +1278,10 @@ app.post('/api/empresas', async (req: Request, res: Response) => {
       INSERT INTO empresas (
         razao_social, nome_fantasia, cnpj,
         cep, logradouro, numero, complemento, bairro, cidade, estado,
-        logo_url, cor_primaria, cor_secundaria, cor_destaque, status
+        logo_url, cor_primaria, cor_secundaria, cor_destaque, status,
+        db_host, db_port, db_user, db_pass, db_name
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING *
     `;
     const result = await pool.query(query, [
@@ -1279,7 +1291,12 @@ app.post('/api/empresas', async (req: Request, res: Response) => {
       cor_primaria || '#6366f1',
       cor_secundaria || '#38bdf8',
       cor_destaque || '#34d399',
-      status || 'Ativa'
+      status || 'Ativa',
+      db_host || 'localhost',
+      db_port ? parseInt(String(db_port), 10) : 5432,
+      db_user || 'postgres',
+      db_pass || null,
+      db_name || 'regz_db'
     ]);
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
@@ -1293,7 +1310,8 @@ app.put('/api/empresas/:id', async (req: Request, res: Response) => {
   const {
     razao_social, nome_fantasia, cnpj,
     cep, logradouro, numero, complemento, bairro, cidade, estado,
-    logo_url, cor_primaria, cor_secundaria, cor_destaque, status
+    logo_url, cor_primaria, cor_secundaria, cor_destaque, status,
+    db_host, db_port, db_user, db_pass, db_name
   } = req.body;
 
   try {
@@ -1301,8 +1319,9 @@ app.put('/api/empresas/:id', async (req: Request, res: Response) => {
       UPDATE empresas
       SET razao_social = $1, nome_fantasia = $2, cnpj = $3,
           cep = $4, logradouro = $5, numero = $6, complemento = $7, bairro = $8, cidade = $9, estado = $10,
-          logo_url = $11, cor_primaria = $12, cor_secundaria = $13, cor_destaque = $14, status = $15
-      WHERE id = $16
+          logo_url = $11, cor_primaria = $12, cor_secundaria = $13, cor_destaque = $14, status = $15,
+          db_host = $16, db_port = $17, db_user = $18, db_pass = $19, db_name = $20
+      WHERE id = $21
       RETURNING *
     `;
     const result = await pool.query(query, [
@@ -1313,6 +1332,11 @@ app.put('/api/empresas/:id', async (req: Request, res: Response) => {
       cor_secundaria || '#38bdf8',
       cor_destaque || '#34d399',
       status || 'Ativa',
+      db_host || 'localhost',
+      db_port ? parseInt(String(db_port), 10) : 5432,
+      db_user || 'postgres',
+      db_pass || null,
+      db_name || 'regz_db',
       id
     ]);
 

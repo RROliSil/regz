@@ -10,6 +10,7 @@ import { Administracao } from './pages/Administracao';
 import { Configuracoes } from './pages/Configuracoes';
 import { Relatorios } from './pages/Relatorios';
 import { Login } from './pages/Login';
+import { SuperAdmin } from './pages/SuperAdmin';
 import { PermissoesAba } from './types/auth';
 import { Loader2, Eye, AlertTriangle } from 'lucide-react';
 
@@ -19,6 +20,8 @@ const ProtectedLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('regz_sidebar_collapsed') === 'true';
   });
+
+  const isSuperAdmin = !!(usuario?.is_super_admin || (usuario?.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario?.nome === 'Administrador Regz');
 
   const toggleSidebar = () => {
     setSidebarCollapsed(prev => {
@@ -52,6 +55,10 @@ const ProtectedLayout: React.FC = () => {
 
   if (!usuario) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (isSuperAdmin) {
+    return <SuperAdmin />;
   }
 
   return (
