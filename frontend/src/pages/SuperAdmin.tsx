@@ -8,18 +8,8 @@ import {
   MapPin, Upload, Database, LogOut, Users, UserCheck, UserX
 } from 'lucide-react';
 
-interface LicencaColumnWidths {
-  chave: number;
-  empresa: number;
-  plano: number;
-  validade: number;
-  status: number;
-  acoes: number;
-}
-
 export const SuperAdmin: React.FC = () => {
   const { usuario, logout } = useAuth();
-  const [subTab, setSubTab] = useState<'empresas' | 'licencas'>('empresas');
 
   // Estados de Empresas
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
@@ -27,7 +17,7 @@ export const SuperAdmin: React.FC = () => {
   const [modalEmpresaOpen, setModalEmpresaOpen] = useState(false);
   const [editingEmpresaId, setEditingEmpresaId] = useState<number | null>(null);
 
-  // Campos de Empresa (Sem as 3 cores)
+  // Campos de Empresa
   const [empresaRazaoSocial, setEmpresaRazaoSocial] = useState('');
   const [empresaNomeFantasia, setEmpresaNomeFantasia] = useState('');
   const [empresaCnpj, setEmpresaCnpj] = useState('');
@@ -52,26 +42,24 @@ export const SuperAdmin: React.FC = () => {
   const [cepErrorEmpresa, setCepErrorEmpresa] = useState('');
   const [submittingEmpresa, setSubmittingEmpresa] = useState(false);
 
-  // Estados do Modal de Licenças por Empresa
+  // Modal de Licenças Master da Empresa Selecionada
   const [selectedEmpresaLicencas, setSelectedEmpresaLicencas] = useState<Empresa | null>(null);
   const [empresaLicencas, setEmpresaLicencas] = useState<Licenca[]>([]);
   const [loadingEmpresaLicencas, setLoadingEmpresaLicencas] = useState(false);
 
-  // Estados do Modal de Usuários por Empresa
+  // Modal de Usuários da Empresa Selecionada
   const [selectedEmpresaUsuarios, setSelectedEmpresaUsuarios] = useState<Empresa | null>(null);
   const [empresaUsuarios, setEmpresaUsuarios] = useState<any[]>([]);
   const [loadingEmpresaUsuarios, setLoadingEmpresaUsuarios] = useState(false);
 
-  // Estados de Licenças Master Globais
-  const [licencas, setLicencas] = useState<Licenca[]>([]);
-  const [loadingLicencas, setLoadingLicencas] = useState(true);
+  // Modal de Emissão de Nova Licença
   const [modalLicencaOpen, setModalLicencaOpen] = useState(false);
   const [newLicencaEmpresaId, setNewLicencaEmpresaId] = useState<string>('');
   const [newLicencaTipo, setNewLicencaTipo] = useState<string>('Enterprise');
   const [newLicencaValidade, setNewLicencaValidade] = useState<number>(365);
   const [submittingLicenca, setSubmittingLicenca] = useState(false);
 
-  // Modal Renovação / Alteração de Licença
+  // Modal de Renovação / Alteração de Licença
   const [modalRenovarOpen, setModalRenovarOpen] = useState(false);
   const [selectedLicencaRenovar, setSelectedLicencaRenovar] = useState<Licenca | null>(null);
   const [renovarOpcao, setRenovarOpcao] = useState<'renovar_30' | 'upgrade_120' | 'upgrade_365' | 'downgrade_trial' | 'add_120' | 'add_365'>('renovar_30');
@@ -79,22 +67,6 @@ export const SuperAdmin: React.FC = () => {
 
   const [globalSuccess, setGlobalSuccess] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  const [licencaColumnWidths] = useState<LicencaColumnWidths>({
-    chave: 260,
-    empresa: 220,
-    plano: 150,
-    validade: 150,
-    status: 120,
-    acoes: 165
-  });
-
-  const totalLicTableWidth = (licencaColumnWidths.chave || 260) +
-    (licencaColumnWidths.empresa || 220) +
-    (licencaColumnWidths.plano || 150) +
-    (licencaColumnWidths.validade || 150) +
-    (licencaColumnWidths.status || 120) +
-    (licencaColumnWidths.acoes || 165);
 
   // Listener para fechar modais com a tecla ESC
   useEffect(() => {
@@ -111,7 +83,7 @@ export const SuperAdmin: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [modalEmpresaOpen, modalLicencaOpen, modalRenovarOpen, selectedEmpresaLicencas, selectedEmpresaUsuarios]);
 
-  // Carregar Empresas e Licenças
+  // Carregar Empresas
   const fetchEmpresas = async () => {
     setLoadingEmpresas(true);
     try {
@@ -127,24 +99,8 @@ export const SuperAdmin: React.FC = () => {
     }
   };
 
-  const fetchLicencas = async () => {
-    setLoadingLicencas(true);
-    try {
-      const res = await fetch('/api/licencas');
-      if (res.ok) {
-        const data = await res.json();
-        setLicencas(data);
-      }
-    } catch (err) {
-      console.error('Erro ao buscar licenças:', err);
-    } finally {
-      setLoadingLicencas(false);
-    }
-  };
-
   useEffect(() => {
     fetchEmpresas();
-    fetchLicencas();
   }, []);
 
   // Abrir Gerenciamento de Licenças da Empresa
@@ -381,7 +337,6 @@ export const SuperAdmin: React.FC = () => {
         const data = await res.json();
         setGlobalSuccess(`Nova Chave Master Gerada: ${data.chave}`);
         setModalLicencaOpen(false);
-        fetchLicencas();
         fetchEmpresas();
         if (selectedEmpresaLicencas) {
           handleOpenEmpresaLicencas(selectedEmpresaLicencas);
@@ -439,7 +394,6 @@ export const SuperAdmin: React.FC = () => {
       if (res.ok) {
         setGlobalSuccess('Validade da chave atualizada com sucesso!');
         setModalRenovarOpen(false);
-        fetchLicencas();
         fetchEmpresas();
         if (selectedEmpresaLicencas) {
           handleOpenEmpresaLicencas(selectedEmpresaLicencas);
@@ -465,7 +419,6 @@ export const SuperAdmin: React.FC = () => {
         body: JSON.stringify({ status: novoStatus })
       });
       if (res.ok) {
-        fetchLicencas();
         fetchEmpresas();
         if (selectedEmpresaLicencas) {
           handleOpenEmpresaLicencas(selectedEmpresaLicencas);
@@ -482,7 +435,6 @@ export const SuperAdmin: React.FC = () => {
       const res = await fetch(`/api/licencas/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setGlobalSuccess('Chave de licença excluída com sucesso!');
-        fetchLicencas();
         fetchEmpresas();
         if (selectedEmpresaLicencas) {
           handleOpenEmpresaLicencas(selectedEmpresaLicencas);
@@ -543,24 +495,6 @@ export const SuperAdmin: React.FC = () => {
         </div>
       </header>
 
-      {/* Sub-Abas do Portal Master */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px' }}>
-        <button
-          onClick={() => setSubTab('empresas')}
-          className={subTab === 'empresas' ? 'btn-primary' : 'btn-secondary'}
-          style={{ padding: '12px 20px', borderRadius: '12px', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '10px', fontWeight: 700 }}
-        >
-          <Building2 size={20} color={subTab === 'empresas' ? '#ffffff' : '#818cf8'} /> Empresas Clientes & Banco Próprio ({empresas.length})
-        </button>
-        <button
-          onClick={() => setSubTab('licencas')}
-          className={subTab === 'licencas' ? 'btn-primary' : 'btn-secondary'}
-          style={{ padding: '12px 20px', borderRadius: '12px', fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '10px', fontWeight: 700 }}
-        >
-          <Key size={20} color={subTab === 'licencas' ? '#ffffff' : '#38bdf8'} /> Gerenciador de Chaves de Licença Master ({licencas.length})
-        </button>
-      </div>
-
       {globalSuccess && (
         <div style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', padding: '14px 20px', borderRadius: '14px', fontSize: '0.92rem', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '10px' }}>
           <CheckCircle2 size={20} /> {globalSuccess}
@@ -568,367 +502,193 @@ export const SuperAdmin: React.FC = () => {
       )}
 
       {/* ======================================================== */}
-      {/* ABA DE EMPRESAS CLIENTES (CARDS MODERNOS & ACOES INTERATIVAS) */}
+      {/* PAINEL DE EMPRESAS CLIENTES (CARDS MODERNOS EXECUTIVOS) */}
       {/* ======================================================== */}
-      {subTab === 'empresas' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
-          {/* Métricas Master */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-            <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '14px', borderRadius: '12px', color: '#818cf8' }}>
-                <Building2 size={24} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>EMPRESAS CLIENTES</span>
-                <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: '#f8fafc' }}>{empresas.length}</h3>
-              </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
+        {/* Métricas Master */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+          <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '14px', borderRadius: '12px', color: '#818cf8' }}>
+              <Building2 size={24} />
             </div>
-
-            <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ background: 'rgba(52, 211, 153, 0.15)', padding: '14px', borderRadius: '12px', color: '#34d399' }}>
-                <CheckCircle2 size={24} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>LICENÇAS ATIVAS NA PLATAFORMA</span>
-                <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: '#f8fafc' }}>
-                  {empresas.reduce((acc, emp) => acc + (emp.licencas_ativas || 0), 0)}
-                </h3>
-              </div>
-            </div>
-
-            <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '14px', borderRadius: '12px', color: '#38bdf8' }}>
-                <Database size={24} />
-              </div>
-              <div>
-                <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>BANCOS DE DADOS REGISTRADOS</span>
-                <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: '#f8fafc' }}>
-                  {empresas.filter(e => (e as any).db_host).length}
-                </h3>
-              </div>
+            <div>
+              <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>EMPRESAS CLIENTES</span>
+              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: '#f8fafc' }}>{empresas.length}</h3>
             </div>
           </div>
 
-          {/* Action Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '18px 24px', borderRadius: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Building2 size={22} color="#818cf8" />
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#f8fafc' }}>Gestão de Empresas Clientes ({empresas.length})</h3>
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Clique nas ações dos cards para gerenciar licenças master ou usuários de cada empresa</span>
-              </div>
+          <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ background: 'rgba(52, 211, 153, 0.15)', padding: '14px', borderRadius: '12px', color: '#34d399' }}>
+              <CheckCircle2 size={24} />
             </div>
-            <button
-              onClick={handleOpenCreateEmpresa}
-              className="btn-primary"
-              style={{ padding: '10px 18px', borderRadius: '10px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px' }}
-            >
-              <Plus size={18} /> Cadastrar Empresa Cliente
-            </button>
+            <div>
+              <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>LICENÇAS ATIVAS NA PLATAFORMA</span>
+              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: '#f8fafc' }}>
+                {empresas.reduce((acc, emp) => acc + (emp.licencas_ativas || 0), 0)}
+              </h3>
+            </div>
           </div>
 
-          {/* GRID DE CARDS EXECUTIVOS DE EMPRESAS */}
-          {loadingEmpresas ? (
-            <div style={{ textAlign: 'center', padding: '60px', background: 'rgba(15, 23, 42, 0.8)', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              <Loader2 className="spin" size={28} color="#818cf8" style={{ margin: '0 auto' }} />
-              <span style={{ display: 'block', marginTop: '12px', color: '#94a3b8' }}>Carregando empresas clientes...</span>
+          <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '14px', borderRadius: '12px', color: '#38bdf8' }}>
+              <Database size={24} />
             </div>
-          ) : empresas.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px', background: 'rgba(15, 23, 42, 0.8)', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#94a3b8' }}>
-              Nenhuma empresa cadastrada. Clique em "+ Cadastrar Empresa Cliente" para começar.
+            <div>
+              <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>BANCOS DE DADOS REGISTRADOS</span>
+              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: '#f8fafc' }}>
+                {empresas.filter(e => (e as any).db_host).length}
+              </h3>
             </div>
-          ) : (
-            <div className="empresas-grid">
-              {empresas.map((emp: any) => (
-                <div key={emp.id} className="empresa-card">
-                  
-                  {/* Cabeçalho do Card */}
-                  <div className="empresa-card-header">
-                    <div className="empresa-card-title-box">
-                      {emp.logo_url ? (
-                        <img src={emp.logo_url} alt={emp.nome_fantasia} className="empresa-logo-avatar" style={{ objectFit: 'cover' }} />
-                      ) : (
-                        <div className="empresa-logo-avatar" style={{ background: 'linear-gradient(135deg, #6366f1 0%, #38bdf8 100%)', color: '#ffffff' }}>
-                          {(emp.nome_fantasia || 'E').substring(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="empresa-card-info">
-                        <h4 className="empresa-card-nome">{emp.nome_fantasia}</h4>
-                        <span className="empresa-card-razao">{emp.razao_social}</span>
-                        <span className="empresa-card-cnpj-badge">{emp.cnpj}</span>
+          </div>
+        </div>
+
+        {/* Action Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '18px 24px', borderRadius: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Building2 size={22} color="#818cf8" />
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#f8fafc' }}>Gestão de Empresas Clientes ({empresas.length})</h3>
+              <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Clique nas ações dos cards para gerenciar licenças master ou usuários de cada empresa</span>
+            </div>
+          </div>
+          <button
+            onClick={handleOpenCreateEmpresa}
+            className="btn-primary"
+            style={{ padding: '10px 18px', borderRadius: '10px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            <Plus size={18} /> Cadastrar Empresa Cliente
+          </button>
+        </div>
+
+        {/* GRID DE CARDS EXECUTIVOS DE EMPRESAS */}
+        {loadingEmpresas ? (
+          <div style={{ textAlign: 'center', padding: '60px', background: 'rgba(15, 23, 42, 0.8)', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <Loader2 className="spin" size={28} color="#818cf8" style={{ margin: '0 auto' }} />
+            <span style={{ display: 'block', marginTop: '12px', color: '#94a3b8' }}>Carregando empresas clientes...</span>
+          </div>
+        ) : empresas.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '60px', background: 'rgba(15, 23, 42, 0.8)', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.1)', color: '#94a3b8' }}>
+            Nenhuma empresa cadastrada. Clique em "+ Cadastrar Empresa Cliente" para começar.
+          </div>
+        ) : (
+          <div className="empresas-grid">
+            {empresas.map((emp: any) => (
+              <div key={emp.id} className="empresa-card">
+                
+                {/* Cabeçalho do Card */}
+                <div className="empresa-card-header">
+                  <div className="empresa-card-title-box">
+                    {emp.logo_url ? (
+                      <img src={emp.logo_url} alt={emp.nome_fantasia} className="empresa-logo-avatar" style={{ objectFit: 'cover' }} />
+                    ) : (
+                      <div className="empresa-logo-avatar" style={{ background: 'linear-gradient(135deg, #6366f1 0%, #38bdf8 100%)', color: '#ffffff' }}>
+                        {(emp.nome_fantasia || 'E').substring(0, 2).toUpperCase()}
                       </div>
+                    )}
+                    <div className="empresa-card-info">
+                      <h4 className="empresa-card-nome">{emp.nome_fantasia}</h4>
+                      <span className="empresa-card-razao">{emp.razao_social}</span>
+                      <span className="empresa-card-cnpj-badge">{emp.cnpj}</span>
                     </div>
+                  </div>
 
-                    <span className={`empresa-card-status-badge ${emp.status === 'Ativa' ? 'ativa' : 'inativa'}`}>
-                      {emp.status}
+                  <span className={`empresa-card-status-badge ${emp.status === 'Ativa' ? 'ativa' : 'inativa'}`}>
+                    {emp.status}
+                  </span>
+                </div>
+
+                {/* Detalhes do Card */}
+                <div className="empresa-card-body">
+                  <div className="empresa-card-row">
+                    <span className="empresa-card-label">
+                      <Database size={14} color="#38bdf8" /> Banco DB Local:
+                    </span>
+                    <span className="empresa-card-val" style={{ fontFamily: 'monospace', color: '#38bdf8', fontSize: '0.8rem' }}>
+                      {emp.db_host || 'localhost'}:{emp.db_port || 5432}/{emp.db_name || 'regz_db'}
                     </span>
                   </div>
 
-                  {/* Detalhes do Card */}
-                  <div className="empresa-card-body">
-                    <div className="empresa-card-row">
-                      <span className="empresa-card-label">
-                        <Database size={14} color="#38bdf8" /> Banco DB Local:
-                      </span>
-                      <span className="empresa-card-val" style={{ fontFamily: 'monospace', color: '#38bdf8', fontSize: '0.8rem' }}>
-                        {emp.db_host || 'localhost'}:{emp.db_port || 5432}/{emp.db_name || 'regz_db'}
-                      </span>
-                    </div>
-
-                    <div className="empresa-card-row">
-                      <span className="empresa-card-label">
-                        <MapPin size={14} color="#818cf8" /> Localização:
-                      </span>
-                      <span className="empresa-card-val">
-                        {emp.cidade ? `${emp.cidade} - ${emp.estado}` : 'Não Informado'}
-                      </span>
-                    </div>
-
-                    <div className="empresa-card-row">
-                      <span className="empresa-card-label">
-                        <Users size={14} color="#a5b4fc" /> Colaboradores:
-                      </span>
-                      <span className="empresa-card-val">
-                        {emp.total_usuarios || 0} Usuários
-                      </span>
-                    </div>
-
-                    <div className="empresa-card-row">
-                      <span className="empresa-card-label">
-                        <Key size={14} color="#34d399" /> Licenças Ativas:
-                      </span>
-                      <span className="empresa-card-val" style={{ color: '#34d399', fontWeight: 700 }}>
-                        {emp.licencas_ativas || 0} Ativas / {emp.total_licencas || 0} Total
-                      </span>
-                    </div>
+                  <div className="empresa-card-row">
+                    <span className="empresa-card-label">
+                      <MapPin size={14} color="#818cf8" /> Localização:
+                    </span>
+                    <span className="empresa-card-val">
+                      {emp.cidade ? `${emp.cidade} - ${emp.estado}` : 'Não Informado'}
+                    </span>
                   </div>
 
-                  {/* Ações Interativas no Card */}
-                  <div className="empresa-card-actions">
-                    <button
-                      onClick={() => handleOpenEmpresaLicencas(emp)}
-                      className="empresa-action-btn licencas"
-                      title="Gerenciar Licenças Master desta empresa"
-                    >
-                      <Key size={14} /> Licenças Master
-                    </button>
-
-                    <button
-                      onClick={() => handleOpenEmpresaUsuarios(emp)}
-                      className="empresa-action-btn usuarios"
-                      title="Gerenciar Usuários e Acessos desta empresa"
-                    >
-                      <Users size={14} /> Usuários
-                    </button>
-
-                    <button
-                      onClick={() => handleOpenEditEmpresa(emp)}
-                      className="empresa-action-btn editar"
-                      title="Editar Dados & Banco DB da Empresa"
-                    >
-                      <Edit size={14} /> Editar
-                    </button>
-
-                    <button
-                      onClick={() => handleDeleteEmpresa(emp.id, emp.nome_fantasia)}
-                      className="empresa-action-btn excluir"
-                      title="Excluir Empresa"
-                    >
-                      <Trash2 size={14} /> Excluir
-                    </button>
+                  <div className="empresa-card-row">
+                    <span className="empresa-card-label">
+                      <Users size={14} color="#a5b4fc" /> Colaboradores:
+                    </span>
+                    <span className="empresa-card-val">
+                      {emp.total_usuarios || 0} Usuários
+                    </span>
                   </div>
 
+                  <div className="empresa-card-row">
+                    <span className="empresa-card-label">
+                      <Key size={14} color="#34d399" /> Licenças Ativas:
+                    </span>
+                    <span className="empresa-card-val" style={{ color: '#34d399', fontWeight: 700 }}>
+                      {emp.licencas_ativas || 0} Ativas / {emp.total_licencas || 0} Total
+                    </span>
+                  </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* ======================================================== */}
-      {/* ABA DE GERENCIADOR DE CHAVES DE LICENÇA MASTER GLOBAIS */}
-      {/* ======================================================== */}
-      {subTab === 'licencas' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          
-          {/* Action Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '18px 24px', borderRadius: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <Key size={22} color="#38bdf8" />
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#f8fafc' }}>Gestão Geral de Chaves Master ({licencas.length})</h3>
-                <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Emita, altere validade ou revogue chaves para qualquer empresa cliente</span>
+                {/* Ações Interativas no Card */}
+                <div className="empresa-card-actions">
+                  <button
+                    onClick={() => handleOpenEmpresaLicencas(emp)}
+                    className="empresa-action-btn licencas"
+                    title="Gerenciar Licenças Master desta empresa"
+                  >
+                    <Key size={14} /> Licenças Master
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenEmpresaUsuarios(emp)}
+                    className="empresa-action-btn usuarios"
+                    title="Gerenciar Usuários e Acessos desta empresa"
+                  >
+                    <Users size={14} /> Usuários
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenEditEmpresa(emp)}
+                    className="empresa-action-btn editar"
+                    title="Editar Dados & Banco DB da Empresa"
+                  >
+                    <Edit size={14} /> Editar
+                  </button>
+
+                  <button
+                    onClick={() => handleDeleteEmpresa(emp.id, emp.nome_fantasia)}
+                    className="empresa-action-btn excluir"
+                    title="Excluir Empresa"
+                  >
+                    <Trash2 size={14} /> Excluir
+                  </button>
+                </div>
+
               </div>
-            </div>
-            <button
-              onClick={() => {
-                setNewLicencaEmpresaId('');
-                setModalLicencaOpen(true);
-              }}
-              className="btn-primary"
-              style={{ padding: '10px 18px', borderRadius: '10px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '8px' }}
-            >
-              <Plus size={18} /> Emitir Nova Chave de Licença Master
-            </button>
+            ))}
           </div>
-
-          {/* Tabela de Licenças */}
-          <div className="custom-table-container" style={{ position: 'relative', overflowX: 'auto', background: 'rgba(15, 23, 42, 0.8)', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-            <div className="table-flex-wrapper" style={{ overflowX: 'auto', width: '100%' }}>
-              <table className="custom-table" style={{ width: '100%', minWidth: `${totalLicTableWidth}px`, borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th style={{ width: `${licencaColumnWidths.chave}px` }}>Chave de Licença Master</th>
-                    <th style={{ width: `${licencaColumnWidths.empresa}px` }}>Empresa Cliente / Usuário</th>
-                    <th style={{ width: `${licencaColumnWidths.plano}px` }}>Plano / Validade</th>
-                    <th style={{ width: `${licencaColumnWidths.validade}px` }}>Data Expiração</th>
-                    <th style={{ width: `${licencaColumnWidths.status}px` }}>Status</th>
-                    <th className="col-acoes" style={{ textAlign: 'center', width: `${licencaColumnWidths.acoes || 165}px`, minWidth: '165px' }}>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loadingLicencas ? (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '40px' }}>
-                        <Loader2 className="spin" size={24} color="#38bdf8" style={{ margin: '0 auto' }} />
-                        <span style={{ display: 'block', marginTop: '8px', color: '#94a3b8' }}>Carregando chaves master...</span>
-                      </td>
-                    </tr>
-                  ) : licencas.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-                        Nenhuma chave de licença emitida. Clique em "+ Emitir Nova Chave de Licença Master".
-                      </td>
-                    </tr>
-                  ) : (
-                    licencas.map((lic: any) => {
-                      const isExpirada = lic.dias_restantes < 0 || lic.status === 'Expirada';
-                      const isSuspensa = lic.status === 'Suspensa';
-
-                      return (
-                        <tr key={lic.id}>
-                          <td style={{ width: `${licencaColumnWidths.chave}px` }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.88rem', color: '#38bdf8' }}>
-                                {lic.chave}
-                              </span>
-                              <button
-                                onClick={() => handleCopyKey(lic.chave)}
-                                style={{ background: 'transparent', border: 'none', color: copiedKey === lic.chave ? '#34d399' : '#94a3b8', cursor: 'pointer', padding: '2px' }}
-                                title="Copiar Chave"
-                              >
-                                {copiedKey === lic.chave ? <Check size={14} /> : <Copy size={14} />}
-                              </button>
-                            </div>
-                          </td>
-
-                          <td style={{ width: `${licencaColumnWidths.empresa}px` }}>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#f8fafc' }}>
-                                {lic.usuario_nome ? `${lic.usuario_nome}` : (lic.empresa_nome || 'Empresa Cliente / Global')}
-                              </span>
-                              <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                                {lic.usuario_email || 'Chave de Empresa'}
-                              </span>
-                            </div>
-                          </td>
-
-                          <td style={{ width: `${licencaColumnWidths.plano}px` }}>
-                            <span style={{
-                              fontSize: '0.78rem',
-                              padding: '3px 10px',
-                              borderRadius: '6px',
-                              fontWeight: 700,
-                              background: lic.tipo_licenca === 'Enterprise' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(56, 189, 248, 0.2)',
-                              color: lic.tipo_licenca === 'Enterprise' ? '#818cf8' : '#38bdf8',
-                              border: lic.tipo_licenca === 'Enterprise' ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid rgba(56, 189, 248, 0.4)'
-                            }}>
-                              {lic.tipo_licenca || 'Enterprise'}
-                            </span>
-                          </td>
-
-                          <td style={{ width: `${licencaColumnWidths.validade}px` }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Calendar size={13} color="#94a3b8" />
-                                {new Date(lic.data_expiracao).toLocaleDateString('pt-BR')}
-                              </span>
-                              <span style={{ fontSize: '0.74rem', color: isExpirada ? '#f87171' : '#94a3b8' }}>
-                                {isExpirada ? `Expirada há ${Math.abs(lic.dias_restantes)}d` : `Faltam ${lic.dias_restantes} dias`}
-                              </span>
-                            </div>
-                          </td>
-
-                          <td style={{ width: `${licencaColumnWidths.status}px` }}>
-                            {isSuspensa ? (
-                              <span style={{ fontSize: '0.78rem', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
-                                Suspensa
-                              </span>
-                            ) : isExpirada ? (
-                              <span style={{ fontSize: '0.78rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
-                                Expirada
-                              </span>
-                            ) : (
-                              <span style={{ fontSize: '0.78rem', background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
-                                Ativa
-                              </span>
-                            )}
-                          </td>
-
-                          <td className="col-acoes" style={{ textAlign: 'center', width: `${licencaColumnWidths.acoes || 165}px`, minWidth: '165px' }}>
-                            <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'center', alignItems: 'center' }}>
-                              <button
-                                onClick={() => handleOpenModalRenovar(lic)}
-                                className="btn-action map"
-                                title="Renovar / Alterar Validade da Licença"
-                              >
-                                <RefreshCw size={14} />
-                              </button>
-
-                              <button
-                                onClick={() => handleToggleStatusLicenca(lic.id, lic.status)}
-                                className="btn-action"
-                                style={{
-                                  background: lic.status === 'Ativa' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(52, 211, 153, 0.15)',
-                                  color: lic.status === 'Ativa' ? '#fbbf24' : '#34d399'
-                                }}
-                                title={lic.status === 'Ativa' ? 'Suspender Licença' : 'Ativar Licença'}
-                              >
-                                {lic.status === 'Ativa' ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
-                              </button>
-
-                              <button
-                                onClick={() => handleDeleteLicenca(lic.id, lic.chave)}
-                                className="btn-action delete"
-                                title="Excluir Chave de Licença"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* ======================================================== */}
-      {/* MODAL DE GERENCIAMENTO DE LICENÇAS DE UMA EMPRESA */}
+      {/* MODAL COMPLETO DE GERENCIAMENTO DE LICENÇAS DA EMPRESA */}
       {/* ======================================================== */}
       {selectedEmpresaLicencas && (
         <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: '800px', width: '92%', background: '#0f172a', border: '1px solid rgba(56, 189, 248, 0.4)' }}>
+          <div className="modal-content" style={{ maxWidth: '880px', width: '94%', background: '#0f172a', border: '1px solid rgba(56, 189, 248, 0.4)' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Key size={22} color="#38bdf8" />
+                <Key size={24} color="#38bdf8" />
                 <div>
-                  <h3 style={{ color: '#ffffff', margin: 0 }}>Chaves de Licença Master - {selectedEmpresaLicencas.nome_fantasia}</h3>
+                  <h3 style={{ color: '#ffffff', margin: 0 }}>Gerenciador de Licenças Master - {selectedEmpresaLicencas.nome_fantasia}</h3>
                   <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{selectedEmpresaLicencas.razao_social} ({selectedEmpresaLicencas.cnpj})</span>
                 </div>
               </div>
@@ -938,9 +698,9 @@ export const SuperAdmin: React.FC = () => {
             </div>
 
             <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(30, 41, 59, 0.6)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <span style={{ fontSize: '0.88rem', color: '#f8fafc', fontWeight: 600 }}>
-                  Licenças Emitidas para esta Empresa ({empresaLicencas.length})
+                  Chaves de Licença Emitidas para esta Empresa ({empresaLicencas.length})
                 </span>
                 <button
                   onClick={() => {
@@ -950,65 +710,143 @@ export const SuperAdmin: React.FC = () => {
                   className="btn-primary"
                   style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
-                  <Plus size={15} /> Emitir Nova Licença
+                  <Plus size={15} /> Emitir Nova Chave de Licença Master
                 </button>
               </div>
 
               {loadingEmpresaLicencas ? (
-                <div style={{ textAlign: 'center', padding: '30px' }}>
-                  <Loader2 className="spin" size={24} color="#38bdf8" style={{ margin: '0 auto' }} />
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                  <Loader2 className="spin" size={26} color="#38bdf8" style={{ margin: '0 auto' }} />
+                  <span style={{ display: 'block', marginTop: '8px', color: '#94a3b8' }}>Carregando chaves de licença...</span>
                 </div>
               ) : empresaLicencas.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '30px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '10px', color: '#94a3b8' }}>
-                  Nenhuma chave emitida para esta empresa. Clique em "+ Emitir Nova Licença".
+                <div style={{ textAlign: 'center', padding: '40px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '12px', color: '#94a3b8' }}>
+                  Nenhuma chave emitida para esta empresa. Clique em "+ Emitir Nova Chave de Licença Master".
                 </div>
               ) : (
-                <div style={{ overflowX: 'auto' }}>
+                <div style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                   <table className="custom-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
-                        <th>Chave Master</th>
+                        <th>Chave de Licença Master</th>
                         <th>Usuário Vinculado</th>
                         <th>Plano</th>
-                        <th>Expiração</th>
+                        <th>Data Expiração</th>
                         <th>Status</th>
                         <th style={{ textAlign: 'center' }}>Ações</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {empresaLicencas.map((lic: any) => (
-                        <tr key={lic.id}>
-                          <td style={{ fontFamily: 'monospace', fontWeight: 700, color: '#38bdf8', fontSize: '0.85rem' }}>
-                            {lic.chave}
-                          </td>
-                          <td style={{ fontSize: '0.82rem' }}>
-                            {lic.usuario_nome ? `${lic.usuario_nome} (${lic.usuario_email})` : 'Empresa / Avulso'}
-                          </td>
-                          <td>
-                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '6px', background: 'rgba(99, 102, 241, 0.2)', color: '#818cf8', fontWeight: 700 }}>
-                              {lic.tipo_licenca}
-                            </span>
-                          </td>
-                          <td style={{ fontSize: '0.8rem' }}>
-                            {new Date(lic.data_expiracao).toLocaleDateString('pt-BR')} ({lic.dias_restantes}d)
-                          </td>
-                          <td>
-                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '6px', background: lic.status === 'Ativa' ? 'rgba(52, 211, 153, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: lic.status === 'Ativa' ? '#34d399' : '#f87171', fontWeight: 700 }}>
-                              {lic.status}
-                            </span>
-                          </td>
-                          <td style={{ textAlign: 'center' }}>
-                            <div style={{ display: 'inline-flex', gap: '6px' }}>
-                              <button onClick={() => handleOpenModalRenovar(lic)} className="btn-action map" title="Renovar">
-                                <RefreshCw size={13} />
-                              </button>
-                              <button onClick={() => handleDeleteLicenca(lic.id, lic.chave)} className="btn-action delete" title="Excluir">
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {empresaLicencas.map((lic: any) => {
+                        const isExpirada = lic.dias_restantes < 0 || lic.status === 'Expirada';
+                        const isSuspensa = lic.status === 'Suspensa';
+
+                        return (
+                          <tr key={lic.id}>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.88rem', color: '#38bdf8' }}>
+                                  {lic.chave}
+                                </span>
+                                <button
+                                  onClick={() => handleCopyKey(lic.chave)}
+                                  style={{ background: 'transparent', border: 'none', color: copiedKey === lic.chave ? '#34d399' : '#94a3b8', cursor: 'pointer', padding: '2px' }}
+                                  title="Copiar Chave"
+                                >
+                                  {copiedKey === lic.chave ? <Check size={14} /> : <Copy size={14} />}
+                                </button>
+                              </div>
+                            </td>
+
+                            <td>
+                              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#f8fafc' }}>
+                                  {lic.usuario_nome || 'Empresa / Avulso'}
+                                </span>
+                                {lic.usuario_email && (
+                                  <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
+                                    {lic.usuario_email}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            <td>
+                              <span style={{
+                                fontSize: '0.75rem',
+                                padding: '3px 9px',
+                                borderRadius: '6px',
+                                fontWeight: 700,
+                                background: lic.tipo_licenca === 'Enterprise' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(56, 189, 248, 0.2)',
+                                color: lic.tipo_licenca === 'Enterprise' ? '#818cf8' : '#38bdf8',
+                                border: lic.tipo_licenca === 'Enterprise' ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid rgba(56, 189, 248, 0.4)'
+                              }}>
+                                {lic.tipo_licenca || 'Enterprise'}
+                              </span>
+                            </td>
+
+                            <td>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Calendar size={13} color="#94a3b8" />
+                                  {new Date(lic.data_expiracao).toLocaleDateString('pt-BR')}
+                                </span>
+                                <span style={{ fontSize: '0.74rem', color: isExpirada ? '#f87171' : '#94a3b8' }}>
+                                  {isExpirada ? `Expirada há ${Math.abs(lic.dias_restantes)}d` : `Faltam ${lic.dias_restantes} dias`}
+                                </span>
+                              </div>
+                            </td>
+
+                            <td>
+                              {isSuspensa ? (
+                                <span style={{ fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                                  Suspensa
+                                </span>
+                              ) : isExpirada ? (
+                                <span style={{ fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                                  Expirada
+                                </span>
+                              ) : (
+                                <span style={{ fontSize: '0.75rem', background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                                  Ativa
+                                </span>
+                              )}
+                            </td>
+
+                            <td style={{ textAlign: 'center' }}>
+                              <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'center' }}>
+                                <button
+                                  onClick={() => handleOpenModalRenovar(lic)}
+                                  className="btn-action map"
+                                  title="Renovar / Alterar Validade da Licença"
+                                >
+                                  <RefreshCw size={14} />
+                                </button>
+
+                                <button
+                                  onClick={() => handleToggleStatusLicenca(lic.id, lic.status)}
+                                  className="btn-action"
+                                  style={{
+                                    background: lic.status === 'Ativa' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(52, 211, 153, 0.15)',
+                                    color: lic.status === 'Ativa' ? '#fbbf24' : '#34d399'
+                                  }}
+                                  title={lic.status === 'Ativa' ? 'Suspender Licença' : 'Ativar Licença'}
+                                >
+                                  {lic.status === 'Ativa' ? <AlertTriangle size={14} /> : <CheckCircle2 size={14} />}
+                                </button>
+
+                                <button
+                                  onClick={() => handleDeleteLicenca(lic.id, lic.chave)}
+                                  className="btn-action delete"
+                                  title="Excluir / Revogar Chave de Licença"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1387,9 +1225,9 @@ export const SuperAdmin: React.FC = () => {
 
             <form onSubmit={handleGerarNovaLicenca} className="modal-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="form-group">
-                <label>Vincular a Empresa Cliente (Opcional)</label>
+                <label>Empresa Cliente Destino</label>
                 <select value={newLicencaEmpresaId} onChange={(e) => setNewLicencaEmpresaId(e.target.value)}>
-                  <option value="">Nenhuma (Chave Avulsa / Global)</option>
+                  <option value="">Selecione a empresa...</option>
                   {empresas.map((emp) => (
                     <option key={emp.id} value={emp.id}>
                       {emp.nome_fantasia} ({emp.cnpj})
