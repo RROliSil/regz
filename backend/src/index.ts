@@ -1367,87 +1367,144 @@ app.delete('/api/empresas/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Testar Conexão & Inicializar Estrutura de Banco DB Próprio de uma Empresa
+// Testar Conexão & Inicializar Estrutura de Banco DB Próprio de uma Empresa (com Resolução Inteligente Docker/Portainer)
 app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
   const { db_host, db_port, db_user, db_pass, db_name } = req.body;
 
-  if (!db_host || !db_name) {
-    return res.status(400).json({ error: 'Host e Nome do Banco de Dados são obrigatórios' });
+  if (!db_name) {
+    return res.status(400).json({ error: 'Nome do Banco de Dados é obrigatório' });
   }
 
-  const host = String(db_host).trim();
-  const port = db_port ? parseInt(String(db_port), 10) : 5432;
-  const user = String(db_user || 'postgres').trim();
-  const password = String(db_pass || '');
   const targetDbName = String(db_name).trim();
+  const port = db_port ? parseInt(String(db_port), 10) : parseInt(process.env.DB_PORT || '5432', 10);
 
-  try {
-    // 1. Tentar conectar ao banco de dados genérico postgres para verificar credenciais e criar o banco se não existir
-    const adminPool = new Pool({
-      host,
-      port,
-      user,
-      password,
-      database: 'postgres',
-      connectionTimeoutMillis: 6000
-    });
+  // Lista de hosts candidatos a tentar (ordenada por preferência)
+  const reqHost = db_host ? String(db_host).trim() : '';
+  const envHost = process.env.DB_HOST || '';
+  const hostsToTry: string[] = Array.from(new Set([
+    reqHost,
+    envHost,
+    'db',
+    'postgres',
+    'localhost',
+    '127.0.0.1'
+  ].filter(Boolean)));
 
-    let dbCreatedNow = false;
-    try {
-      const checkDb = await adminPool.query('SELECT 1 FROM pg_database WHERE datname = $1', [targetDbName]);
-      if (checkDb.rows.length === 0) {
-        // Criar o banco de dados se não existir
-        await adminPool.query(`CREATE DATABASE "${targetDbName.replace(/"/g, '""')}"`);
-        dbCreatedNow = true;
-        console.log(`✅ Novo banco de dados "${targetDbName}" criado no PostgreSQL (${host}:${port})!`);
+  // Lista de usuários candidatos a tentar
+  const reqUser = db_user ? String(db_user).trim() : '';
+  const envUser = process.env.DB_USER || 'regz_user';
+  const usersToTry: string[] = Array.from(new Set([
+    reqUser,
+    envUser,
+    'regz_user',
+    'postgres'
+  ].filter(Boolean)));
+
+  // Lista de senhas candidatas a tentar
+  const reqPass = db_pass !== undefined ? String(db_pass) : '';
+  const envPass = process.env.DB_PASSWORD || 'regz_password';
+  const passwordsToTry: string[] = Array.from(new Set([
+    reqPass,
+    envPass,
+    'regz_password',
+    'postgres',
+    ''
+  ]));
+
+  let successfulHost = '';
+  let successfulUser = '';
+  let successfulPass = '';
+  let dbCreatedNow = false;
+  let connectionEstablished = false;
+  let lastErrorMessage = '';
+
+  // Loop de busca por uma combinação válida de Conexão no PostgreSQL
+  outerLoop: for (const h of hostsToTry) {
+    for (const u of usersToTry) {
+      for (const p of passwordsToTry) {
+        // 1. Tentar conectar ao banco genérico para administrar (postgres, template1, regz_db)
+        const adminDbsToTry = ['postgres', 'template1', process.env.DB_NAME || 'regz_db', 'regz_db'];
+
+        for (const adminDb of adminDbsToTry) {
+          const adminPool = new Pool({
+            host: h,
+            port,
+            user: u,
+            password: p,
+            database: adminDb,
+            connectionTimeoutMillis: 3500
+          });
+
+          try {
+            const checkDb = await adminPool.query('SELECT 1 FROM pg_database WHERE datname = $1', [targetDbName]);
+
+            if (checkDb.rows.length === 0) {
+              // Criar o banco de dados se não existir
+              await adminPool.query(`CREATE DATABASE "${targetDbName.replace(/"/g, '""')}"`);
+              dbCreatedNow = true;
+              console.log(`✅ Banco de dados "${targetDbName}" criado com sucesso no host PostgreSQL ${h}:${port}!`);
+            }
+            await adminPool.end().catch(() => {});
+            break;
+          } catch (adminErr: any) {
+            lastErrorMessage = adminErr.message || 'Erro de autenticação ou host inacessível';
+            await adminPool.end().catch(() => {});
+          }
+        }
+
+        // 2. Conectar diretamente ao banco alvo da empresa
+        const targetPool = new Pool({
+          host: h,
+          port,
+          user: u,
+          password: p,
+          database: targetDbName,
+          connectionTimeoutMillis: 3500
+        });
+
+        try {
+          await targetPool.query('SELECT 1');
+
+          // Garantir estrutura mínima de tabelas no banco da empresa
+          await targetPool.query(`
+            CREATE TABLE IF NOT EXISTS usuarios (
+              id SERIAL PRIMARY KEY,
+              nome VARCHAR(255) NOT NULL,
+              email VARCHAR(255) UNIQUE NOT NULL,
+              ativo BOOLEAN DEFAULT true,
+              criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+          `);
+
+          await targetPool.end().catch(() => {});
+          connectionEstablished = true;
+          successfulHost = h;
+          successfulUser = u;
+          successfulPass = p;
+          break outerLoop;
+        } catch (targetErr: any) {
+          lastErrorMessage = targetErr.message || 'Erro de conexão no banco alvo';
+          await targetPool.end().catch(() => {});
+        }
       }
-    } catch (adminErr: any) {
-      console.warn('Aviso ao checar/criar banco via adminPool:', adminErr.message);
-    } finally {
-      await adminPool.end().catch(() => {});
     }
-
-    // 2. Conectar diretamente ao banco da empresa (targetDbName)
-    const targetPool = new Pool({
-      host,
-      port,
-      user,
-      password,
-      database: targetDbName,
-      connectionTimeoutMillis: 6000
-    });
-
-    try {
-      // Testar query simples
-      await targetPool.query('SELECT 1');
-
-      // Garantir estrutura mínima de tabelas do sistema no banco da empresa
-      await targetPool.query(`
-        CREATE TABLE IF NOT EXISTS usuarios (
-          id SERIAL PRIMARY KEY,
-          nome VARCHAR(255) NOT NULL,
-          email VARCHAR(255) UNIQUE NOT NULL,
-          ativo BOOLEAN DEFAULT true,
-          criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-      `);
-
-      await targetPool.end().catch(() => {});
-
-      res.json({
-        success: true,
-        message: dbCreatedNow 
-          ? `Novo banco "${targetDbName}" criado com sucesso no host ${host}:${port} e estrutura REGZ inicializada!`
-          : `Conexão estabelecida com sucesso! Banco "${targetDbName}" no host ${host}:${port} está online e pronto.`
-      });
-    } catch (connErr: any) {
-      await targetPool.end().catch(() => {});
-      throw connErr;
-    }
-  } catch (error: any) {
-    console.error('Erro ao testar banco de dados:', error);
-    res.status(500).json({ error: `Falha na conexão DB (${host}:${port}): ${error.message || 'Host ou credenciais inválidas'}` });
   }
+
+  if (connectionEstablished) {
+    return res.json({
+      success: true,
+      message: dbCreatedNow 
+        ? `Novo banco "${targetDbName}" criado com sucesso no host ${successfulHost}:${port} (Usuário: ${successfulUser})!`
+        : `Conexão estabelecida com sucesso! Banco "${targetDbName}" no host ${successfulHost}:${port} está online e pronto.`,
+      resolvedHost: successfulHost,
+      resolvedUser: successfulUser,
+      resolvedPass: successfulPass
+    });
+  }
+
+  res.status(500).json({
+    error: `Falha na conexão DB (${reqHost || 'localhost'}:${port}): ${lastErrorMessage}. Dica: No ambiente Docker/Portainer use o host "db" ou IP e o usuário "${process.env.DB_USER || 'regz_user'}".`
+  });
 });
 
 // Listar licenças de uma empresa

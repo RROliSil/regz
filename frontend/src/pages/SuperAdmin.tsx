@@ -260,9 +260,17 @@ export const SuperAdmin: React.FC = () => {
     }
   };
 
+  const handleAutoFillDbCredentials = () => {
+    setDbHost('localhost');
+    setDbPort(5432);
+    setDbUser('regz_user');
+    setDbPass('regz_password');
+    if (!dbName) setDbName('regz_db');
+  };
+
   const handleTestDbConnection = async () => {
-    if (!dbHost || !dbName) {
-      alert('Preencha o Host e o Nome do Banco de Dados para testar a conexão.');
+    if (!dbName) {
+      alert('Preencha o Nome do Banco de Dados para testar a conexão.');
       return;
     }
 
@@ -285,6 +293,8 @@ export const SuperAdmin: React.FC = () => {
       const data = await res.json();
       if (res.ok && data.success) {
         setTestingDbResult({ success: true, message: data.message });
+        if (data.resolvedHost) setDbHost(data.resolvedHost);
+        if (data.resolvedUser) setDbUser(data.resolvedUser);
       } else {
         setTestingDbResult({ success: false, message: data.error || 'Falha ao conectar no banco de dados.' });
       }
@@ -1083,8 +1093,30 @@ export const SuperAdmin: React.FC = () => {
 
               {/* Seção Banco de Dados Próprio (On-Premise) */}
               <div style={{ background: 'rgba(30, 41, 59, 0.8)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontWeight: 700, fontSize: '0.9rem', color: '#38bdf8' }}>
-                  <Database size={16} /> Parâmetros do Banco de Dados Próprio da Empresa (PostgreSQL)
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.9rem', color: '#38bdf8' }}>
+                    <Database size={16} /> Parâmetros do Banco de Dados Próprio da Empresa (PostgreSQL)
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAutoFillDbCredentials}
+                    style={{
+                      background: 'rgba(99, 102, 241, 0.12)',
+                      color: '#a5b4fc',
+                      border: '1px solid rgba(99, 102, 241, 0.3)',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      fontSize: '0.74rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    title="Preencher com os dados padrão do container PostgreSQL (regz_user)"
+                  >
+                    ⚡ Preencher com Credenciais Padrão
+                  </button>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr', gap: '12px', marginBottom: '12px' }}>
