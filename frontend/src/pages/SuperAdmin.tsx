@@ -42,6 +42,11 @@ export const SuperAdmin: React.FC = () => {
   const [cepErrorEmpresa, setCepErrorEmpresa] = useState('');
   const [submittingEmpresa, setSubmittingEmpresa] = useState(false);
 
+  // Modal de Confirmação de Exclusão de Empresa ("SIM")
+  const [empresaToDelete, setEmpresaToDelete] = useState<{ id: number; nome: string } | null>(null);
+  const [confirmTextDelete, setConfirmTextDelete] = useState('');
+  const [deletingEmpresa, setDeletingEmpresa] = useState(false);
+
   // Modal de Licenças Master da Empresa Selecionada
   const [selectedEmpresaLicencas, setSelectedEmpresaLicencas] = useState<Empresa | null>(null);
   const [empresaLicencas, setEmpresaLicencas] = useState<Licenca[]>([]);
@@ -77,11 +82,12 @@ export const SuperAdmin: React.FC = () => {
         if (modalRenovarOpen) setModalRenovarOpen(false);
         if (selectedEmpresaLicencas) setSelectedEmpresaLicencas(null);
         if (selectedEmpresaUsuarios) setSelectedEmpresaUsuarios(null);
+        if (empresaToDelete) setEmpresaToDelete(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modalEmpresaOpen, modalLicencaOpen, modalRenovarOpen, selectedEmpresaLicencas, selectedEmpresaUsuarios]);
+  }, [modalEmpresaOpen, modalLicencaOpen, modalRenovarOpen, selectedEmpresaLicencas, selectedEmpresaUsuarios, empresaToDelete]);
 
   // Carregar Empresas
   const fetchEmpresas = async () => {
@@ -302,17 +308,31 @@ export const SuperAdmin: React.FC = () => {
     }
   };
 
-  const handleDeleteEmpresa = async (id: number, nome: string) => {
-    if (!window.confirm(`Tem certeza que deseja excluir a empresa "${nome}"?`)) return;
+  const handleOpenDeleteEmpresa = (id: number, nome: string) => {
+    setEmpresaToDelete({ id, nome });
+    setConfirmTextDelete('');
+  };
+
+  const handleConfirmDeleteEmpresa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!empresaToDelete || confirmTextDelete.trim().toUpperCase() !== 'SIM') return;
+
+    setDeletingEmpresa(true);
     try {
-      const res = await fetch(`/api/empresas/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/empresas/${empresaToDelete.id}`, { method: 'DELETE' });
       if (res.ok) {
-        setGlobalSuccess('Empresa removida com sucesso!');
+        setGlobalSuccess(`Empresa "${empresaToDelete.nome}" removida com sucesso!`);
+        setEmpresaToDelete(null);
         fetchEmpresas();
         setTimeout(() => setGlobalSuccess(null), 4000);
+      } else {
+        const errData = await res.json();
+        alert(errData.error || 'Erro ao excluir empresa');
       }
     } catch (err) {
       console.error('Erro ao excluir empresa:', err);
+    } finally {
+      setDeletingEmpresa(false);
     }
   };
 
@@ -664,7 +684,7 @@ export const SuperAdmin: React.FC = () => {
                   </button>
 
                   <button
-                    onClick={() => handleDeleteEmpresa(emp.id, emp.nome_fantasia)}
+                    onClick={() => handleOpenDeleteEmpresa(emp.id, emp.nome_fantasia)}
                     className="empresa-action-btn excluir"
                     title="Excluir Empresa"
                   >
@@ -1362,6 +1382,84 @@ export const SuperAdmin: React.FC = () => {
                 CONFIRMAR ALTERAÇÃO
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE EMPRESA ("SIM") */}
+      {/* ======================================================== */}
+      {empresaToDelete && (
+        <div className="modal-backdrop">
+          <div className="modal-content" style={{ maxWidth: '520px', background: '#0f172a', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <AlertTriangle size={24} color="#f87171" />
+                <h3 style={{ color: '#ffffff', margin: 0 }}>Confirmar Exclusão de Empresa</h3>
+              </div>
+              <button onClick={() => setEmpresaToDelete(null)} className="btn-close">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleConfirmDeleteEmpresa} className="modal-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px 0' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '14px 16px', borderRadius: '12px', color: '#fca5a5', fontSize: '0.88rem', lineHeight: '1.5' }}>
+                <strong>Atenção:</strong> Você está prestes a excluir permanentemente a empresa <strong>"{empresaToDelete.nome}"</strong> e todas as suas licenças e vínculos. Esta ação é irreversível.
+              </div>
+
+              <div className="form-group" style={{ margin: 0 }}>
+                <label style={{ color: '#f8fafc', fontWeight: 600 }}>
+                  Para confirmar a exclusão, digite <span style={{ color: '#f87171', fontWeight: 800 }}>SIM</span> abaixo:
+                </label>
+                <input
+                  type="text"
+                  value={confirmTextDelete}
+                  onChange={(e) => setConfirmTextDelete(e.target.value)}
+                  placeholder="Digite SIM para confirmar"
+                  style={{
+                    borderColor: confirmTextDelete.trim().toUpperCase() === 'SIM' ? '#34d399' : 'rgba(255, 255, 255, 0.2)',
+                    background: 'rgba(30, 41, 59, 0.8)',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    letterSpacing: '1px'
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '12px' }}>
+                <button
+                  type="button"
+                  onClick={() => setEmpresaToDelete(null)}
+                  className="btn-secondary"
+                  style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem' }}
+                >
+                  CANCELAR
+                </button>
+                <button
+                  type="submit"
+                  disabled={confirmTextDelete.trim().toUpperCase() !== 'SIM' || deletingEmpresa}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    fontSize: '0.85rem',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    opacity: confirmTextDelete.trim().toUpperCase() === 'SIM' ? 1 : 0.4,
+                    cursor: confirmTextDelete.trim().toUpperCase() === 'SIM' ? 'pointer' : 'not-allowed',
+                    background: confirmTextDelete.trim().toUpperCase() === 'SIM' ? '#ef4444' : 'rgba(239, 68, 68, 0.2)',
+                    color: '#ffffff',
+                    border: 'none'
+                  }}
+                >
+                  {deletingEmpresa ? <Loader2 className="spin" size={16} /> : <Trash2 size={16} />}
+                  CONFIRMAR EXCLUSÃO
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
