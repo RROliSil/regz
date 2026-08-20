@@ -58,6 +58,9 @@ const ProtectedLayout: React.FC = () => {
   }
 
   if (isSuperAdmin) {
+    if (location.pathname !== '/administracao') {
+      return <Navigate to="/administracao" replace />;
+    }
     return <SuperAdmin />;
   }
 
@@ -246,7 +249,8 @@ const LoginRoute: React.FC = () => {
   }
 
   if (usuario) {
-    return <Navigate to="/colaboradores" replace />;
+    const isSuperAdmin = !!(usuario.is_super_admin || (usuario.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario.nome === 'Administrador Regz');
+    return <Navigate to={isSuperAdmin ? "/administracao" : "/colaboradores"} replace />;
   }
 
   return <Login />;

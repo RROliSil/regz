@@ -1100,21 +1100,23 @@ app.get('/api/licencas', async (req: Request, res: Response) => {
 
 // Gerar nova chave de licença
 app.post('/api/licencas', async (req: Request, res: Response) => {
-  const { usuario_id, tipo_licenca, validade_dias } = req.body;
+  const { usuario_id, empresa_id, tipo_licenca, validade_dias, dias_validade } = req.body;
 
   try {
     const randomHex = () => Math.random().toString(36).substring(2, 6).toUpperCase();
     const chaveGerada = `REGZ-2026-${randomHex()}-${randomHex()}-${randomHex()}`;
-    const diasValidade = validade_dias ? parseInt(validade_dias, 10) : 30;
+    const diasValidade = dias_validade ? parseInt(dias_validade, 10) : (validade_dias ? parseInt(validade_dias, 10) : 30);
+    const targetEmpresaId = empresa_id ? parseInt(empresa_id, 10) : null;
 
     const query = `
-      INSERT INTO chaves_licenca (chave, usuario_id, tipo_licenca, data_expiracao, status)
-      VALUES ($1, $2, $3, CURRENT_TIMESTAMP + ($4 || ' days')::interval, 'Ativa')
+      INSERT INTO chaves_licenca (chave, usuario_id, empresa_id, tipo_licenca, data_expiracao, status)
+      VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP + ($5 || ' days')::interval, 'Ativa')
       RETURNING *
     `;
     const result = await pool.query(query, [
       chaveGerada,
       usuario_id || null,
+      targetEmpresaId,
       tipo_licenca || 'Enterprise',
       diasValidade
     ]);
@@ -1123,7 +1125,6 @@ app.post('/api/licencas', async (req: Request, res: Response) => {
       await pool.query('UPDATE usuarios SET chave_licenca = $1 WHERE id = $2', [chaveGerada, usuario_id]);
     }
 
-    await syncDatabaseLicenses();
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao gerar chave de licença' });
@@ -1511,8 +1512,25 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
 app.get('/api/empresas/:id/licencas', async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
+    // 1. Auto-vínculo de licenças sem empresa_id cujos usuários pertençam a esta empresa
+    await pool.query(`
+      UPDATE chaves_licenca l
+      SET empresa_id = u.empresa_id
+      FROM usuarios u
+      WHERE l.usuario_id = u.id AND l.empresa_id IS NULL AND u.empresa_id IS NOT NULL
+    `);
+
+    // 2. Auto-vínculo para chaves soltas sem usuario_id e sem empresa_id criadas durante testes
+    if (id) {
+      await pool.query(`
+        UPDATE chaves_licenca
+        SET empresa_id = $1
+        WHERE empresa_id IS NULL AND usuario_id IS NULL
+      `, [id]);
+    }
+
     const query = `
-      SELECT l.id, l.chave, l.usuario_id, l.tipo_licenca, l.data_ativacao, l.data_expiracao, l.status,
+      SELECT l.id, l.chave, l.usuario_id, l.empresa_id, l.tipo_licenca, l.data_ativacao, l.data_expiracao, l.status,
              (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes,
              u.nome as usuario_nome, u.email as usuario_email
       FROM chaves_licenca l
