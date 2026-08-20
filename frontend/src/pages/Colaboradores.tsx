@@ -222,6 +222,18 @@ export const Colaboradores: React.FC = () => {
     };
   }, []);
 
+  // Fechar modal de QR Code / Crachá ao pressionar ESC
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isQrModalOpen) {
+        setIsQrModalOpen(false);
+        setSelectedColabQrCode(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isQrModalOpen]);
+
   // Carregar preferências salvas do LocalStorage específicas do usuário logado
   useEffect(() => {
     if (usuario?.id) {

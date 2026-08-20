@@ -159,6 +159,9 @@ const syncDatabaseLicenses = async () => {
 // Inicialização e migrations do banco de dados
 const initDb = async () => {
   try {
+    // Remover tabela órfã de testes se existir no PostgreSQL
+    await pool.query('DROP TABLE IF EXISTS teste;');
+
     // 1. Tabela de Perfis de Acesso (RBAC)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS perfis_acesso (
