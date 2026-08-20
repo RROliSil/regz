@@ -623,6 +623,146 @@ const getEmpresaIdFromReq = (req: Request): number | null => {
   return null;
 };
 
+// Gerenciador de conexões dinâmicas multi-tenant (Empresas 1 e 2 no Banco Central; Empresa 3+ em Banco Próprio)
+const tenantPoolsMap = new Map<number, Pool>();
+
+const initTenantDb = async (tenantPool: Pool, empresaId: number) => {
+  await tenantPool.query(`
+    CREATE TABLE IF NOT EXISTS perfis_acesso (
+      id SERIAL PRIMARY KEY,
+      nome VARCHAR(255) NOT NULL,
+      descricao TEXT,
+      is_admin BOOLEAN DEFAULT false,
+      permissoes JSONB NOT NULL DEFAULT '{}'::jsonb,
+      empresa_id INT,
+      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    ALTER TABLE perfis_acesso ADD COLUMN IF NOT EXISTS empresa_id INT;
+  `);
+
+  const countP = await tenantPool.query('SELECT COUNT(*) FROM perfis_acesso');
+  if (parseInt(countP.rows[0].count, 10) === 0) {
+    await tenantPool.query(`
+      INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes, empresa_id) VALUES
+      ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita"}'::jsonb, $1),
+      ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso"}'::jsonb, $1),
+      ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1),
+      ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1);
+    `, [empresaId]);
+  }
+
+  await tenantPool.query(`
+    CREATE TABLE IF NOT EXISTS cargos (
+      id SERIAL PRIMARY KEY,
+      nome VARCHAR(255) NOT NULL UNIQUE,
+      codigo_cbo VARCHAR(20),
+      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    ALTER TABLE cargos ADD COLUMN IF NOT EXISTS codigo_cbo VARCHAR(20);
+  `);
+
+  await tenantPool.query(`
+    CREATE TABLE IF NOT EXISTS colaboradores (
+      id SERIAL PRIMARY KEY,
+      nome VARCHAR(255) NOT NULL,
+      cpf VARCHAR(14) NOT NULL UNIQUE,
+      cargo VARCHAR(255),
+      cep VARCHAR(9),
+      logradouro VARCHAR(255),
+      numero VARCHAR(50),
+      complemento VARCHAR(255),
+      bairro VARCHAR(255),
+      cidade VARCHAR(255),
+      estado VARCHAR(2),
+      latitude NUMERIC(10,8),
+      longitude NUMERIC(11,8),
+      foto_url TEXT,
+      ativo BOOLEAN DEFAULT true,
+      empresa_id INT,
+      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true;
+    ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS cargo VARCHAR(255);
+    ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,8);
+    ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8);
+    ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS empresa_id INT;
+  `);
+
+  await tenantPool.query(`
+    CREATE TABLE IF NOT EXISTS campos_customizados (
+      id SERIAL PRIMARY KEY,
+      nome VARCHAR(255) NOT NULL,
+      tipo VARCHAR(50) DEFAULT 'texto',
+      opcoes TEXT,
+      obrigatorio BOOLEAN DEFAULT false,
+      min_caracteres INT,
+      max_caracteres INT,
+      empresa_id INT,
+      criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS min_caracteres INT;
+    ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS max_caracteres INT;
+    ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS empresa_id INT;
+  `);
+
+  await tenantPool.query(`
+    CREATE TABLE IF NOT EXISTS colaboradores_valores_customizados (
+      id SERIAL PRIMARY KEY,
+      colaborador_id INT REFERENCES colaboradores(id) ON DELETE CASCADE,
+      campo_id INT REFERENCES campos_customizados(id) ON DELETE CASCADE,
+      valor TEXT,
+      CONSTRAINT unique_colab_campo UNIQUE (colaborador_id, campo_id)
+    );
+  `);
+};
+
+const getPoolForEmpresa = async (empresaId: number | null): Promise<Pool> => {
+  if (!empresaId || empresaId === 1 || empresaId === 2) {
+    return pool;
+  }
+
+  if (tenantPoolsMap.has(empresaId)) {
+    return tenantPoolsMap.get(empresaId)!;
+  }
+
+  try {
+    const res = await pool.query(
+      'SELECT db_host, db_port, db_user, db_pass, db_name FROM empresas WHERE id = $1',
+      [empresaId]
+    );
+
+    if (res.rows.length === 0) {
+      return pool;
+    }
+
+    const emp = res.rows[0];
+    const host = (emp.db_host || '').trim();
+    const dbName = (emp.db_name || '').trim();
+
+    if (!host || !dbName || (host === 'localhost' && dbName === 'regz_db')) {
+      return pool;
+    }
+
+    const tenantPool = new Pool({
+      host,
+      port: emp.db_port ? parseInt(String(emp.db_port), 10) : 5432,
+      user: (emp.db_user || 'postgres').trim(),
+      password: emp.db_pass || undefined,
+      database: dbName,
+      max: 10,
+      idleTimeoutMillis: 30000
+    });
+
+    await initTenantDb(tenantPool, empresaId);
+    tenantPoolsMap.set(empresaId, tenantPool);
+    console.log(`✅ Conexão dinâmica própria ativada para empresa_id = ${empresaId} (${dbName}@${host})`);
+    return tenantPool;
+  } catch (err: any) {
+    console.error(`⚠️ Erro ao conectar no banco próprio da empresa_id = ${empresaId}, utilizando banco central:`, err.message);
+    return pool;
+  }
+};
+
 // Login de Usuário (Sem Auto-Registro)
 app.post('/api/auth/login', async (req: Request, res: Response) => {
   const { email, senha } = req.body;
@@ -826,10 +966,11 @@ const checkPermission = (aba: string) => {
 // ROTAS DE GESTÃO DE PERFIS DE ACESSO (RBAC)
 // ==========================================
 
-// Listar todos os perfis de acesso (filtrados por empresa_id)
+// Listar todos os perfis de acesso (filtrados por empresa_id e banco próprio se houver)
 app.get('/api/perfis-acesso', async (req: Request, res: Response) => {
   const empId = getEmpresaIdFromReq(req);
   try {
+    const targetPool = await getPoolForEmpresa(empId);
     let query = 'SELECT * FROM perfis_acesso';
     const params: any[] = [];
     if (empId) {
@@ -837,7 +978,7 @@ app.get('/api/perfis-acesso', async (req: Request, res: Response) => {
       params.push(empId);
     }
     query += ' ORDER BY id ASC';
-    const result = await pool.query(query, params);
+    const result = await targetPool.query(query, params);
     res.json(result.rows);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar perfis de acesso' });
@@ -854,8 +995,9 @@ app.post('/api/perfis-acesso', checkPermission('administracao'), async (req: Req
   }
 
   try {
+    const targetPool = await getPoolForEmpresa(empId);
     const nomeTrimmed = nome.trim();
-    const existing = await pool.query(
+    const existing = await targetPool.query(
       'SELECT id FROM perfis_acesso WHERE LOWER(nome) = LOWER($1) AND (empresa_id = $2 OR empresa_id IS NULL)',
       [nomeTrimmed, empId]
     );
@@ -863,7 +1005,7 @@ app.post('/api/perfis-acesso', checkPermission('administracao'), async (req: Req
       return res.status(400).json({ error: 'Já existe um perfil com este nome nesta empresa' });
     }
 
-    const result = await pool.query(
+    const result = await targetPool.query(
       'INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes, empresa_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [nomeTrimmed, descricao || null, !!is_admin, JSON.stringify(permissoes || {}), empId]
     );
@@ -878,13 +1020,15 @@ app.post('/api/perfis-acesso', checkPermission('administracao'), async (req: Req
 app.put('/api/perfis-acesso/:id', checkPermission('administracao'), async (req: Request, res: Response) => {
   const { id } = req.params;
   const { nome, descricao, is_admin, permissoes } = req.body;
+  const empId = getEmpresaIdFromReq(req);
 
   if (!nome || !nome.trim()) {
     return res.status(400).json({ error: 'O nome do perfil é obrigatório' });
   }
 
   try {
-    const result = await pool.query(
+    const targetPool = await getPoolForEmpresa(empId);
+    const result = await targetPool.query(
       'UPDATE perfis_acesso SET nome = $1, descricao = $2, is_admin = $3, permissoes = $4 WHERE id = $5 RETURNING *',
       [nome.trim(), descricao || null, !!is_admin, JSON.stringify(permissoes || {}), id]
     );
@@ -902,13 +1046,15 @@ app.put('/api/perfis-acesso/:id', checkPermission('administracao'), async (req: 
 // Excluir perfil de acesso
 app.delete('/api/perfis-acesso/:id', checkPermission('administracao'), async (req: Request, res: Response) => {
   const { id } = req.params;
+  const empId = getEmpresaIdFromReq(req);
   try {
-    const checkAdmin = await pool.query('SELECT is_admin FROM perfis_acesso WHERE id = $1', [id]);
+    const targetPool = await getPoolForEmpresa(empId);
+    const checkAdmin = await targetPool.query('SELECT is_admin FROM perfis_acesso WHERE id = $1', [id]);
     if (checkAdmin.rows.length > 0 && checkAdmin.rows[0].is_admin) {
       return res.status(400).json({ error: 'O perfil de Administrador padrão não pode ser excluído' });
     }
 
-    const result = await pool.query('DELETE FROM perfis_acesso WHERE id = $1 RETURNING id', [id]);
+    const result = await targetPool.query('DELETE FROM perfis_acesso WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Perfil não encontrado' });
     }
@@ -1794,10 +1940,11 @@ app.get('/api/cargos', async (req: Request, res: Response) => {
 // ROTAS CRUD DE CAMPOS CUSTOMIZADOS
 // ==========================================
 
-// Listar todos os campos customizados definidos (filtrados por empresa_id)
+// Listar todos os campos customizados definidos (filtrados por empresa_id e banco próprio se houver)
 app.get('/api/campos-customizados', async (req: Request, res: Response) => {
   const empId = getEmpresaIdFromReq(req);
   try {
+    const targetPool = await getPoolForEmpresa(empId);
     let query = 'SELECT * FROM campos_customizados';
     const params: any[] = [];
     if (empId) {
@@ -1805,7 +1952,7 @@ app.get('/api/campos-customizados', async (req: Request, res: Response) => {
       params.push(empId);
     }
     query += ' ORDER BY id ASC';
-    const result = await pool.query(query, params);
+    const result = await targetPool.query(query, params);
     res.json(result.rows);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar campos customizados' });
@@ -1822,8 +1969,9 @@ app.post('/api/campos-customizados', checkPermission('campos'), async (req: Requ
   }
 
   try {
+    const targetPool = await getPoolForEmpresa(empId);
     const nomeTrimmed = nome.trim();
-    const existing = await pool.query(
+    const existing = await targetPool.query(
       'SELECT id FROM campos_customizados WHERE LOWER(nome) = LOWER($1) AND (empresa_id = $2 OR empresa_id IS NULL)',
       [nomeTrimmed, empId]
     );
@@ -1834,7 +1982,7 @@ app.post('/api/campos-customizados', checkPermission('campos'), async (req: Requ
     const minVal = min_caracteres !== undefined && min_caracteres !== null && min_caracteres !== '' ? Number(min_caracteres) : null;
     const maxVal = max_caracteres !== undefined && max_caracteres !== null && max_caracteres !== '' ? Number(max_caracteres) : null;
 
-    const result = await pool.query(
+    const result = await targetPool.query(
       'INSERT INTO campos_customizados (nome, tipo, opcoes, obrigatorio, min_caracteres, max_caracteres, empresa_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
       [nomeTrimmed, tipo || 'texto', opcoes || null, !!obrigatorio, minVal, maxVal, empId]
     );
@@ -1848,8 +1996,10 @@ app.post('/api/campos-customizados', checkPermission('campos'), async (req: Requ
 // Excluir um campo customizado
 app.delete('/api/campos-customizados/:id', checkPermission('campos'), async (req: Request, res: Response) => {
   const { id } = req.params;
+  const empId = getEmpresaIdFromReq(req);
   try {
-    const result = await pool.query('DELETE FROM campos_customizados WHERE id = $1 RETURNING id', [id]);
+    const targetPool = await getPoolForEmpresa(empId);
+    const result = await targetPool.query('DELETE FROM campos_customizados WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Campo customizado não encontrado' });
     }
@@ -1862,8 +2012,10 @@ app.delete('/api/campos-customizados/:id', checkPermission('campos'), async (req
 // Buscar valores dos campos customizados de um colaborador específico
 app.get('/api/colaboradores/:id/valores-customizados', async (req: Request, res: Response) => {
   const { id } = req.params;
+  const empId = getEmpresaIdFromReq(req);
   try {
-    const result = await pool.query(
+    const targetPool = await getPoolForEmpresa(empId);
+    const result = await targetPool.query(
       `SELECT v.campo_id, c.nome as campo_nome, v.valor 
        FROM colaboradores_valores_customizados v
        JOIN campos_customizados c ON v.campo_id = c.id
@@ -1886,25 +2038,27 @@ app.get('/api/colaboradores/:id/valores-customizados', async (req: Request, res:
 app.put('/api/colaboradores/:id/valores-customizados', async (req: Request, res: Response) => {
   const { id } = req.params;
   const { valores } = req.body;
+  const empId = getEmpresaIdFromReq(req);
 
   if (!valores || typeof valores !== 'object') {
     return res.status(400).json({ error: 'Valores customizados devem ser fornecidos como um objeto' });
   }
 
   try {
+    const targetPool = await getPoolForEmpresa(empId);
     for (const [campoIdStr, val] of Object.entries(valores)) {
       const campoId = parseInt(campoIdStr, 10);
       const valStr = String(val ?? '').trim();
 
       if (valStr) {
-        await pool.query(
+        await targetPool.query(
           `INSERT INTO colaboradores_valores_customizados (colaborador_id, campo_id, valor)
            VALUES ($1, $2, $3)
            ON CONFLICT (colaborador_id, campo_id) DO UPDATE SET valor = EXCLUDED.valor`,
           [id, campoId, valStr]
         );
       } else {
-        await pool.query(
+        await targetPool.query(
           `DELETE FROM colaboradores_valores_customizados WHERE colaborador_id = $1 AND campo_id = $2`,
           [id, campoId]
         );
@@ -1937,10 +2091,12 @@ app.get('/api/geocode', async (req: Request, res: Response) => {
 // ==========================================
 app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
   let pessoaGerada: any = null;
+  const empId = getEmpresaIdFromReq(req);
 
   let cargoSorteado = 'Analista de desenvolvimento de sistemas';
   try {
-    const cargosRes = await pool.query('SELECT nome FROM cargos');
+    const targetPool = await getPoolForEmpresa(empId);
+    const cargosRes = await targetPool.query('SELECT nome FROM cargos');
     if (cargosRes.rows.length > 0) {
       const idx = Math.floor(Math.random() * cargosRes.rows.length);
       cargoSorteado = cargosRes.rows[idx].nome;
@@ -2031,12 +2187,13 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
 // ROTAS CRUD DE COLABORADORES
 // ==========================================
 
-// Listar colaboradores (filtrados por empresa_id)
+// Listar colaboradores (filtrados por empresa_id e banco próprio se houver)
 app.get('/api/colaboradores', async (req: Request, res: Response) => {
   const { status } = req.query;
   const empId = getEmpresaIdFromReq(req);
 
   try {
+    const targetPool = await getPoolForEmpresa(empId);
     let query = 'SELECT * FROM colaboradores';
     const values: any[] = [];
 
@@ -2057,7 +2214,7 @@ app.get('/api/colaboradores', async (req: Request, res: Response) => {
     }
 
     query += ' ORDER BY id DESC';
-    const result = await pool.query(query, values);
+    const result = await targetPool.query(query, values);
     res.json(result.rows);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar colaboradores' });
@@ -2067,8 +2224,10 @@ app.get('/api/colaboradores', async (req: Request, res: Response) => {
 // Buscar colaborador por ID
 app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
+  const empId = getEmpresaIdFromReq(req);
   try {
-    const result = await pool.query('SELECT * FROM colaboradores WHERE id = $1', [id]);
+    const targetPool = await getPoolForEmpresa(empId);
+    const result = await targetPool.query('SELECT * FROM colaboradores WHERE id = $1', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
@@ -2088,7 +2247,8 @@ app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Req
   }
 
   try {
-    const existingCpf = await pool.query('SELECT id FROM colaboradores WHERE cpf = $1', [cpf]);
+    const targetPool = await getPoolForEmpresa(empId);
+    const existingCpf = await targetPool.query('SELECT id FROM colaboradores WHERE cpf = $1', [cpf]);
     if (existingCpf.rows.length > 0) {
       return res.status(400).json({ error: 'Este CPF já está cadastrado' });
     }
@@ -2101,7 +2261,7 @@ app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Req
       finalLon = coords.lon;
     }
 
-    const result = await pool.query(
+    const result = await targetPool.query(
       `INSERT INTO colaboradores 
       (nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, ativo, empresa_id) 
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, true, $14) 
@@ -2116,7 +2276,7 @@ app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Req
         const campoId = parseInt(campoIdStr, 10);
         const valStr = String(val ?? '').trim();
         if (valStr) {
-          await pool.query(
+          await targetPool.query(
             'INSERT INTO colaboradores_valores_customizados (colaborador_id, campo_id, valor) VALUES ($1, $2, $3)',
             [novoColaborador.id, campoId, valStr]
           );
@@ -2134,13 +2294,15 @@ app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Req
 app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: Request, res: Response) => {
   const { id } = req.params;
   const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, valores_customizados } = req.body;
+  const empId = getEmpresaIdFromReq(req);
 
   if (!nome || !cpf) {
     return res.status(400).json({ error: 'Campos Nome e CPF são obrigatórios' });
   }
 
   try {
-    const existingCpf = await pool.query('SELECT id FROM colaboradores WHERE cpf = $1 AND id != $2', [cpf, id]);
+    const targetPool = await getPoolForEmpresa(empId);
+    const existingCpf = await targetPool.query('SELECT id FROM colaboradores WHERE cpf = $1 AND id != $2', [cpf, id]);
     if (existingCpf.rows.length > 0) {
       return res.status(400).json({ error: 'Este CPF pertence a outro colaborador' });
     }
@@ -2153,7 +2315,7 @@ app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: 
       finalLon = coords.lon;
     }
 
-    const result = await pool.query(
+    const result = await targetPool.query(
       `UPDATE colaboradores 
        SET nome = $1, cpf = $2, cargo = $3, cep = $4, logradouro = $5, numero = $6, complemento = $7, bairro = $8, cidade = $9, estado = $10, latitude = $11, longitude = $12, foto_url = $13 
        WHERE id = $14 
@@ -2171,14 +2333,14 @@ app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: 
         const valStr = String(val ?? '').trim();
 
         if (valStr) {
-          await pool.query(
+          await targetPool.query(
             `INSERT INTO colaboradores_valores_customizados (colaborador_id, campo_id, valor)
              VALUES ($1, $2, $3)
              ON CONFLICT (colaborador_id, campo_id) DO UPDATE SET valor = EXCLUDED.valor`,
             [id, campoId, valStr]
           );
         } else {
-          await pool.query(
+          await targetPool.query(
             `DELETE FROM colaboradores_valores_customizados WHERE colaborador_id = $1 AND campo_id = $2`,
             [id, campoId]
           );
@@ -2195,8 +2357,10 @@ app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: 
 // Inativar colaborador (Soft Delete)
 app.put('/api/colaboradores/:id/inativar', checkPermission('colaboradores'), async (req: Request, res: Response) => {
   const { id } = req.params;
+  const empId = getEmpresaIdFromReq(req);
   try {
-    const result = await pool.query('UPDATE colaboradores SET ativo = false WHERE id = $1 RETURNING *', [id]);
+    const targetPool = await getPoolForEmpresa(empId);
+    const result = await targetPool.query('UPDATE colaboradores SET ativo = false WHERE id = $1 RETURNING *', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
@@ -2209,8 +2373,10 @@ app.put('/api/colaboradores/:id/inativar', checkPermission('colaboradores'), asy
 // Reativar colaborador
 app.put('/api/colaboradores/:id/reativar', checkPermission('colaboradores'), async (req: Request, res: Response) => {
   const { id } = req.params;
+  const empId = getEmpresaIdFromReq(req);
   try {
-    const result = await pool.query('UPDATE colaboradores SET ativo = true WHERE id = $1 RETURNING *', [id]);
+    const targetPool = await getPoolForEmpresa(empId);
+    const result = await targetPool.query('UPDATE colaboradores SET ativo = true WHERE id = $1 RETURNING *', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
@@ -2223,8 +2389,10 @@ app.put('/api/colaboradores/:id/reativar', checkPermission('colaboradores'), asy
 // Excluir permanentemente
 app.delete('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: Request, res: Response) => {
   const { id } = req.params;
+  const empId = getEmpresaIdFromReq(req);
   try {
-    const result = await pool.query('DELETE FROM colaboradores WHERE id = $1 RETURNING id', [id]);
+    const targetPool = await getPoolForEmpresa(empId);
+    const result = await targetPool.query('DELETE FROM colaboradores WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
