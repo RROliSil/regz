@@ -592,18 +592,7 @@ export const Administracao: React.FC = () => {
     }
   };
 
-  // Handlers de Usuários
-  const handleOpenNewUser = () => {
-    setEditingUserId(null);
-    setUserNome('');
-    setUserEmail('');
-    setUserSenha('');
-    setUserPerfilId(perfis[0]?.id || '');
-    setUserChaveLicenca('');
-    setUserAtivo(true);
-    setUserError('');
-    setModalUserOpen(true);
-  };
+  // Handlers de Usuários (Criação de novos usuários mantida exclusivamente no Super Admin)
 
   const handleOpenEditUser = (u: Usuario) => {
     setEditingUserId(u.id);
@@ -1034,15 +1023,7 @@ export const Administracao: React.FC = () => {
               </h3>
             </div>
 
-            <button
-              onClick={handleOpenNewUser}
-              className="btn-primary"
-              disabled={!podeEditar}
-              style={{ fontSize: '0.88rem', opacity: podeEditar ? 1 : 0.5, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
-              title={podeEditar ? 'Cadastrar Usuário' : 'Ação desativada: Seu perfil permite apenas visualização'}
-            >
-              <Plus size={16} /> Novo Usuário
-            </button>
+            {/* Criar novos usuários é uma atribuição exclusiva do Licenciador Master (Super Admin Regz) no card da empresa */}
           </div>
 
           <div className="table-flex-wrapper" style={{ overflowX: 'auto' }}>

@@ -908,9 +908,9 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
   }
 });
 
-// Cadastrar novo usuário (Apenas via Painel Admin)
+// Cadastrar novo usuário (Apenas via Painel Super Admin)
 app.post('/api/usuarios', async (req: Request, res: Response) => {
-  const { nome, email, senha, perfil_id, ativo, chave_licenca } = req.body;
+  const { nome, email, senha, perfil_id, ativo, chave_licenca, empresa_id } = req.body;
 
   if (!nome || !email || !senha) {
     return res.status(400).json({ error: 'Nome, E-mail e Senha são obrigatórios' });
@@ -929,6 +929,7 @@ app.post('/api/usuarios', async (req: Request, res: Response) => {
 
     const senhaHash = await bcrypt.hash(senha, 10);
     let finalChave = chave_licenca && chave_licenca.trim() ? chave_licenca.trim() : null;
+    const targetEmpresaId = empresa_id ? parseInt(empresa_id, 10) : null;
 
     if (!finalChave) {
       const randomHex = () => Math.random().toString(36).substring(2, 6).toUpperCase();
@@ -936,8 +937,8 @@ app.post('/api/usuarios', async (req: Request, res: Response) => {
     }
 
     const result = await pool.query(
-      'INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo, chave_licenca) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
-      [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false, finalChave]
+      'INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo, chave_licenca, empresa_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+      [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false, finalChave, targetEmpresaId]
     );
 
     const newId = result.rows[0].id;
@@ -945,11 +946,11 @@ app.post('/api/usuarios', async (req: Request, res: Response) => {
     if (finalChave) {
       const checkLic = await pool.query('SELECT id FROM chaves_licenca WHERE chave = $1', [finalChave]);
       if (checkLic.rows.length > 0) {
-        await pool.query('UPDATE chaves_licenca SET usuario_id = $1, status = \'Ativa\' WHERE chave = $2', [newId, finalChave]);
+        await pool.query('UPDATE chaves_licenca SET usuario_id = $1, empresa_id = COALESCE(empresa_id, $2), status = \'Ativa\' WHERE chave = $3', [newId, targetEmpresaId, finalChave]);
       } else {
         await pool.query(
-          'INSERT INTO chaves_licenca (chave, usuario_id, tipo_licenca, data_expiracao, status) VALUES ($1, $2, \'Enterprise\', CURRENT_TIMESTAMP + INTERVAL \'30 days\', \'Ativa\')',
-          [finalChave, newId]
+          'INSERT INTO chaves_licenca (chave, usuario_id, empresa_id, tipo_licenca, data_expiracao, status) VALUES ($1, $2, $3, \'Enterprise\', CURRENT_TIMESTAMP + INTERVAL \'30 days\', \'Ativa\')',
+          [finalChave, newId, targetEmpresaId]
         );
       }
     }
@@ -1244,6 +1245,28 @@ app.put('/api/licencas/:id/renovar', async (req: Request, res: Response) => {
     res.json(result.rows[0]);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao renovar chave de licença' });
+  }
+});
+
+// Desvincular usuário de uma licença (Voltar chave para Empresa / Avulso)
+app.post('/api/licencas/:id/desvincular', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  try {
+    const lic = await pool.query('SELECT chave, usuario_id FROM chaves_licenca WHERE id = $1', [id]);
+    if (lic.rows.length === 0) {
+      return res.status(404).json({ error: 'Licença não encontrada' });
+    }
+
+    const { chave, usuario_id } = lic.rows[0];
+    if (usuario_id) {
+      await pool.query('UPDATE usuarios SET chave_licenca = NULL WHERE id = $1 OR chave_licenca = $2', [usuario_id, chave]);
+    }
+    await pool.query('UPDATE chaves_licenca SET usuario_id = NULL WHERE id = $1', [id]);
+
+    await syncDatabaseLicenses();
+    res.json({ success: true, message: 'Licença desvinculada do usuário com sucesso!' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao desvincular licença' });
   }
 });
 

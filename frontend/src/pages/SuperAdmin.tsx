@@ -5,7 +5,7 @@ import { Licenca } from '../types/auth';
 import {
   Building2, Key, Plus, Trash2, Edit, Check, Loader2,
   Shield, Copy, RefreshCw, Calendar, CheckCircle2, AlertTriangle,
-  MapPin, Upload, Database, LogOut, Users, UserCheck, UserX, Zap
+  MapPin, Upload, Database, LogOut, Users, UserCheck, UserX, Zap, UserPlus, Unlink
 } from 'lucide-react';
 
 export const SuperAdmin: React.FC = () => {
@@ -71,6 +71,17 @@ export const SuperAdmin: React.FC = () => {
   const [selectedLicencaRenovar, setSelectedLicencaRenovar] = useState<Licenca | null>(null);
   const [renovarOpcao, setRenovarOpcao] = useState<'renovar_30' | 'upgrade_120' | 'upgrade_365' | 'downgrade_trial' | 'add_120' | 'add_365'>('renovar_30');
   const [submittingRenovar, setSubmittingRenovar] = useState(false);
+
+  // Modal de Cadastro de Usuário para Empresa (Com Vínculo de Licença Master)
+  const [modalCreateUserOpen, setModalCreateUserOpen] = useState(false);
+  const [newUserNome, setNewUserNome] = useState('');
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserSenha, setNewUserSenha] = useState('');
+  const [newUserPerfilId, setNewUserPerfilId] = useState<number | string>('');
+  const [newUserChaveLicenca, setNewUserChaveLicenca] = useState('');
+  const [submittingCreateUser, setSubmittingCreateUser] = useState(false);
+  const [perfisDisponiveis, setPerfisDisponiveis] = useState<any[]>([]);
+  const [licencasAvulsas, setLicencasAvulsas] = useState<Licenca[]>([]);
 
   const [globalSuccess, setGlobalSuccess] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -509,6 +520,106 @@ export const SuperAdmin: React.FC = () => {
     }
   };
 
+  const handleOpenCreateUserEmpresa = async (emp: Empresa) => {
+    setNewUserNome('');
+    setNewUserEmail('');
+    setNewUserSenha('');
+    setNewUserPerfilId('');
+    setNewUserChaveLicenca('');
+    setModalCreateUserOpen(true);
+
+    try {
+      const resPerfis = await fetch('/api/perfis-acesso');
+      if (resPerfis.ok) {
+        const perfis = await resPerfis.json();
+        setPerfisDisponiveis(perfis);
+        if (perfis.length > 0) setNewUserPerfilId(perfis[0].id);
+      }
+
+      const resLic = await fetch(`/api/empresas/${emp.id}/licencas`);
+      if (resLic.ok) {
+        const lics: Licenca[] = await resLic.json();
+        const avulsas = lics.filter((l: any) => !l.usuario_id || l.usuario_nome === 'Não Vinculado');
+        setLicencasAvulsas(avulsas);
+        if (avulsas.length > 0) {
+          setNewUserChaveLicenca(avulsas[0].chave);
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao carregar dados para cadastro de usuário:', err);
+    }
+  };
+
+  const handleCreateUserEmpresaSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEmpresaUsuarios) return;
+
+    if (!newUserNome || !newUserEmail || !newUserSenha) {
+      alert('Preencha Nome, E-mail e Senha para o novo usuário.');
+      return;
+    }
+
+    if (!newUserChaveLicenca) {
+      alert('Selecione uma Chave de Licença Master já emitida para atrelar ao usuário.');
+      return;
+    }
+
+    setSubmittingCreateUser(true);
+    try {
+      const res = await fetch('/api/usuarios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: newUserNome,
+          email: newUserEmail,
+          senha: newUserSenha,
+          perfil_id: newUserPerfilId ? Number(newUserPerfilId) : null,
+          empresa_id: selectedEmpresaUsuarios.id,
+          chave_licenca: newUserChaveLicenca
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setGlobalSuccess(`Usuário "${data.nome}" cadastrado e vinculado à chave Master com sucesso!`);
+        setModalCreateUserOpen(false);
+        handleOpenEmpresaUsuarios(selectedEmpresaUsuarios);
+        fetchEmpresas();
+        setTimeout(() => setGlobalSuccess(null), 4000);
+      } else {
+        const errData = await res.json();
+        alert(errData.error || 'Erro ao cadastrar usuário');
+      }
+    } catch (err) {
+      console.error('Erro ao cadastrar usuário:', err);
+    } finally {
+      setSubmittingCreateUser(false);
+    }
+  };
+
+  const handleDesvincularLicenca = async (licId: number) => {
+    if (!window.confirm('Deseja desvincular esta chave do usuário atual? A chave voltará ao status "Empresa / Avulso".')) return;
+    try {
+      const res = await fetch(`/api/licencas/${licId}/desvincular`, { method: 'POST' });
+      if (res.ok) {
+        setGlobalSuccess('Licença desvinculada do usuário com sucesso!');
+        if (selectedEmpresaLicencas) {
+          handleOpenEmpresaLicencas(selectedEmpresaLicencas);
+        }
+        if (selectedEmpresaUsuarios) {
+          handleOpenEmpresaUsuarios(selectedEmpresaUsuarios);
+        }
+        fetchEmpresas();
+        setTimeout(() => setGlobalSuccess(null), 3500);
+      } else {
+        const errData = await res.json();
+        alert(errData.error || 'Erro ao desvincular licença');
+      }
+    } catch (err) {
+      console.error('Erro ao desvincular licença:', err);
+    }
+  };
+
   const handleToggleStatusLicenca = async (id: number, statusAtual: string) => {
     const novoStatus = statusAtual === 'Ativa' ? 'Suspensa' : 'Ativa';
     try {
@@ -944,6 +1055,17 @@ export const SuperAdmin: React.FC = () => {
 
                             <td style={{ textAlign: 'center' }}>
                               <div style={{ display: 'inline-flex', gap: '6px', justifyContent: 'center' }}>
+                                {lic.usuario_id && (
+                                  <button
+                                    onClick={() => handleDesvincularLicenca(lic.id)}
+                                    className="btn-action"
+                                    style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171' }}
+                                    title="Desvincular Licença do Usuário"
+                                  >
+                                    <Unlink size={14} />
+                                  </button>
+                                )}
+
                                 <button
                                   onClick={() => handleOpenModalRenovar(lic)}
                                   className="btn-action map"
@@ -1013,6 +1135,22 @@ export const SuperAdmin: React.FC = () => {
             </div>
 
             <div className="custom-scrollbar" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(30, 41, 59, 0.6)', padding: '14px 20px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Users size={20} color="#818cf8" />
+                  <span style={{ fontSize: '0.95rem', color: '#f8fafc', fontWeight: 700 }}>
+                    Usuários Cadastrados nesta Empresa ({empresaUsuarios.length})
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleOpenCreateUserEmpresa(selectedEmpresaUsuarios)}
+                  className="btn-primary"
+                  style={{ padding: '10px 18px', fontSize: '0.88rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}
+                >
+                  <UserPlus size={18} /> Cadastrar Novo Usuário
+                </button>
+              </div>
+
               {loadingEmpresaUsuarios ? (
                 <div style={{ textAlign: 'center', padding: '30px' }}>
                   <Loader2 className="spin" size={24} color="#818cf8" style={{ margin: '0 auto' }} />
@@ -1624,6 +1762,115 @@ export const SuperAdmin: React.FC = () => {
                 >
                   {deletingEmpresa ? <Loader2 className="spin" size={16} /> : <Trash2 size={16} />}
                   CONFIRMAR EXCLUSÃO
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* MODAL DE CADASTRO DE USUÁRIO PARA EMPRESA */}
+      {/* ======================================================== */}
+      {modalCreateUserOpen && selectedEmpresaUsuarios && (
+        <div className="modal-backdrop" style={{ zIndex: 2000 }}>
+          <div className="modal-content" style={{ maxWidth: '580px', background: '#0f172a', border: '1px solid rgba(99, 102, 241, 0.4)', borderRadius: '16px' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <UserPlus size={22} color="#818cf8" />
+                <h3 style={{ color: '#ffffff' }}>Cadastrar Novo Usuário - {selectedEmpresaUsuarios.nome_fantasia}</h3>
+              </div>
+              <button onClick={() => setModalCreateUserOpen(false)} className="btn-close">
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUserEmpresaSubmit} style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="form-group">
+                <label>Nome Completo do Usuário *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: João da Silva"
+                  value={newUserNome}
+                  onChange={(e) => setNewUserNome(e.target.value)}
+                  style={{ background: 'rgba(30, 41, 59, 0.8)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '10px 14px', borderRadius: '8px' }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>E-mail Corporativo *</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="usuario@empresa.com.br"
+                  value={newUserEmail}
+                  onChange={(e) => setNewUserEmail(e.target.value)}
+                  style={{ background: 'rgba(30, 41, 59, 0.8)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '10px 14px', borderRadius: '8px' }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Senha de Acesso Inicial *</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  placeholder="Mínimo de 6 caracteres"
+                  value={newUserSenha}
+                  onChange={(e) => setNewUserSenha(e.target.value)}
+                  style={{ background: 'rgba(30, 41, 59, 0.8)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '10px 14px', borderRadius: '8px' }}
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Perfil de Acesso (RBAC)</label>
+                <select
+                  value={newUserPerfilId}
+                  onChange={(e) => setNewUserPerfilId(e.target.value)}
+                  style={{ background: 'rgba(30, 41, 59, 0.8)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '10px 14px', borderRadius: '8px' }}
+                >
+                  {perfisDisponiveis.map((p: any) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome} {p.is_admin ? '(ADMIN)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Vincular Chave de Licença Master Avulsa *</label>
+                {licencasAvulsas.length === 0 ? (
+                  <div style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '12px', borderRadius: '8px', fontSize: '0.84rem' }}>
+                    ⚠️ Nenhuma chave de licença master avulsa disponível para esta empresa. Por favor, emita uma nova chave master no card da empresa primeiro.
+                  </div>
+                ) : (
+                  <select
+                    value={newUserChaveLicenca}
+                    onChange={(e) => setNewUserChaveLicenca(e.target.value)}
+                    style={{ background: 'rgba(30, 41, 59, 0.8)', color: '#ffffff', border: '1px solid rgba(99, 102, 241, 0.4)', padding: '10px 14px', borderRadius: '8px', fontWeight: 600 }}
+                  >
+                    {licencasAvulsas.map((l: any) => (
+                      <option key={l.id} value={l.chave}>
+                        {l.chave} ({l.tipo_licenca || 'Enterprise'} - {l.dias_restantes}d restantes)
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div className="modal-footer" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '12px' }}>
+                <button type="button" onClick={() => setModalCreateUserOpen(false)} className="btn-secondary" style={{ padding: '8px 16px', borderRadius: '8px' }}>
+                  CANCELAR
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingCreateUser || licencasAvulsas.length === 0}
+                  className="btn-primary"
+                  style={{ padding: '8px 20px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', opacity: (submittingCreateUser || licencasAvulsas.length === 0) ? 0.5 : 1 }}
+                >
+                  {submittingCreateUser ? <Loader2 className="spin" size={16} /> : <Check size={16} />}
+                  CADASTRAR E VINCULAR LICENÇA
                 </button>
               </div>
             </form>
