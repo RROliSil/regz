@@ -395,11 +395,19 @@ export const Administracao: React.FC = () => {
     };
   }, [resizingCol, resizingLicCol, resizingEmpCol, startX, startWidth, usuario?.id]);
 
+  const getAuthHeaders = () => {
+    const savedToken = localStorage.getItem('regz_token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (savedToken) headers['Authorization'] = `Bearer ${savedToken}`;
+    if (usuario?.empresa_id) headers['x-empresa-id'] = String(usuario.empresa_id);
+    return headers;
+  };
+
   // Carregar dados da API
   const fetchUsuarios = async () => {
     setLoadingUsuarios(true);
     try {
-      const res = await fetch('/api/usuarios');
+      const res = await fetch('/api/usuarios', { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         setUsuarios(data);
@@ -414,7 +422,7 @@ export const Administracao: React.FC = () => {
   const fetchPerfis = async () => {
     setLoadingPerfis(true);
     try {
-      const res = await fetch('/api/perfis-acesso');
+      const res = await fetch('/api/perfis-acesso', { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         setPerfis(data);
@@ -429,7 +437,7 @@ export const Administracao: React.FC = () => {
   const fetchLicencas = async () => {
     setLoadingLicencas(true);
     try {
-      const res = await fetch('/api/licencas');
+      const res = await fetch('/api/licencas', { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         setLicencas(data);
@@ -444,7 +452,7 @@ export const Administracao: React.FC = () => {
   const fetchEmpresas = async () => {
     setLoadingEmpresas(true);
     try {
-      const res = await fetch('/api/empresas');
+      const res = await fetch('/api/empresas', { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         setEmpresas(data);

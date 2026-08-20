@@ -166,23 +166,25 @@ const initDb = async () => {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS perfis_acesso (
         id SERIAL PRIMARY KEY,
-        nome VARCHAR(255) NOT NULL UNIQUE,
+        nome VARCHAR(255) NOT NULL,
         descricao TEXT,
         is_admin BOOLEAN DEFAULT false,
         permissoes JSONB NOT NULL DEFAULT '{}'::jsonb,
+        empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE perfis_acesso ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE;
     `);
 
     // Inserir perfis padrão se a tabela estiver vazia
     const countPerfis = await pool.query('SELECT COUNT(*) FROM perfis_acesso');
     if (parseInt(countPerfis.rows[0].count, 10) === 0) {
       await pool.query(`
-        INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes) VALUES
-        ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita"}'::jsonb),
-        ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso"}'::jsonb),
-        ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb),
-        ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb);
+        INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes, empresa_id) VALUES
+        ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita"}'::jsonb, 1),
+        ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso"}'::jsonb, 1),
+        ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, 1),
+        ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, 1);
       `);
       console.log('✅ Perfis de acesso padrão inicializados!');
     }
@@ -196,6 +198,7 @@ const initDb = async () => {
         senha_hash VARCHAR(255) NOT NULL,
         perfil_id INT REFERENCES perfis_acesso(id) ON DELETE SET NULL,
         ativo BOOLEAN DEFAULT true,
+        empresa_id INT REFERENCES empresas(id) ON DELETE SET NULL,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -208,7 +211,7 @@ const initDb = async () => {
       const senhaHash = await bcrypt.hash('admin123', 10);
 
       await pool.query(
-        `INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo) VALUES ($1, $2, $3, $4, true)`,
+        `INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo, empresa_id) VALUES ($1, $2, $3, $4, true, 1)`,
         ['Administrador Regz', 'admin@regz.app', senhaHash, perfilId]
       );
       console.log('✅ Usuário administrador inicial (admin@regz.app / admin123) criado com sucesso!');
@@ -357,6 +360,7 @@ const initDb = async () => {
         longitude NUMERIC(11,8),
         foto_url TEXT,
         ativo BOOLEAN DEFAULT true,
+        empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -366,18 +370,20 @@ const initDb = async () => {
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS cargo VARCHAR(255);
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,8);
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS longitude NUMERIC(11,8);
+      ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE;
     `);
 
     // 5. Tabela de Campos Customizados / Dinâmicos
     await pool.query(`
       CREATE TABLE IF NOT EXISTS campos_customizados (
         id SERIAL PRIMARY KEY,
-        nome VARCHAR(255) NOT NULL UNIQUE,
+        nome VARCHAR(255) NOT NULL,
         tipo VARCHAR(50) DEFAULT 'texto',
         opcoes TEXT,
         obrigatorio BOOLEAN DEFAULT false,
         min_caracteres INT,
         max_caracteres INT,
+        empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -385,7 +391,33 @@ const initDb = async () => {
     await pool.query(`
       ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS min_caracteres INT;
       ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS max_caracteres INT;
+      ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE;
     `);
+
+    // Migração de empresa_id para registros legados que ainda possuem empresa_id NULL
+    await pool.query(`
+      UPDATE colaboradores SET empresa_id = 1 WHERE empresa_id IS NULL;
+      UPDATE perfis_acesso SET empresa_id = 1 WHERE empresa_id IS NULL;
+      UPDATE campos_customizados SET empresa_id = 1 WHERE empresa_id IS NULL;
+      UPDATE usuarios SET empresa_id = 1 WHERE empresa_id IS NULL;
+    `);
+
+    // Garantir inicialização dos perfis de acesso RBAC padrão para TODAS as empresas cadastradas
+    const empresasExistentes = await pool.query('SELECT id FROM empresas');
+    for (const empRow of empresasExistentes.rows) {
+      const empId = empRow.id;
+      const countEmpPerfis = await pool.query('SELECT COUNT(*) FROM perfis_acesso WHERE empresa_id = $1', [empId]);
+      if (parseInt(countEmpPerfis.rows[0].count, 10) === 0) {
+        await pool.query(`
+          INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes, empresa_id) VALUES
+          ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita"}'::jsonb, $1),
+          ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso"}'::jsonb, $1),
+          ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1),
+          ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1);
+        `, [empId]);
+        console.log(`✅ Perfis RBAC padrão inicializados para a empresa_id = ${empId}!`);
+      }
+    }
 
     // 6. Tabela de Valores dos Campos Customizados por Colaborador
     await pool.query(`
@@ -573,6 +605,24 @@ setInterval(() => {
   }
 }, 10 * 60 * 1000);
 
+const getEmpresaIdFromReq = (req: Request): number | null => {
+  const headerEmpId = req.headers['x-empresa-id'];
+  if (headerEmpId && !isNaN(Number(headerEmpId))) {
+    return parseInt(headerEmpId as string, 10);
+  }
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.split(' ')[1];
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      if (decoded && decoded.empresa_id) {
+        return parseInt(decoded.empresa_id, 10);
+      }
+    } catch (e) {}
+  }
+  return null;
+};
+
 // Login de Usuário (Sem Auto-Registro)
 app.post('/api/auth/login', async (req: Request, res: Response) => {
   const { email, senha } = req.body;
@@ -597,7 +647,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
   try {
     await syncDatabaseLicenses();
     const query = `
-      SELECT u.id, u.nome, u.email, u.senha_hash, u.ativo, u.perfil_id, u.chave_licenca,
+      SELECT u.id, u.nome, u.email, u.senha_hash, u.ativo, u.perfil_id, u.chave_licenca, u.empresa_id, u.is_super_admin,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
              l.chave as licenca_chave, l.status as licenca_status, l.data_expiracao as licenca_expiracao,
              (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes_licenca
@@ -645,7 +695,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     const licencaExpirada = !isSuperAdmin && (semLicenca || diasRestantesLic <= 0 || usuario.licenca_status === 'Suspensa' || usuario.licenca_status === 'Expirada');
 
     const token = jwt.sign(
-      { id: usuario.id, email: usuario.email, perfil_id: usuario.perfil_id },
+      { id: usuario.id, email: usuario.email, perfil_id: usuario.perfil_id, empresa_id: usuario.empresa_id || 1, is_super_admin: isSuperAdmin },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -657,6 +707,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         nome: usuario.nome,
         email: usuario.email,
         ativo: usuario.ativo,
+        empresa_id: usuario.empresa_id || 1,
         is_super_admin: isSuperAdmin,
         chave_licenca: usuario.chave_licenca || usuario.licenca_chave || null,
         perfil,
@@ -683,7 +734,7 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
     await syncDatabaseLicenses();
     const decoded: any = jwt.verify(token, JWT_SECRET);
     const query = `
-      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca, u.is_super_admin,
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca, u.empresa_id, u.is_super_admin,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
              l.chave as licenca_chave, l.status as licenca_status, l.data_expiracao as licenca_expiracao,
              (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes_licenca
@@ -721,6 +772,7 @@ app.get('/api/auth/me', async (req: Request, res: Response) => {
         nome: usuario.nome,
         email: usuario.email,
         ativo: usuario.ativo,
+        empresa_id: usuario.empresa_id || 1,
         is_super_admin: isSuperAdmin,
         chave_licenca: usuario.chave_licenca || usuario.licenca_chave || null,
         perfil,
@@ -774,10 +826,18 @@ const checkPermission = (aba: string) => {
 // ROTAS DE GESTÃO DE PERFIS DE ACESSO (RBAC)
 // ==========================================
 
-// Listar todos os perfis de acesso
+// Listar todos os perfis de acesso (filtrados por empresa_id)
 app.get('/api/perfis-acesso', async (req: Request, res: Response) => {
+  const empId = getEmpresaIdFromReq(req);
   try {
-    const result = await pool.query('SELECT * FROM perfis_acesso ORDER BY id ASC');
+    let query = 'SELECT * FROM perfis_acesso';
+    const params: any[] = [];
+    if (empId) {
+      query += ' WHERE empresa_id = $1 OR empresa_id IS NULL';
+      params.push(empId);
+    }
+    query += ' ORDER BY id ASC';
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar perfis de acesso' });
@@ -787,20 +847,25 @@ app.get('/api/perfis-acesso', async (req: Request, res: Response) => {
 // Cadastrar novo perfil de acesso
 app.post('/api/perfis-acesso', checkPermission('administracao'), async (req: Request, res: Response) => {
   const { nome, descricao, is_admin, permissoes } = req.body;
+  const empId = getEmpresaIdFromReq(req) || 1;
+
   if (!nome || !nome.trim()) {
     return res.status(400).json({ error: 'O nome do perfil é obrigatório' });
   }
 
   try {
     const nomeTrimmed = nome.trim();
-    const existing = await pool.query('SELECT id FROM perfis_acesso WHERE LOWER(nome) = LOWER($1)', [nomeTrimmed]);
+    const existing = await pool.query(
+      'SELECT id FROM perfis_acesso WHERE LOWER(nome) = LOWER($1) AND (empresa_id = $2 OR empresa_id IS NULL)',
+      [nomeTrimmed, empId]
+    );
     if (existing.rows.length > 0) {
-      return res.status(400).json({ error: 'Já existe um perfil com este nome' });
+      return res.status(400).json({ error: 'Já existe um perfil com este nome nesta empresa' });
     }
 
     const result = await pool.query(
-      'INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes) VALUES ($1, $2, $3, $4) RETURNING *',
-      [nomeTrimmed, descricao || null, !!is_admin, JSON.stringify(permissoes || {})]
+      'INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes, empresa_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [nomeTrimmed, descricao || null, !!is_admin, JSON.stringify(permissoes || {}), empId]
     );
 
     res.status(201).json(result.rows[0]);
@@ -857,12 +922,15 @@ app.delete('/api/perfis-acesso/:id', checkPermission('administracao'), async (re
 // ROTAS DE GESTÃO DE USUÁRIOS (ADMIN PAINEL)
 // ==========================================
 
-// Listar todos os usuários com dados do perfil, expiração de senha e validade da licença
+// Listar todos os usuários com dados do perfil, expiração de senha e validade da licença (filtrado por empresa)
 app.get('/api/usuarios', async (req: Request, res: Response) => {
+  const empId = getEmpresaIdFromReq(req);
+  const isSuperAdminQuery = req.headers['x-is-super-admin'] === 'true';
+
   try {
     await syncDatabaseLicenses();
-    const query = `
-      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em, u.senha_atualizada_em, u.chave_licenca, u.is_super_admin,
+    let query = `
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em, u.senha_atualizada_em, u.chave_licenca, u.is_super_admin, u.empresa_id,
              p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
              (30 - (CURRENT_DATE - COALESCE(u.senha_atualizada_em, u.criado_em)::date))::int as dias_para_expirar,
              l.chave as licenca_chave, l.tipo_licenca, l.status as status_licenca,
@@ -870,9 +938,15 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
       LEFT JOIN chaves_licenca l ON (l.chave = u.chave_licenca OR l.usuario_id = u.id)
-      ORDER BY u.id ASC
     `;
-    const result = await pool.query(query);
+    const params: any[] = [];
+    if (empId && !isSuperAdminQuery) {
+      query += ` WHERE u.empresa_id = $1`;
+      params.push(empId);
+    }
+    query += ` ORDER BY u.id ASC`;
+
+    const result = await pool.query(query, params);
     const usuariosFormatados = result.rows.map(u => {
       const diasRestantesSenha = typeof u.dias_para_expirar === 'number' ? u.dias_para_expirar : 30;
       const isSuperAdmin = !!(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz');
@@ -1375,7 +1449,19 @@ app.post('/api/empresas', async (req: Request, res: Response) => {
       db_pass || null,
       db_name || 'regz_db'
     ]);
-    res.status(201).json(result.rows[0]);
+    const newEmpresa = result.rows[0];
+    const newEmpId = newEmpresa.id;
+
+    // Inicializar perfis RBAC padrão para a nova empresa
+    await pool.query(`
+      INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes, empresa_id) VALUES
+      ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita"}'::jsonb, $1),
+      ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso"}'::jsonb, $1),
+      ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1),
+      ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1);
+    `, [newEmpId]);
+
+    res.status(201).json(newEmpresa);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao criar empresa' });
   }
@@ -1708,10 +1794,18 @@ app.get('/api/cargos', async (req: Request, res: Response) => {
 // ROTAS CRUD DE CAMPOS CUSTOMIZADOS
 // ==========================================
 
-// Listar todos os campos customizados definidos
+// Listar todos os campos customizados definidos (filtrados por empresa_id)
 app.get('/api/campos-customizados', async (req: Request, res: Response) => {
+  const empId = getEmpresaIdFromReq(req);
   try {
-    const result = await pool.query('SELECT * FROM campos_customizados ORDER BY id ASC');
+    let query = 'SELECT * FROM campos_customizados';
+    const params: any[] = [];
+    if (empId) {
+      query += ' WHERE empresa_id = $1 OR empresa_id IS NULL';
+      params.push(empId);
+    }
+    query += ' ORDER BY id ASC';
+    const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar campos customizados' });
@@ -1721,23 +1815,28 @@ app.get('/api/campos-customizados', async (req: Request, res: Response) => {
 // Cadastrar novo campo customizado
 app.post('/api/campos-customizados', checkPermission('campos'), async (req: Request, res: Response) => {
   const { nome, tipo, opcoes, obrigatorio, min_caracteres, max_caracteres } = req.body;
+  const empId = getEmpresaIdFromReq(req) || 1;
+
   if (!nome || !nome.trim()) {
     return res.status(400).json({ error: 'O nome do campo é obrigatório' });
   }
 
   try {
     const nomeTrimmed = nome.trim();
-    const existing = await pool.query('SELECT id FROM campos_customizados WHERE LOWER(nome) = LOWER($1)', [nomeTrimmed]);
+    const existing = await pool.query(
+      'SELECT id FROM campos_customizados WHERE LOWER(nome) = LOWER($1) AND (empresa_id = $2 OR empresa_id IS NULL)',
+      [nomeTrimmed, empId]
+    );
     if (existing.rows.length > 0) {
-      return res.status(400).json({ error: 'Um campo com este nome já foi criado' });
+      return res.status(400).json({ error: 'Um campo com este nome já foi criado nesta empresa' });
     }
 
     const minVal = min_caracteres !== undefined && min_caracteres !== null && min_caracteres !== '' ? Number(min_caracteres) : null;
     const maxVal = max_caracteres !== undefined && max_caracteres !== null && max_caracteres !== '' ? Number(max_caracteres) : null;
 
     const result = await pool.query(
-      'INSERT INTO campos_customizados (nome, tipo, opcoes, obrigatorio, min_caracteres, max_caracteres) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [nomeTrimmed, tipo || 'texto', opcoes || null, !!obrigatorio, minVal, maxVal]
+      'INSERT INTO campos_customizados (nome, tipo, opcoes, obrigatorio, min_caracteres, max_caracteres, empresa_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [nomeTrimmed, tipo || 'texto', opcoes || null, !!obrigatorio, minVal, maxVal, empId]
     );
 
     res.status(201).json(result.rows[0]);
@@ -1932,17 +2031,29 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
 // ROTAS CRUD DE COLABORADORES
 // ==========================================
 
-// Listar todos os colaboradores
+// Listar colaboradores (filtrados por empresa_id)
 app.get('/api/colaboradores', async (req: Request, res: Response) => {
   const { status } = req.query;
+  const empId = getEmpresaIdFromReq(req);
+
   try {
     let query = 'SELECT * FROM colaboradores';
     const values: any[] = [];
 
-    if (status === 'ativos') {
-      query += ' WHERE ativo = true';
-    } else if (status === 'inativos') {
-      query += ' WHERE ativo = false';
+    if (empId) {
+      query += ' WHERE (empresa_id = $1 OR empresa_id IS NULL)';
+      values.push(empId);
+      if (status === 'ativos') {
+        query += ' AND ativo = true';
+      } else if (status === 'inativos') {
+        query += ' AND ativo = false';
+      }
+    } else {
+      if (status === 'ativos') {
+        query += ' WHERE ativo = true';
+      } else if (status === 'inativos') {
+        query += ' WHERE ativo = false';
+      }
     }
 
     query += ' ORDER BY id DESC';
@@ -1970,6 +2081,7 @@ app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
 // Cadastrar novo colaborador
 app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Request, res: Response) => {
   const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, valores_customizados } = req.body;
+  const empId = getEmpresaIdFromReq(req) || 1;
 
   if (!nome || !cpf) {
     return res.status(400).json({ error: 'Campos Nome e CPF são obrigatórios' });
@@ -1991,10 +2103,10 @@ app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Req
 
     const result = await pool.query(
       `INSERT INTO colaboradores 
-      (nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, ativo) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, true) 
+      (nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, ativo, empresa_id) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, true, $14) 
       RETURNING *`,
-      [nome, cpf, cargo || null, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null]
+      [nome, cpf, cargo || null, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null, empId]
     );
 
     const novoColaborador = result.rows[0];

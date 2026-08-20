@@ -34,6 +34,7 @@ export interface Usuario {
   licenca_expirada?: boolean;
   sem_licenca?: boolean;
   is_super_admin?: boolean;
+  empresa_id?: number | null;
   dias_restantes_licenca?: number;
 }
 

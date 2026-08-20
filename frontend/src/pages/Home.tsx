@@ -29,7 +29,11 @@ export const Home: React.FC = () => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const colabRes = await fetch('/api/colaboradores');
+        const savedToken = localStorage.getItem('regz_token');
+        const headers: Record<string, string> = {};
+        if (savedToken) headers['Authorization'] = `Bearer ${savedToken}`;
+
+        const colabRes = await fetch('/api/colaboradores', { headers });
         if (colabRes.ok) {
           const colabData = await colabRes.json();
           setColaboradores(colabData);

@@ -311,11 +311,19 @@ export const Colaboradores: React.FC = () => {
     setColumnWidths(DEFAULT_COLUMN_WIDTHS);
   };
 
+  const getAuthHeaders = () => {
+    const savedToken = localStorage.getItem('regz_token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (savedToken) headers['Authorization'] = `Bearer ${savedToken}`;
+    if (usuario?.empresa_id) headers['x-empresa-id'] = String(usuario.empresa_id);
+    return headers;
+  };
+
   // Buscar lista completa de colaboradores e catálogo de cargos
   const fetchColaboradores = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/colaboradores');
+      const res = await fetch('/api/colaboradores', { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         setColaboradores(data);
@@ -329,7 +337,7 @@ export const Colaboradores: React.FC = () => {
 
   const fetchCargosList = async () => {
     try {
-      const res = await fetch('/api/cargos');
+      const res = await fetch('/api/cargos', { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         setCargosList(data);
@@ -341,7 +349,7 @@ export const Colaboradores: React.FC = () => {
 
   const fetchCamposCustomizados = async () => {
     try {
-      const res = await fetch('/api/campos-customizados');
+      const res = await fetch('/api/campos-customizados', { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         setCamposCustomizadosList(data);

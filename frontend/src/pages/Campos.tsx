@@ -126,11 +126,19 @@ export const Campos: React.FC = () => {
     };
   }, [resizingCol, startX, startWidth, usuario?.id]);
 
+  const getAuthHeaders = () => {
+    const savedToken = localStorage.getItem('regz_token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (savedToken) headers['Authorization'] = `Bearer ${savedToken}`;
+    if (usuario?.empresa_id) headers['x-empresa-id'] = String(usuario.empresa_id);
+    return headers;
+  };
+
   // Carregar lista de campos customizados da API
   const fetchCampos = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/campos-customizados');
+      const res = await fetch('/api/campos-customizados', { headers: getAuthHeaders() });
       if (res.ok) {
         const data = await res.json();
         setCampos(data);

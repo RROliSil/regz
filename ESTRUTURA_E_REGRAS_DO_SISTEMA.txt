@@ -179,6 +179,12 @@ H. Módulo de Relatórios & Exportações:
 - Exportação em CSV/XLSX codificado com BOM UTF-8 (\uFEFF) para visualização imediata no Microsoft Excel sem desconfigurar acentos.
 - Impressão e PDF A4 Executivo via @media print ajustado para preencher 100% de uma folha A4 Retrato (margin: 10mm 12mm), ocultando elementos de interface (.no-print) e mantendo cabeçalho institucional e tabelas fluidas sem truncamento.
 
+I. Isolamento Estrito de Dados Multi-Empresas (Multi-Tenancy por empresa_id):
+- REGRA 154: As tabelas 'colaboradores', 'perfis_acesso', 'campos_customizados' e 'usuarios' possuem vinculação de chave estrangeira 'empresa_id' com a tabela 'empresas'.
+- As requisições de API ('/api/colaboradores', '/api/usuarios', '/api/perfis-acesso', '/api/campos-customizados') realizam filtragem no banco de dados baseando-se no 'empresa_id' extraído do cabeçalho HTTP ('x-empresa-id') ou do payload decodificado do Token JWT do usuário autenticado.
+- Usuários comuns e administradores de uma determinada empresa (ex: Rainha Logística - empresa_id = 2) visualizam, editam e gerenciam estritamente os colaboradores, usuários, perfis de acesso e campos customizados pertencentes à sua própria empresa, impedindo vazamento de dados entre os diferentes clientes do sistema SaaS.
+- Ao cadastrar uma nova empresa no Painel Super Admin, os 4 perfis de acesso RBAC padrão ("Administrador", "Gestor de RH", "Operador", "Consulta") são automaticamente semeados e atrelados ao 'empresa_id' correspondente.
+
 
 4. INSTRUÇÕES DE EXECUÇÃO E DEPLOY NO PORTAINER.IO
 -------------------------------------------------------------------------------
