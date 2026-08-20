@@ -701,7 +701,7 @@ export const SuperAdmin: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
+            <div className="custom-scrollbar" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(30, 41, 59, 0.6)', padding: '14px 20px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Shield size={20} color="#38bdf8" />
@@ -890,7 +890,7 @@ export const SuperAdmin: React.FC = () => {
               </button>
             </div>
 
-            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
+            <div className="custom-scrollbar" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
               {loadingEmpresaUsuarios ? (
                 <div style={{ textAlign: 'center', padding: '30px' }}>
                   <Loader2 className="spin" size={24} color="#818cf8" style={{ margin: '0 auto' }} />
