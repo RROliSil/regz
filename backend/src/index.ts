@@ -542,8 +542,36 @@ app.get('/api/db-status', async (req: Request, res: Response) => {
 });
 
 // ==========================================
+// ==========================================
 // ROTAS DE AUTENTICAÇÃO E LOGIN (JWT / BCRYPT)
 // ==========================================
+
+interface LoginAttempt {
+  count: number;
+  lockUntil: number | null;
+}
+
+const loginAttemptsMap = new Map<string, LoginAttempt>();
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKTIME_MS = 15 * 60 * 1000; // 15 Minutos
+
+const recordFailedAttempt = (key: string) => {
+  const now = Date.now();
+  const existing = loginAttemptsMap.get(key) || { count: 0, lockUntil: null };
+  const newCount = existing.count + 1;
+  const lockUntil = newCount >= MAX_LOGIN_ATTEMPTS ? now + LOCKTIME_MS : null;
+  loginAttemptsMap.set(key, { count: newCount, lockUntil });
+};
+
+// Limpeza periódica de tentativas expiradas (a cada 10 min)
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, val] of loginAttemptsMap.entries()) {
+    if (val.lockUntil && val.lockUntil < now) {
+      loginAttemptsMap.delete(key);
+    }
+  }
+}, 10 * 60 * 1000);
 
 // Login de Usuário (Sem Auto-Registro)
 app.post('/api/auth/login', async (req: Request, res: Response) => {
@@ -551,6 +579,19 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
   if (!email || !senha) {
     return res.status(400).json({ error: 'E-mail e senha são obrigatórios' });
+  }
+
+  const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+  const attemptKey = `${clientIp}_${String(email).trim().toLowerCase()}`;
+  const now = Date.now();
+  const currentAttempt = loginAttemptsMap.get(attemptKey);
+
+  if (currentAttempt && currentAttempt.lockUntil && currentAttempt.lockUntil > now) {
+    const remainingSec = Math.ceil((currentAttempt.lockUntil - now) / 1000);
+    const remainingMin = Math.ceil(remainingSec / 60);
+    return res.status(429).json({
+      error: `Muitas tentativas incorretas consecutivas. Por segurança, o acesso para este e-mail/IP foi temporariamente bloqueado. Tente novamente em ${remainingMin} minuto(s).`
+    });
   }
 
   try {
@@ -568,6 +609,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     const result = await pool.query(query, [email.trim()]);
 
     if (result.rows.length === 0) {
+      recordFailedAttempt(attemptKey);
       return res.status(401).json({ error: 'E-mail ou senha incorretos' });
     }
 
@@ -579,8 +621,12 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
     const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
     if (!senhaValida) {
+      recordFailedAttempt(attemptKey);
       return res.status(401).json({ error: 'E-mail ou senha incorretos' });
     }
+
+    // Sucesso no login: resetar contador de falhas
+    loginAttemptsMap.delete(attemptKey);
 
     const perfil = {
       id: usuario.perfil_id,
