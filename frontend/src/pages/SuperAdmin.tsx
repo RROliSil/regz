@@ -41,6 +41,8 @@ export const SuperAdmin: React.FC = () => {
   const [buscandoCepEmpresa, setBuscandoCepEmpresa] = useState(false);
   const [cepErrorEmpresa, setCepErrorEmpresa] = useState('');
   const [submittingEmpresa, setSubmittingEmpresa] = useState(false);
+  const [testingDb, setTestingDb] = useState(false);
+  const [testingDbResult, setTestingDbResult] = useState<{ success: boolean; message: string } | null>(null);
 
   // Modal de Confirmação de Exclusão de Empresa ("SIM")
   const [empresaToDelete, setEmpresaToDelete] = useState<{ id: number; nome: string } | null>(null);
@@ -255,6 +257,41 @@ export const SuperAdmin: React.FC = () => {
         setEmpresaLogoUrl(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleTestDbConnection = async () => {
+    if (!dbHost || !dbName) {
+      alert('Preencha o Host e o Nome do Banco de Dados para testar a conexão.');
+      return;
+    }
+
+    setTestingDb(true);
+    setTestingDbResult(null);
+
+    try {
+      const res = await fetch('/api/empresas/test-db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          db_host: dbHost,
+          db_port: dbPort,
+          db_user: dbUser,
+          db_pass: dbPass,
+          db_name: dbName
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTestingDbResult({ success: true, message: data.message });
+      } else {
+        setTestingDbResult({ success: false, message: data.error || 'Falha ao conectar no banco de dados.' });
+      }
+    } catch (err: any) {
+      setTestingDbResult({ success: false, message: 'Erro na requisição de teste de banco.' });
+    } finally {
+      setTestingDb(false);
     }
   };
 
@@ -1102,6 +1139,49 @@ export const SuperAdmin: React.FC = () => {
                       placeholder="••••••••"
                     />
                   </div>
+                </div>
+
+                <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={handleTestDbConnection}
+                    disabled={testingDb}
+                    style={{
+                      background: 'rgba(56, 189, 248, 0.15)',
+                      color: '#38bdf8',
+                      border: '1px solid rgba(56, 189, 248, 0.4)',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: testingDb ? 'wait' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    {testingDb ? <Loader2 className="spin" size={14} /> : <Database size={14} />}
+                    🔌 TESTAR CONEXÃO & CRIAR BANCO DB
+                  </button>
+
+                  {testingDbResult && (
+                    <div style={{
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      background: testingDbResult.success ? 'rgba(52, 211, 153, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                      color: testingDbResult.success ? '#34d399' : '#f87171',
+                      border: testingDbResult.success ? '1px solid rgba(52, 211, 153, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}>
+                      {testingDbResult.success ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
+                      {testingDbResult.message}
+                    </div>
+                  )}
                 </div>
               </div>
 

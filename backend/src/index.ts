@@ -1367,6 +1367,89 @@ app.delete('/api/empresas/:id', async (req: Request, res: Response) => {
   }
 });
 
+// Testar Conexão & Inicializar Estrutura de Banco DB Próprio de uma Empresa
+app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
+  const { db_host, db_port, db_user, db_pass, db_name } = req.body;
+
+  if (!db_host || !db_name) {
+    return res.status(400).json({ error: 'Host e Nome do Banco de Dados são obrigatórios' });
+  }
+
+  const host = String(db_host).trim();
+  const port = db_port ? parseInt(String(db_port), 10) : 5432;
+  const user = String(db_user || 'postgres').trim();
+  const password = String(db_pass || '');
+  const targetDbName = String(db_name).trim();
+
+  try {
+    // 1. Tentar conectar ao banco de dados genérico postgres para verificar credenciais e criar o banco se não existir
+    const adminPool = new Pool({
+      host,
+      port,
+      user,
+      password,
+      database: 'postgres',
+      connectionTimeoutMillis: 6000
+    });
+
+    let dbCreatedNow = false;
+    try {
+      const checkDb = await adminPool.query('SELECT 1 FROM pg_database WHERE datname = $1', [targetDbName]);
+      if (checkDb.rows.length === 0) {
+        // Criar o banco de dados se não existir
+        await adminPool.query(`CREATE DATABASE "${targetDbName.replace(/"/g, '""')}"`);
+        dbCreatedNow = true;
+        console.log(`✅ Novo banco de dados "${targetDbName}" criado no PostgreSQL (${host}:${port})!`);
+      }
+    } catch (adminErr: any) {
+      console.warn('Aviso ao checar/criar banco via adminPool:', adminErr.message);
+    } finally {
+      await adminPool.end().catch(() => {});
+    }
+
+    // 2. Conectar diretamente ao banco da empresa (targetDbName)
+    const targetPool = new Pool({
+      host,
+      port,
+      user,
+      password,
+      database: targetDbName,
+      connectionTimeoutMillis: 6000
+    });
+
+    try {
+      // Testar query simples
+      await targetPool.query('SELECT 1');
+
+      // Garantir estrutura mínima de tabelas do sistema no banco da empresa
+      await targetPool.query(`
+        CREATE TABLE IF NOT EXISTS usuarios (
+          id SERIAL PRIMARY KEY,
+          nome VARCHAR(255) NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          ativo BOOLEAN DEFAULT true,
+          criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      await targetPool.end().catch(() => {});
+
+      res.json({
+        success: true,
+        message: dbCreatedNow 
+          ? `Novo banco "${targetDbName}" criado com sucesso no host ${host}:${port} e estrutura REGZ inicializada!`
+          : `Conexão estabelecida com sucesso! Banco "${targetDbName}" no host ${host}:${port} está online e pronto.`
+      });
+    } catch (connErr: any) {
+      await targetPool.end().catch(() => {});
+      throw connErr;
+    }
+  } catch (error: any) {
+    console.error('Erro ao testar banco de dados:', error);
+    res.status(500).json({ error: `Falha na conexão DB (${host}:${port}): ${error.message || 'Host ou credenciais inválidas'}` });
+  }
+});
+
 // Listar licenças de uma empresa
 app.get('/api/empresas/:id/licencas', async (req: Request, res: Response) => {
   const { id } = req.params;
