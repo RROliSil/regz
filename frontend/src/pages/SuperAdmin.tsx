@@ -5,7 +5,7 @@ import { Licenca } from '../types/auth';
 import {
   Building2, Key, Plus, Trash2, Edit, Check, Loader2,
   Shield, Copy, RefreshCw, Calendar, CheckCircle2, AlertTriangle,
-  MapPin, Upload, Database, LogOut, Users, UserCheck, UserX
+  MapPin, Upload, Database, LogOut, Users, UserCheck, UserX, Zap
 } from 'lucide-react';
 
 export const SuperAdmin: React.FC = () => {
@@ -420,6 +420,38 @@ export const SuperAdmin: React.FC = () => {
     }
   };
 
+  const handleEmissaoRapidaLicenca = async (empresaId: number) => {
+    setSubmittingLicenca(true);
+    try {
+      const res = await fetch('/api/licencas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          empresa_id: empresaId,
+          tipo_licenca: 'Enterprise',
+          dias_validade: 365
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setGlobalSuccess(`Nova Chave Master Enterprise (365 Dias) Gerada: ${data.chave}`);
+        fetchEmpresas();
+        if (selectedEmpresaLicencas) {
+          handleOpenEmpresaLicencas(selectedEmpresaLicencas);
+        }
+        setTimeout(() => setGlobalSuccess(null), 5000);
+      } else {
+        const errData = await res.json();
+        alert(errData.error || 'Erro ao gerar chave de licença');
+      }
+    } catch (err) {
+      console.error('Erro ao gerar chave rápida:', err);
+    } finally {
+      setSubmittingLicenca(false);
+    }
+  };
+
   const handleCopyKey = (chave: string) => {
     navigator.clipboard.writeText(chave);
     setCopiedKey(chave);
@@ -776,16 +808,39 @@ export const SuperAdmin: React.FC = () => {
                     Chaves de Licença Master Emitidas para esta Empresa ({empresaLicencas.length})
                   </span>
                 </div>
-                <button
-                  onClick={() => {
-                    setNewLicencaEmpresaId(String(selectedEmpresaLicencas.id));
-                    setModalLicencaOpen(true);
-                  }}
-                  className="btn-primary"
-                  style={{ padding: '10px 18px', fontSize: '0.88rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}
-                >
-                  <Plus size={18} /> Emitir Nova Chave de Licença Master
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button
+                    onClick={() => handleEmissaoRapidaLicenca(selectedEmpresaLicencas.id)}
+                    disabled={submittingLicenca}
+                    style={{
+                      background: 'rgba(52, 211, 153, 0.15)',
+                      color: '#34d399',
+                      border: '1px solid rgba(52, 211, 153, 0.4)',
+                      padding: '10px 16px',
+                      fontSize: '0.86rem',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontWeight: 700,
+                      cursor: submittingLicenca ? 'wait' : 'pointer'
+                    }}
+                    title="Emitir instantaneamente uma licença Enterprise de 365 dias (1 Ano)"
+                  >
+                    {submittingLicenca ? <Loader2 className="spin" size={16} /> : <Zap size={16} />} ⚡ Emissão Rápida (1 Ano)
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setNewLicencaEmpresaId(String(selectedEmpresaLicencas.id));
+                      setModalLicencaOpen(true);
+                    }}
+                    className="btn-primary"
+                    style={{ padding: '10px 18px', fontSize: '0.88rem', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700 }}
+                  >
+                    <Plus size={18} /> Emitir Nova Chave de Licença Master
+                  </button>
+                </div>
               </div>
 
               {loadingEmpresaLicencas ? (
@@ -1034,7 +1089,7 @@ export const SuperAdmin: React.FC = () => {
       {/* MODAL DE CADASTRO / EDIÇÃO DE EMPRESA & BANCO PRÓPRIO */}
       {/* ======================================================== */}
       {modalEmpresaOpen && (
-        <div className="modal-backdrop">
+        <div className="modal-backdrop" style={{ zIndex: 2000 }}>
           <div className="modal-content" style={{ maxWidth: '720px', width: '90%', background: '#0f172a', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1352,7 +1407,7 @@ export const SuperAdmin: React.FC = () => {
       {/* MODAL DE EMISSÃO DE LICENÇA MASTER */}
       {/* ======================================================== */}
       {modalLicencaOpen && (
-        <div className="modal-backdrop">
+        <div className="modal-backdrop" style={{ zIndex: 2000 }}>
           <div className="modal-content" style={{ maxWidth: '520px', background: '#0f172a', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1424,7 +1479,7 @@ export const SuperAdmin: React.FC = () => {
       {/* MODAL DE RENOVAÇÃO / ALTERAÇÃO DE VALIDADE */}
       {/* ======================================================== */}
       {modalRenovarOpen && selectedLicencaRenovar && (
-        <div className="modal-backdrop">
+        <div className="modal-backdrop" style={{ zIndex: 2000 }}>
           <div className="modal-content renovar-modal-card" style={{ maxWidth: '520px', background: '#0f172a', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1502,7 +1557,7 @@ export const SuperAdmin: React.FC = () => {
       {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO DE EMPRESA ("SIM") */}
       {/* ======================================================== */}
       {empresaToDelete && (
-        <div className="modal-backdrop">
+        <div className="modal-backdrop" style={{ zIndex: 2000 }}>
           <div className="modal-content" style={{ maxWidth: '520px', background: '#0f172a', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
