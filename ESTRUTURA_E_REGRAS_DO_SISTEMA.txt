@@ -236,6 +236,12 @@ I. Isolamento Estrito de Dados Multi-Empresas (Multi-Tenancy por empresa_id):
   - No Modo Tema Dark (`[data-theme="dark"]`):
     - O campo de **Busca Rápida** (`.search-box-relatorio`) foi padronizado com o fundo `#141416`, borda translúcida suave `rgba(255, 255, 255, 0.15)` e altura de `38px`, tornando seu visual 100% idêntico e alinhado aos selects e date inputs da barra de filtros.
     - Todos os botões e abas de seleção (`.relatorio-tab-btn.active`, `.btn-relatorio-primary`, `.btn-builder-action` e chips ativos `.btn-column-chip.active`) tiveram qualquer tom azul substituído por fundo cinza escuro/zinco neutro (`#27272a` / `#141416`), bordas finas com brilho discreto e textos brancos nítidos, mantendo a consistência do tema escuro monocromático.
+- REGRA 167: Padronização Visual no Modo Tema Claro em Relatórios (`[data-theme="light"]`):
+  - O campo de **Busca Rápida** (`.search-box-relatorio`) foi padronizado com o fundo `#ffffff`, borda `#cbd5e1`, altura de `38px` e textos `#0f172a`, perfeitamente idêntico e alinhado a todos os selects e inputs da barra de filtros.
+  - Os **Chips de Colunas Inativos** (`.btn-column-chip`) receberam fundo cinza suave (`#f8fafc`), borda `#cbd5e1` e textos escuros (`#334155`), eliminando o contraste inadequado de fundos escuros no tema claro.
+  - Os **Chips de Colunas Ativos** receberam fundo com destaque translúcido suave (`rgba(99, 102, 241, 0.12)` / `rgba(14, 165, 233, 0.12)`), bordas em destaque (`#6366f1` / `#0284c7`), texto destacado e ícones de verificação nítidos.
+  - Os painéis do construtor de colunas (`.panel-builder-container`), filtros (`.panel-filtros-container`) e ações rápidas foram alinhados com fundo branco puro (`#ffffff`) e bordas suaves `#cbd5e1`.
+
 
 
 

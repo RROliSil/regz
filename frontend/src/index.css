@@ -3921,6 +3921,156 @@ select option,
 }
 
 /* ======================================================== */
+/* MODO CLARO / LIGHT THEME ESPECÍFICO DE RELATÓRIOS */
+/* ======================================================== */
+[data-theme="light"] .relatorio-tab-group {
+  background: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .relatorio-tab-btn {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .relatorio-tab-btn:hover:not(.active) {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .relatorio-tab-btn.active {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25) !important;
+}
+
+[data-theme="light"] .relatorios-container .btn-primary,
+[data-theme="light"] .btn-relatorio-primary {
+  background: #6366f1 !important;
+  color: #ffffff !important;
+  border-color: #4f46e5 !important;
+}
+
+[data-theme="light"] .relatorios-container .btn-primary:hover,
+[data-theme="light"] .btn-relatorio-primary:hover {
+  background: #4f46e5 !important;
+}
+
+[data-theme="light"] .panel-builder-container {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .builder-header-icon {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #6366f1 !important;
+}
+
+[data-theme="light"] .builder-group-title.cadastral {
+  color: #4f46e5 !important;
+}
+
+[data-theme="light"] .builder-group-title.custom {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .btn-builder-action {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .btn-builder-action:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .btn-builder-custom-action {
+  background: rgba(14, 165, 233, 0.08) !important;
+  border-color: #38bdf8 !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .btn-builder-custom-action:hover {
+  background: rgba(14, 165, 233, 0.16) !important;
+}
+
+[data-theme="light"] .btn-builder-clear {
+  color: #e11d48 !important;
+}
+
+[data-theme="light"] .btn-column-chip {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .btn-column-chip:hover {
+  background: #f1f5f9 !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .btn-column-chip.active {
+  background: rgba(99, 102, 241, 0.12) !important;
+  border: 1.5px solid #6366f1 !important;
+  color: #4338ca !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15) !important;
+}
+
+[data-theme="light"] .btn-column-chip.custom.active {
+  background: rgba(14, 165, 233, 0.12) !important;
+  border: 1.5px solid #0284c7 !important;
+  color: #0369a1 !important;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.15) !important;
+}
+
+[data-theme="light"] .btn-column-chip .chip-plus-icon {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .btn-column-chip .chip-check-icon {
+  color: #4f46e5 !important;
+}
+
+[data-theme="light"] .btn-column-chip.custom.active .chip-check-icon {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .chip-type-tag {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #475569 !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .search-box-relatorio {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .search-box-relatorio input {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .search-box-relatorio input::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .search-box-relatorio .search-box-icon {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .panel-filtros-container {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* ======================================================== */
 /* MÓDULO DE RELATÓRIOS & SUPORTE A IMPRESSÃO / PDF (A4) */
 /* ======================================================== */
 .pdf-header-only {
