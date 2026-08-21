@@ -1,34 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { Empresa } from './Administracao';
 import { Licenca } from '../types/auth';
 import {
   Building2, Key, Plus, Trash2, Edit, Check, Loader2,
   Shield, Copy, RefreshCw, Calendar, CheckCircle2, AlertTriangle,
-  MapPin, Upload, Database, LogOut, Users, UserCheck, UserX, Zap, UserPlus, Unlink,
-  Sun, Moon, Sparkles
+  MapPin, Upload, Database, LogOut, Users, UserCheck, UserX, Zap, UserPlus, Unlink
 } from 'lucide-react';
 
 export const SuperAdmin: React.FC = () => {
   const { usuario, logout } = useAuth();
-  const { theme, cycleTheme } = useTheme();
-
-  const getThemeIcon = () => {
-    switch (theme) {
-      case 'light': return <Sun size={16} />;
-      case 'dark': return <Moon size={16} />;
-      default: return <Sparkles size={16} />;
-    }
-  };
-
-  const getThemeTitle = () => {
-    switch (theme) {
-      case 'light': return 'Modo Claro Ativo (Clique para alternar)';
-      case 'dark': return 'Modo Escuro Ativo (Clique para alternar)';
-      default: return 'Modo Padrão Regz (Clique para alternar)';
-    }
-  };
 
   // Estados de Empresas
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
@@ -682,18 +663,18 @@ export const SuperAdmin: React.FC = () => {
   };
 
   return (
-    <div className="superadmin-container" style={{ minHeight: '100vh', background: 'var(--bg-gradient)', color: 'var(--text-main)', padding: '24px 36px' }}>
+    <div className="superadmin-container" data-theme="padrao" style={{ minHeight: '100vh', background: '#020617', color: '#f8fafc', padding: '24px 36px' }}>
       
       {/* Header Executivo do Licenciador Regz */}
       <header className="superadmin-header" style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        background: 'var(--card-bg)',
-        border: '1px solid var(--card-border)',
+        background: '#0f172a',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
         padding: '20px 28px',
         borderRadius: '20px',
-        backdropFilter: 'blur(12px)',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.4)',
         marginBottom: '28px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -702,30 +683,22 @@ export const SuperAdmin: React.FC = () => {
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h1 className="superadmin-title" style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800 }}>
+              <h1 className="superadmin-title" style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#ffffff' }}>
                 REGZ LICENCIAMENTO MASTER
               </h1>
               <span className="superadmin-badge-portal" style={{ background: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.4)', color: '#818cf8', fontSize: '0.72rem', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', textTransform: 'uppercase' }}>
                 PORTAL SUPER ADMIN EXCLUSIVO
               </span>
             </div>
-            <p className="superadmin-subtitle" style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            <p className="superadmin-subtitle" style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
               Central de Gestão de Licenças On-Premise & Parâmetros de Banco de Dados Local por Empresa
             </p>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <button
-            onClick={cycleTheme}
-            className="theme-toggle-btn superadmin-theme-btn"
-            title={getThemeTitle()}
-            style={{ width: '38px', height: '38px', borderRadius: '10px' }}
-          >
-            {getThemeIcon()}
-          </button>
           <div style={{ textAlign: 'right', fontSize: '0.85rem' }}>
-            <span style={{ display: 'block', fontWeight: 700, color: 'var(--text-main)' }}>{usuario?.nome || 'Administrador Regz'}</span>
+            <span style={{ display: 'block', fontWeight: 700, color: '#ffffff' }}>{usuario?.nome || 'Administrador Regz'}</span>
             <span style={{ fontSize: '0.78rem', color: '#818cf8' }}>{usuario?.email || 'admin@regz.app'}</span>
           </div>
           <button
@@ -751,35 +724,35 @@ export const SuperAdmin: React.FC = () => {
         
         {/* Métricas Master */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-          <div className="superadmin-stat-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="superadmin-stat-card" style={{ background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '14px', borderRadius: '12px', color: '#818cf8' }}>
               <Building2 size={24} />
             </div>
             <div>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>EMPRESAS CLIENTES</span>
-              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: 'var(--text-main)' }}>{empresas.length}</h3>
+              <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>EMPRESAS CLIENTES</span>
+              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: '#ffffff' }}>{empresas.length}</h3>
             </div>
           </div>
 
-          <div className="superadmin-stat-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="superadmin-stat-card" style={{ background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ background: 'rgba(52, 211, 153, 0.15)', padding: '14px', borderRadius: '12px', color: '#34d399' }}>
               <CheckCircle2 size={24} />
             </div>
             <div>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>LICENÇAS ATIVAS NA PLATAFORMA</span>
-              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>LICENÇAS ATIVAS NA PLATAFORMA</span>
+              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: '#ffffff' }}>
                 {empresas.reduce((acc, emp) => acc + (emp.licencas_ativas || 0), 0)}
               </h3>
             </div>
           </div>
 
-          <div className="superadmin-stat-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="superadmin-stat-card" style={{ background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '20px', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
             <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '14px', borderRadius: '12px', color: '#38bdf8' }}>
               <Database size={24} />
             </div>
             <div>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>BANCOS DE DADOS REGISTRADOS</span>
-              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: 'var(--text-main)' }}>
+              <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>BANCOS DE DADOS REGISTRADOS</span>
+              <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: '#ffffff' }}>
                 {empresas.filter(e => (e as any).db_host).length}
               </h3>
             </div>
@@ -787,12 +760,12 @@ export const SuperAdmin: React.FC = () => {
         </div>
 
         {/* Action Header */}
-        <div className="superadmin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--card-bg)', border: '1px solid var(--card-border)', padding: '18px 24px', borderRadius: '16px' }}>
+        <div className="superadmin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '18px 24px', borderRadius: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Building2 size={22} color="#818cf8" />
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-main)' }}>Gestão de Empresas Clientes ({empresas.length})</h3>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Clique nas ações dos cards para gerenciar licenças master ou usuários de cada empresa</span>
+              <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: '#ffffff' }}>Gestão de Empresas Clientes ({empresas.length})</h3>
+              <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Clique nas ações dos cards para gerenciar licenças master ou usuários de cada empresa</span>
             </div>
           </div>
           <button
