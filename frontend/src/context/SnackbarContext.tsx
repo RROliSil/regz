@@ -28,7 +28,7 @@ export const SnackbarProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     setTimeout(() => {
       removeSnackbar(id);
-    }, 3500);
+    }, 2500);
   }, [removeSnackbar]);
 
   const getIcon = (type: SnackbarType) => {
@@ -151,7 +151,7 @@ export const SnackbarProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                 height: '3px',
                 background: item.type === 'success' ? '#34d399' : item.type === 'error' ? '#f87171' : item.type === 'warning' ? '#fbbf24' : '#38bdf8',
                 width: '100%',
-                animation: 'shrinkTimer 3.5s linear forwards'
+                animation: 'shrinkTimer 2.5s linear forwards'
               }}
             />
           </div>

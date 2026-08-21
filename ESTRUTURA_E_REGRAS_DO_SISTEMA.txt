@@ -215,7 +215,7 @@ I. Isolamento Estrito de Dados Multi-Empresas (Multi-Tenancy por empresa_id):
     - Modais: Todos os modais (Gerenciador de Licenças Master, Colaboradores Cadastrados, Editar Empresa & Banco Local, Confirmar Exclusão de Empresa, Cadastrar Novo Usuário, Emitir Licença e Renovar) possuem fundo `#0f172a`, bordas translúcidas azul/índigo (`rgba(99, 102, 241, 0.4)` / `rgba(56, 189, 248, 0.4)`), caixas internas e banners em `rgba(30, 41, 59, 0.8)`, inputs e selects escuros (`rgba(30, 41, 59, 0.8)`) com textos em branco (`#ffffff`), títulos brancos (`#ffffff`) e acentos luminosos ciano (`#38bdf8`), índigo (`#818cf8`), verde (`#34d399`) e vermelho (`#f87171`).
 - REGRA 163: Sistema Global de Snackbar com Feedback Positivo:
   - Criado o contexto global `SnackbarContext` (`SnackbarContext.tsx`) integrado ao roteador raiz em `App.tsx`.
-  - Notificações flutuantes no canto inferior direito (`bottom: 24px, right: 24px, zIndex: 9999999`) com estilo Glassmorphism, ícone de verificação verde esmeralda (`CheckCircle2`), borda esmeralda com brilho translúcido, textos nítidos em branco e barra de tempo de auto-fechamento (3,5 segundos).
+  - Notificações flutuantes no canto inferior direito (`bottom: 24px, right: 24px, zIndex: 9999999`) com estilo Glassmorphism, ícone de verificação verde esmeralda (`CheckCircle2`), borda esmeralda com brilho translúcido, textos nítidos em branco e barra de tempo de auto-fechamento (2,5 segundos).
   - Integrado em todas as ações do sistema:
     - Criação e edição de campos customizados (`Campos.tsx`).
     - Criação de perfis de acesso, alteração de permissões RBAC, cadastro/edição de usuários, dados da empresa e emissão/renovação de licenças (`Administracao.tsx`).
