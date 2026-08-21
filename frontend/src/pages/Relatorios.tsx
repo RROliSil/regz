@@ -7,9 +7,15 @@ import {
   Search,
   RefreshCw,
   FileSpreadsheet,
-  Columns,
-  ChevronDown,
-  RotateCcw
+  RotateCcw,
+  Check,
+  Plus,
+  Sliders,
+  CheckSquare,
+  Square,
+  Sparkles,
+  MapPin,
+  Shield
 } from 'lucide-react';
 
 interface Colaborador {
@@ -56,59 +62,44 @@ interface Usuario {
   perfil?: PerfilAcesso;
 }
 
-type TipoRelatorio = 'headcount' | 'campos' | 'geo' | 'rbac';
+type ModoVisualizacao = 'construtor' | 'geo' | 'rbac';
+
+// Definição das colunas cadastrais disponíveis
+const COLUNAS_CADASTRAIS = [
+  { key: 'id', label: 'ID' },
+  { key: 'foto', label: 'Foto' },
+  { key: 'nome', label: 'Nome do Colaborador' },
+  { key: 'cpf', label: 'CPF' },
+  { key: 'cargo', label: 'Cargo / Função' },
+  { key: 'email', label: 'E-mail' },
+  { key: 'telefone', label: 'Telefone' },
+  { key: 'cbo', label: 'CBO' },
+  { key: 'endereco', label: 'Endereço Completo' },
+  { key: 'cidade_uf', label: 'Cidade / UF' },
+  { key: 'criado_em', label: 'Data de Cadastro' },
+  { key: 'status', label: 'Status' }
+];
 
 export const Relatorios: React.FC = () => {
   const { token } = useAuth();
   const { showSnackbar } = useSnackbar();
 
-  const [tipo, setTipo] = useState<TipoRelatorio>('headcount');
+  const [modo, setModo] = useState<ModoVisualizacao>('construtor');
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [campos, setCampos] = useState<CampoCustomizado[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSpinning, setIsSpinning] = useState(false);
 
-  // Filtros Avançados
-  const [search, setSearch] = useState('');
-  const [filtroStatus, setFiltroStatus] = useState<'todos' | 'ativos' | 'inativos'>('todos');
-  const [filtroCargo, setFiltroCargo] = useState('todos');
-  const [filtroEstado, setFiltroEstado] = useState('todos');
-  const [filtroCidade, setFiltroCidade] = useState('todos');
-  const [dataInicio, setDataInicio] = useState('');
-  const [dataFim, setDataFim] = useState('');
-  const [filtroCampoId, setFiltroCampoId] = useState<string>('todos');
-  const [filtroCampoValor, setFiltroCampoValor] = useState('');
-  const [ordenacao, setOrdenacao] = useState<'nome_asc' | 'nome_desc' | 'id_desc' | 'id_asc' | 'data_desc' | 'data_asc'>('nome_asc');
+  // Seleção de Colunas no Construtor Livre (Keys de colunas padrão + IDs/Nomes de campos personalizados com prefixo 'custom_')
+  const [colunasSelecionadas, setColunasSelecionadas] = useState<string[]>([
+    'nome',
+    'cargo',
+    'cidade_uf',
+    'status'
+  ]);
 
-  // Estado do Dropdown de Colunas Visíveis
-  const [columnsDropdownOpen, setColumnsDropdownOpen] = useState(false);
-
-  // Configuração de Colunas Visíveis para cada Relatório
-  const [headcountCols, setHeadcountCols] = useState<{ [key: string]: boolean }>({
-    id: true,
-    foto: true,
-    nome: true,
-    cpf: true,
-    cargo: true,
-    cbo: false,
-    endereco: false,
-    cidade_uf: true,
-    criado_em: true,
-    status: true
-  });
-
-  const [camposBaseCols, setCamposBaseCols] = useState<{ [key: string]: boolean }>({
-    id: true,
-    nome: true,
-    cargo: true,
-    cidade_uf: false,
-    status: false
-  });
-
-  // Mapa de visibilidade individual de cada campo personalizado (id -> boolean)
-  const [camposCustomVisiveis, setCamposCustomVisiveis] = useState<{ [key: number]: boolean }>({});
-
+  // Colunas do Relatório Geográfico
   const [geoCols, setGeoCols] = useState<{ [key: string]: boolean }>({
     estado: true,
     cidade: true,
@@ -118,6 +109,7 @@ export const Relatorios: React.FC = () => {
     percentual: true
   });
 
+  // Colunas do Relatório RBAC
   const [rbacCols, setRbacCols] = useState<{ [key: string]: boolean }>({
     id: true,
     nome: true,
@@ -126,6 +118,16 @@ export const Relatorios: React.FC = () => {
     tipo: true,
     status: true
   });
+
+  // Filtros Avançados
+  const [search, setSearch] = useState('');
+  const [filtroStatus, setFiltroStatus] = useState<'todos' | 'ativos' | 'inativos'>('todos');
+  const [filtroCargo, setFiltroCargo] = useState('todos');
+  const [filtroEstado, setFiltroEstado] = useState('todos');
+  const [filtroCidade, setFiltroCidade] = useState('todos');
+  const [dataInicio, setDataInicio] = useState('');
+  const [dataFim, setDataFim] = useState('');
+  const [ordenacao, setOrdenacao] = useState<'nome_asc' | 'nome_desc' | 'id_desc' | 'id_asc' | 'data_desc' | 'data_asc'>('nome_asc');
 
   // Carregar dados da API
   const carregarDados = async () => {
@@ -147,13 +149,6 @@ export const Relatorios: React.FC = () => {
         const data = await camposRes.json();
         const listaCampos: CampoCustomizado[] = Array.isArray(data) ? data : [];
         setCampos(listaCampos);
-
-        // Inicializar todos os campos personalizados como visíveis por padrão
-        const mapa: { [key: number]: boolean } = {};
-        listaCampos.forEach(c => {
-          mapa[c.id] = true;
-        });
-        setCamposCustomVisiveis(mapa);
       }
       if (userRes.ok) {
         const data = await userRes.json();
@@ -170,12 +165,47 @@ export const Relatorios: React.FC = () => {
     carregarDados();
   }, [token]);
 
-  // Disparar rotação de 360 graus ao clicar no atualizar
+  // Atualizar dados com animação
   const handleAtualizarClique = () => {
     setIsSpinning(true);
     carregarDados();
     showSnackbar('Dados do relatório atualizados com sucesso!', 'info');
     setTimeout(() => setIsSpinning(false), 650);
+  };
+
+  // Alternar seleção de coluna no Construtor Livre
+  const toggleColuna = (colKey: string) => {
+    setColunasSelecionadas(prev => {
+      if (prev.includes(colKey)) {
+        return prev.filter(k => k !== colKey);
+      } else {
+        return [...prev, colKey];
+      }
+    });
+  };
+
+  // Ações rápidas de seleção de colunas
+  const selecionarTodasColunas = () => {
+    const todasCadastrais = COLUNAS_CADASTRAIS.map(c => c.key);
+    const todasCustom = campos.map(c => `custom_${c.id}`);
+    setColunasSelecionadas([...todasCadastrais, ...todasCustom]);
+    showSnackbar('Todas as colunas selecionadas!', 'info');
+  };
+
+  const limparSelecaoColunas = () => {
+    setColunasSelecionadas([]);
+    showSnackbar('Seleção de colunas limpa!', 'info');
+  };
+
+  const selecionarPadrao = () => {
+    setColunasSelecionadas(['nome', 'cargo', 'cidade_uf', 'status']);
+    showSnackbar('Colunas padrão aplicadas!', 'info');
+  };
+
+  const selecionarNomeECamposCustom = () => {
+    const todasCustom = campos.map(c => `custom_${c.id}`);
+    setColunasSelecionadas(['nome', ...todasCustom]);
+    showSnackbar('Selecionado: Nome + Campos Personalizados!', 'info');
   };
 
   // Resetar todos os filtros
@@ -187,8 +217,6 @@ export const Relatorios: React.FC = () => {
     setFiltroCidade('todos');
     setDataInicio('');
     setDataFim('');
-    setFiltroCampoId('todos');
-    setFiltroCampoValor('');
     setOrdenacao('nome_asc');
     showSnackbar('Filtros redefinidos para o padrão!', 'info');
   };
@@ -270,22 +298,7 @@ export const Relatorios: React.FC = () => {
         if (dataColab > dataFim) return false;
       }
 
-      // 6. Filtro por Campo Personalizado Específico
-      if (filtroCampoId !== 'todos') {
-        const campoAlvo = campos.find(cmp => String(cmp.id) === filtroCampoId);
-        if (campoAlvo) {
-          const valColab = getCustomFieldValue(c, campoAlvo);
-          if (filtroCampoValor.trim() !== '') {
-            if (!valColab.toLowerCase().includes(filtroCampoValor.toLowerCase().trim())) {
-              return false;
-            }
-          } else {
-            if (valColab === '-') return false;
-          }
-        }
-      }
-
-      // 7. Busca Textual Geral
+      // 6. Busca Textual Geral (inclusive dentro de campos personalizados)
       if (search.trim() !== '') {
         const q = search.toLowerCase();
         const matchNome = c.nome.toLowerCase().includes(q);
@@ -295,7 +308,16 @@ export const Relatorios: React.FC = () => {
         const matchCidade = (c.cidade || '').toLowerCase().includes(q);
         const matchLogradouro = (c.logradouro || '').toLowerCase().includes(q);
         const matchBairro = (c.bairro || '').toLowerCase().includes(q);
-        if (!matchNome && !matchCpf && !matchEmail && !matchCargo && !matchCidade && !matchLogradouro && !matchBairro) {
+
+        // Busca nos campos customizados
+        let matchCustom = false;
+        if (c.campos_customizados) {
+          matchCustom = Object.values(c.campos_customizados).some(v =>
+            String(v || '').toLowerCase().includes(q)
+          );
+        }
+
+        if (!matchNome && !matchCpf && !matchEmail && !matchCargo && !matchCidade && !matchLogradouro && !matchBairro && !matchCustom) {
           return false;
         }
       }
@@ -313,14 +335,9 @@ export const Relatorios: React.FC = () => {
       if (ordenacao === 'data_asc') return (a.criado_em || '').localeCompare(b.criado_em || '');
       return 0;
     });
-  }, [colaboradores, campos, filtroStatus, filtroCargo, filtroEstado, filtroCidade, dataInicio, dataFim, filtroCampoId, filtroCampoValor, search, ordenacao]);
+  }, [colaboradores, filtroStatus, filtroCargo, filtroEstado, filtroCidade, dataInicio, dataFim, search, ordenacao]);
 
-  // Lista de campos personalizados ativos para exibição
-  const camposExibicao = useMemo(() => {
-    return campos.filter(c => camposCustomVisiveis[c.id] !== false);
-  }, [campos, camposCustomVisiveis]);
-
-  // Agrupamento Geográfico com contagens
+  // Agrupamento Geográfico
   const dadosGeo = useMemo(() => {
     const mapGeo: Record<string, { estado: string; cidade: string; ativos: number; inativos: number; total: number }> = {};
     colaboradoresFiltrados.forEach(c => {
@@ -347,58 +364,70 @@ export const Relatorios: React.FC = () => {
       .sort((a, b) => b.total - a.total || a.estado.localeCompare(b.estado));
   }, [colaboradoresFiltrados]);
 
-  // Exportar para CSV / Excel com sincronização estrita de colunas visíveis
+  // Definição das colunas ativas no Construtor Livre
+  const colunasAtivasConstrutor = useMemo(() => {
+    const lista: { key: string; label: string; isCustom: boolean; customField?: CampoCustomizado }[] = [];
+
+    colunasSelecionadas.forEach(key => {
+      if (key.startsWith('custom_')) {
+        const campoId = parseInt(key.replace('custom_', ''), 10);
+        const campo = campos.find(c => c.id === campoId);
+        if (campo) {
+          lista.push({ key, label: campo.nome, isCustom: true, customField: campo });
+        }
+      } else {
+        const cad = COLUNAS_CADASTRAIS.find(c => c.key === key);
+        if (cad) {
+          lista.push({ key, label: cad.label, isCustom: false });
+        }
+      }
+    });
+
+    return lista;
+  }, [colunasSelecionadas, campos]);
+
+  // Obter o valor de uma célula no Construtor
+  const getValorCelula = (c: Colaborador, col: { key: string; label: string; isCustom: boolean; customField?: CampoCustomizado }): string => {
+    if (col.isCustom && col.customField) {
+      return getCustomFieldValue(c, col.customField);
+    }
+
+    switch (col.key) {
+      case 'id': return `#${c.id}`;
+      case 'foto': return c.foto_url || '';
+      case 'nome': return c.nome;
+      case 'cpf': return c.cpf || '-';
+      case 'cargo': return c.cargo || '-';
+      case 'email': return c.email || '-';
+      case 'telefone': return c.telefone || '-';
+      case 'cbo': return c.cbo_codigo || '-';
+      case 'endereco': return c.logradouro ? `${c.logradouro}, ${c.numero || 'S/N'} - ${c.bairro || ''}` : '-';
+      case 'cidade_uf': return c.cidade ? `${c.cidade} - ${c.estado || ''}` : '-';
+      case 'criado_em': return c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : '-';
+      case 'status': return c.ativo !== false ? 'Ativo' : 'Inativo';
+      default: return '-';
+    }
+  };
+
+  // Exportar para Excel / CSV respeitando 100% as colunas ativas
   const exportarCSV = () => {
     let headersCSV: string[] = [];
     let rowsCSV: string[][] = [];
 
-    if (tipo === 'headcount') {
-      if (headcountCols.id) headersCSV.push('ID');
-      if (headcountCols.nome) headersCSV.push('Nome do Colaborador');
-      if (headcountCols.cpf) headersCSV.push('CPF');
-      if (headcountCols.cargo) headersCSV.push('Cargo / Função');
-      if (headcountCols.cbo) headersCSV.push('CBO');
-      if (headcountCols.endereco) headersCSV.push('Endereço Completo');
-      if (headcountCols.cidade_uf) headersCSV.push('Cidade / UF');
-      if (headcountCols.criado_em) headersCSV.push('Data de Cadastro');
-      if (headcountCols.status) headersCSV.push('Status');
+    if (modo === 'construtor') {
+      if (colunasAtivasConstrutor.length === 0) {
+        showSnackbar('Selecione ao menos 1 coluna para exportar o relatório!', 'error');
+        return;
+      }
 
-      rowsCSV = colaboradoresFiltrados.map(c => {
-        const row: string[] = [];
-        if (headcountCols.id) row.push(String(c.id));
-        if (headcountCols.nome) row.push(c.nome);
-        if (headcountCols.cpf) row.push(c.cpf || '');
-        if (headcountCols.cargo) row.push(c.cargo || '');
-        if (headcountCols.cbo) row.push(c.cbo_codigo || '');
-        if (headcountCols.endereco) row.push(`${c.logradouro || ''}, ${c.numero || 'S/N'} - ${c.bairro || ''}`);
-        if (headcountCols.cidade_uf) row.push(c.cidade ? `${c.cidade}/${c.estado || ''}` : '');
-        if (headcountCols.criado_em) row.push(c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : '');
-        if (headcountCols.status) row.push(c.ativo !== false ? 'Ativo' : 'Inativo');
-        return row;
-      });
-    } else if (tipo === 'campos') {
-      if (camposBaseCols.id) headersCSV.push('ID');
-      if (camposBaseCols.nome) headersCSV.push('Nome Colaborador');
-      if (camposBaseCols.cargo) headersCSV.push('Cargo');
-      if (camposBaseCols.cidade_uf) headersCSV.push('Cidade / UF');
-      if (camposBaseCols.status) headersCSV.push('Status');
-
-      camposExibicao.forEach(cmp => headersCSV.push(cmp.nome));
-
-      rowsCSV = colaboradoresFiltrados.map(c => {
-        const row: string[] = [];
-        if (camposBaseCols.id) row.push(String(c.id));
-        if (camposBaseCols.nome) row.push(c.nome);
-        if (camposBaseCols.cargo) row.push(c.cargo || '');
-        if (camposBaseCols.cidade_uf) row.push(c.cidade ? `${c.cidade}/${c.estado || ''}` : '');
-        if (camposBaseCols.status) row.push(c.ativo !== false ? 'Ativo' : 'Inativo');
-
-        camposExibicao.forEach(cmp => {
-          row.push(getCustomFieldValue(c, cmp));
+      headersCSV = colunasAtivasConstrutor.map(c => c.label);
+      rowsCSV = colaboradoresFiltrados.map(colab => {
+        return colunasAtivasConstrutor.map(col => {
+          if (col.key === 'foto') return colab.foto_url || '';
+          return getValorCelula(colab, col);
         });
-        return row;
       });
-    } else if (tipo === 'geo') {
+    } else if (modo === 'geo') {
       if (geoCols.estado) headersCSV.push('Estado (UF)');
       if (geoCols.cidade) headersCSV.push('Cidade / Município');
       if (geoCols.ativos) headersCSV.push('Colaboradores Ativos');
@@ -416,7 +445,7 @@ export const Relatorios: React.FC = () => {
         if (geoCols.percentual) row.push(g.percentual);
         return row;
       });
-    } else if (tipo === 'rbac') {
+    } else if (modo === 'rbac') {
       if (rbacCols.id) headersCSV.push('ID Usuário');
       if (rbacCols.nome) headersCSV.push('Nome do Usuário');
       if (rbacCols.email) headersCSV.push('E-mail');
@@ -441,7 +470,7 @@ export const Relatorios: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `relatorio_${tipo}_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `relatorio_${modo}_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -450,23 +479,12 @@ export const Relatorios: React.FC = () => {
   };
 
   const imprimirPDF = () => {
+    if (modo === 'construtor' && colunasAtivasConstrutor.length === 0) {
+      showSnackbar('Selecione ao menos 1 coluna para imprimir o relatório!', 'error');
+      return;
+    }
     window.print();
   };
-
-  // Contagem de colunas ativas para o indicador do botão
-  const totalColunasAtivas = useMemo(() => {
-    if (tipo === 'headcount') {
-      return Object.values(headcountCols).filter(Boolean).length;
-    } else if (tipo === 'campos') {
-      const base = Object.values(camposBaseCols).filter(Boolean).length;
-      const custom = camposExibicao.length;
-      return base + custom;
-    } else if (tipo === 'geo') {
-      return Object.values(geoCols).filter(Boolean).length;
-    } else {
-      return Object.values(rbacCols).filter(Boolean).length;
-    }
-  }, [tipo, headcountCols, camposBaseCols, camposExibicao, geoCols, rbacCols]);
 
   return (
     <div className="relatorios-container" style={{ padding: '28px 32px', width: '100%', boxSizing: 'border-box' }}>
@@ -474,219 +492,80 @@ export const Relatorios: React.FC = () => {
       <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '1.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '12px', margin: 0 }}>
-            <FileBarChart size={32} color="#6366f1" /> Painel de Relatórios & Exportações
+            <FileBarChart size={32} color="#6366f1" /> Painel de Relatórios & Construtor de Visões
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', marginTop: '6px', marginBottom: 0 }}>
-            Gere visões consolidadas com filtros dinâmicos, controle total de colunas e exportação executiva em PDF e Excel.
+            Monte relatórios personalizados selecionando livremente qualquer coluna e campo dinâmico, com filtros avançados e exportação em PDF e Excel.
           </p>
         </div>
 
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Seletor de Tipo de Relatório */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--card-bg)', padding: '6px 14px', borderRadius: '12px', border: '1px solid var(--accent-purple)' }}>
-            <FileBarChart size={18} color="#818cf8" />
-            <select
-              value={tipo}
-              onChange={e => {
-                setTipo(e.target.value as TipoRelatorio);
-                setColumnsDropdownOpen(false);
-              }}
-              className="relatorio-type-select"
+          {/* Abas de Modo de Relatório */}
+          <div style={{ display: 'flex', background: 'var(--card-bg)', padding: '4px', borderRadius: '12px', border: '1px solid var(--accent-purple)', gap: '4px' }}>
+            <button
+              onClick={() => setModo('construtor')}
               style={{
-                background: 'transparent',
+                background: modo === 'construtor' ? '#6366f1' : 'transparent',
+                color: modo === 'construtor' ? '#ffffff' : 'var(--text-main)',
                 border: 'none',
-                color: 'var(--text-main)',
-                fontSize: '0.92rem',
+                padding: '7px 14px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
                 fontWeight: 700,
-                outline: 'none',
                 cursor: 'pointer',
-                paddingRight: '8px'
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease'
               }}
             >
-              <option value="headcount">📋 Quadro de Colaboradores (Headcount)</option>
-              <option value="campos">🧩 Campos Personalizados</option>
-              <option value="geo">🗺️ Distribuição Geográfica (Cidades & UFs)</option>
-              <option value="rbac">🔒 Usuários e Perfis (RBAC)</option>
-            </select>
+              <Sparkles size={15} /> Construtor de Relatório
+            </button>
+
+            <button
+              onClick={() => setModo('geo')}
+              style={{
+                background: modo === 'geo' ? '#6366f1' : 'transparent',
+                color: modo === 'geo' ? '#ffffff' : 'var(--text-main)',
+                border: 'none',
+                padding: '7px 14px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <MapPin size={15} /> Distribuição Geográfica
+            </button>
+
+            <button
+              onClick={() => setModo('rbac')}
+              style={{
+                background: modo === 'rbac' ? '#6366f1' : 'transparent',
+                color: modo === 'rbac' ? '#ffffff' : 'var(--text-main)',
+                border: 'none',
+                padding: '7px 14px',
+                borderRadius: '8px',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Shield size={15} /> Usuários (RBAC)
+            </button>
           </div>
 
           <button onClick={handleAtualizarClique} className="btn-secondary btn-relatorio-sec btn-icon-refresh" title="Atualizar Dados">
             <RefreshCw size={16} className={isSpinning || loading ? "spin-360" : ""} />
           </button>
-
-          {/* Botão Dropdown de Colunas Visíveis */}
-          <div className="dropdown-container" style={{ position: 'relative' }}>
-            <button
-              onClick={() => setColumnsDropdownOpen(!columnsDropdownOpen)}
-              className="btn-secondary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '9px 16px', fontSize: '0.88rem', fontWeight: 600 }}
-              title="Exibir ou Ocultar Colunas no Relatório e Impressão"
-            >
-              <Columns size={16} color="#6366f1" />
-              <span>Colunas ({totalColunasAtivas})</span>
-              <ChevronDown size={14} />
-            </button>
-
-            {columnsDropdownOpen && (
-              <div
-                className="dropdown-menu glass-panel"
-                style={{
-                  position: 'absolute',
-                  right: 0,
-                  top: '46px',
-                  width: '280px',
-                  maxHeight: '380px',
-                  overflowY: 'auto',
-                  padding: '14px 16px',
-                  zIndex: 100,
-                  boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
-                  border: '1px solid rgba(99, 102, 241, 0.3)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', borderBottom: '1px solid var(--card-border)', paddingBottom: '6px' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#818cf8', textTransform: 'uppercase' }}>
-                    Colunas Visíveis
-                  </span>
-                </div>
-
-                {/* Colunas do Tipo 1: Headcount */}
-                {tipo === 'headcount' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {[
-                      { key: 'id', label: 'ID do Colaborador' },
-                      { key: 'foto', label: 'Foto de Perfil' },
-                      { key: 'nome', label: 'Nome Completo' },
-                      { key: 'cpf', label: 'CPF' },
-                      { key: 'cargo', label: 'Cargo / Função' },
-                      { key: 'cbo', label: 'Código CBO' },
-                      { key: 'endereco', label: 'Endereço Completo' },
-                      { key: 'cidade_uf', label: 'Cidade / UF' },
-                      { key: 'criado_em', label: 'Data de Cadastro' },
-                      { key: 'status', label: 'Status (Ativo/Inativo)' }
-                    ].map(col => (
-                      <label key={col.key} className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={!!headcountCols[col.key]}
-                          onChange={() => setHeadcountCols(prev => ({ ...prev, [col.key]: !prev[col.key] }))}
-                        />
-                        <span>{col.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-
-                {/* Colunas do Tipo 2: Campos Personalizados */}
-                {tipo === 'campos' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Dados Base</div>
-                    {[
-                      { key: 'id', label: 'ID' },
-                      { key: 'nome', label: 'Colaborador' },
-                      { key: 'cargo', label: 'Cargo' },
-                      { key: 'cidade_uf', label: 'Cidade / UF' },
-                      { key: 'status', label: 'Status' }
-                    ].map(col => (
-                      <label key={col.key} className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={!!camposBaseCols[col.key]}
-                          onChange={() => setCamposBaseCols(prev => ({ ...prev, [col.key]: !prev[col.key] }))}
-                        />
-                        <span>{col.label}</span>
-                      </label>
-                    ))}
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px', borderTop: '1px solid var(--card-border)', paddingTop: '6px' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Campos Dinâmicos</span>
-                      <div style={{ display: 'flex', gap: '6px' }}>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const m: any = {};
-                            campos.forEach(c => { m[c.id] = true; });
-                            setCamposCustomVisiveis(m);
-                          }}
-                          style={{ background: 'transparent', border: 'none', color: '#38bdf8', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 600 }}
-                        >
-                          Todos
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const m: any = {};
-                            campos.forEach(c => { m[c.id] = false; });
-                            setCamposCustomVisiveis(m);
-                          }}
-                          style={{ background: 'transparent', border: 'none', color: '#fb7185', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 600 }}
-                        >
-                          Nenhum
-                        </button>
-                      </div>
-                    </div>
-
-                    {campos.map(cmp => (
-                      <label key={cmp.id} className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={camposCustomVisiveis[cmp.id] !== false}
-                          onChange={() => setCamposCustomVisiveis(prev => ({ ...prev, [cmp.id]: !prev[cmp.id] }))}
-                        />
-                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{cmp.nome}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-
-                {/* Colunas do Tipo 3: Geo */}
-                {tipo === 'geo' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {[
-                      { key: 'estado', label: 'Estado (UF)' },
-                      { key: 'cidade', label: 'Cidade / Município' },
-                      { key: 'ativos', label: 'Colaboradores Ativos' },
-                      { key: 'inativos', label: 'Colaboradores Inativos' },
-                      { key: 'total', label: 'Total de Registros' },
-                      { key: 'percentual', label: '% do Headcount' }
-                    ].map(col => (
-                      <label key={col.key} className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={!!geoCols[col.key]}
-                          onChange={() => setGeoCols(prev => ({ ...prev, [col.key]: !prev[col.key] }))}
-                        />
-                        <span>{col.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-
-                {/* Colunas do Tipo 4: RBAC */}
-                {tipo === 'rbac' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {[
-                      { key: 'id', label: 'ID do Usuário' },
-                      { key: 'nome', label: 'Nome do Usuário' },
-                      { key: 'email', label: 'E-mail' },
-                      { key: 'perfil', label: 'Perfil de Acesso' },
-                      { key: 'tipo', label: 'Tipo (Admin/Padrão)' },
-                      { key: 'status', label: 'Status' }
-                    ].map(col => (
-                      <label key={col.key} className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
-                        <input
-                          type="checkbox"
-                          checked={!!rbacCols[col.key]}
-                          onChange={() => setRbacCols(prev => ({ ...prev, [col.key]: !prev[col.key] }))}
-                        />
-                        <span>{col.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
           <button onClick={exportarCSV} className="btn-secondary btn-export-excel" title="Exportar Tabela para Excel/CSV">
             <FileSpreadsheet size={16} /> Exportar Excel (CSV)
           </button>
@@ -696,18 +575,250 @@ export const Relatorios: React.FC = () => {
         </div>
       </div>
 
+      {/* PAINEL VISUAL ABERTO: CONSTRUTOR DE COLUNAS (SEM DROPDOWN) */}
+      {modo === 'construtor' && (
+        <div className="glass-panel no-print" style={{ padding: '22px 24px', borderRadius: '18px', marginBottom: '24px', border: '1px solid rgba(99, 102, 241, 0.35)', background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)' }}>
+          {/* Cabeçalho do Construtor */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ background: 'rgba(99, 102, 241, 0.2)', padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.4)' }}>
+                <Sliders size={18} color="#818cf8" />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>
+                  Quais colunas você deseja exibir no relatório?
+                </h3>
+                <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                  Clique nas colunas abaixo para ativar ou desativar. O relatório, a impressão e o Excel exibirão <strong>exatamente</strong> as colunas marcadas.
+                </span>
+              </div>
+            </div>
+
+            {/* Ações Rápidas */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={selecionarTodasColunas}
+                className="btn-secondary"
+                style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+              >
+                <CheckSquare size={13} color="#34d399" /> Selecionar Todas
+              </button>
+              <button
+                type="button"
+                onClick={selecionarPadrao}
+                className="btn-secondary"
+                style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+              >
+                <RotateCcw size={13} color="#818cf8" /> Padrão
+              </button>
+              {campos.length > 0 && (
+                <button
+                  type="button"
+                  onClick={selecionarNomeECamposCustom}
+                  className="btn-secondary"
+                  style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#38bdf8', color: '#38bdf8' }}
+                >
+                  <Sparkles size={13} /> Nome + Campos Personalizados
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={limparSelecaoColunas}
+                className="btn-secondary"
+                style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '5px', color: '#fb7185' }}
+              >
+                <Square size={13} /> Limpar
+              </button>
+            </div>
+          </div>
+
+          {/* Grupo 1: Dados Cadastrais Básicos */}
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
+              📋 Dados Cadastrais do Colaborador
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {COLUNAS_CADASTRAIS.map(col => {
+                const ativa = colunasSelecionadas.includes(col.key);
+                return (
+                  <button
+                    key={col.key}
+                    type="button"
+                    onClick={() => toggleColuna(col.key)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '7px 14px',
+                      borderRadius: '10px',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      border: ativa ? '1.5px solid #6366f1' : '1px solid var(--card-border)',
+                      background: ativa ? 'rgba(99, 102, 241, 0.25)' : 'rgba(30, 41, 59, 0.4)',
+                      color: ativa ? '#f8fafc' : 'var(--text-muted)',
+                      boxShadow: ativa ? '0 0 12px rgba(99, 102, 241, 0.3)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {ativa ? <Check size={14} color="#38bdf8" /> : <Plus size={14} color="var(--text-muted)" />}
+                    <span>{col.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Grupo 2: Campos Personalizados Criados */}
+          {campos.length > 0 && (
+            <div>
+              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
+                🧩 Campos Personalizados Cadastrados ({campos.length})
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                {campos.map(cmp => {
+                  const key = `custom_${cmp.id}`;
+                  const ativa = colunasSelecionadas.includes(key);
+                  return (
+                    <button
+                      key={cmp.id}
+                      type="button"
+                      onClick={() => toggleColuna(key)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '7px 14px',
+                        borderRadius: '10px',
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        border: ativa ? '1.5px solid #38bdf8' : '1px solid var(--card-border)',
+                        background: ativa ? 'rgba(56, 189, 248, 0.22)' : 'rgba(30, 41, 59, 0.4)',
+                        color: ativa ? '#ffffff' : 'var(--text-muted)',
+                        boxShadow: ativa ? '0 0 12px rgba(56, 189, 248, 0.3)' : 'none',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {ativa ? <Check size={14} color="#34d399" /> : <Plus size={14} color="var(--text-muted)" />}
+                      <span>{cmp.nome}</span>
+                      <span style={{ fontSize: '0.7rem', opacity: 0.75, background: 'rgba(0,0,0,0.25)', padding: '1px 6px', borderRadius: '4px' }}>
+                        {cmp.tipo}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Resumo da Seleção Atual */}
+          <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            <span>
+              Colunas ativas no relatório: <strong style={{ color: '#38bdf8' }}>{colunasAtivasConstrutor.length}</strong> de {COLUNAS_CADASTRAIS.length + campos.length}
+            </span>
+            <span style={{ fontStyle: 'italic' }}>
+              Ordem de exibição: {colunasAtivasConstrutor.map(c => c.label).join(' → ') || 'Nenhuma coluna selecionada'}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* PAINEL DE SELEÇÃO DE COLUNAS DO MODO GEOGRÁFICO */}
+      {modo === 'geo' && (
+        <div className="glass-panel no-print" style={{ padding: '16px 20px', borderRadius: '16px', marginBottom: '24px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', marginBottom: '10px' }}>
+            Colunas Visíveis no Relatório Geográfico
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {[
+              { key: 'estado', label: 'Estado (UF)' },
+              { key: 'cidade', label: 'Cidade / Município' },
+              { key: 'ativos', label: 'Colaboradores Ativos' },
+              { key: 'inativos', label: 'Colaboradores Inativos' },
+              { key: 'total', label: 'Total Geral' },
+              { key: 'percentual', label: '% do Headcount' }
+            ].map(col => (
+              <button
+                key={col.key}
+                type="button"
+                onClick={() => setGeoCols(prev => ({ ...prev, [col.key]: !prev[col.key] }))}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: geoCols[col.key] ? '1.5px solid #6366f1' : '1px solid var(--card-border)',
+                  background: geoCols[col.key] ? 'rgba(99, 102, 241, 0.25)' : 'rgba(30, 41, 59, 0.4)',
+                  color: geoCols[col.key] ? '#f8fafc' : 'var(--text-muted)'
+                }}
+              >
+                {geoCols[col.key] ? <Check size={13} color="#38bdf8" /> : <Plus size={13} color="var(--text-muted)" />}
+                <span>{col.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* PAINEL DE SELEÇÃO DE COLUNAS DO MODO RBAC */}
+      {modo === 'rbac' && (
+        <div className="glass-panel no-print" style={{ padding: '16px 20px', borderRadius: '16px', marginBottom: '24px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', marginBottom: '10px' }}>
+            Colunas Visíveis no Relatório de Usuários (RBAC)
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+            {[
+              { key: 'id', label: 'ID do Usuário' },
+              { key: 'nome', label: 'Nome do Usuário' },
+              { key: 'email', label: 'E-mail' },
+              { key: 'perfil', label: 'Perfil de Acesso' },
+              { key: 'tipo', label: 'Tipo (Admin/Padrão)' },
+              { key: 'status', label: 'Status' }
+            ].map(col => (
+              <button
+                key={col.key}
+                type="button"
+                onClick={() => setRbacCols(prev => ({ ...prev, [col.key]: !prev[col.key] }))}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  border: rbacCols[col.key] ? '1.5px solid #6366f1' : '1px solid var(--card-border)',
+                  background: rbacCols[col.key] ? 'rgba(99, 102, 241, 0.25)' : 'rgba(30, 41, 59, 0.4)',
+                  color: rbacCols[col.key] ? '#f8fafc' : 'var(--text-muted)'
+                }}
+              >
+                {rbacCols[col.key] ? <Check size={13} color="#38bdf8" /> : <Plus size={13} color="var(--text-muted)" />}
+                <span>{col.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* PAINEL DE FILTROS AVANÇADOS (Oculto na Impressão) */}
-      {tipo !== 'rbac' && (
-        <div className="glass-panel no-print" style={{ padding: '20px 24px', borderRadius: '18px', marginBottom: '24px', border: '1px solid rgba(99, 102, 241, 0.25)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', alignItems: 'flex-end' }}>
+      {modo !== 'rbac' && (
+        <div className="glass-panel no-print" style={{ padding: '18px 24px', borderRadius: '16px', marginBottom: '24px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', alignItems: 'flex-end' }}>
             {/* 1. Busca Geral */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Busca Rápida</label>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Busca Rápida</label>
               <div className="search-box" style={{ width: '100%' }}>
                 <Search size={16} color="var(--text-muted)" />
                 <input
                   type="text"
-                  placeholder="Nome, CPF, Cargo, Bairro..."
+                  placeholder="Nome, CPF, Cargo, PIX..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', color: 'inherit' }}
@@ -717,12 +828,12 @@ export const Relatorios: React.FC = () => {
 
             {/* 2. Filtro de Status */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status do Colaborador</label>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Status</label>
               <select
                 value={filtroStatus}
                 onChange={e => setFiltroStatus(e.target.value as any)}
                 className="custom-select-small"
-                style={{ width: '100%', height: '40px' }}
+                style={{ width: '100%', height: '38px' }}
               >
                 <option value="todos">Todos os Status</option>
                 <option value="ativos">🟢 Apenas Ativos</option>
@@ -732,12 +843,12 @@ export const Relatorios: React.FC = () => {
 
             {/* 3. Filtro de Cargo */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cargo / Função</label>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cargo / Função</label>
               <select
                 value={filtroCargo}
                 onChange={e => setFiltroCargo(e.target.value)}
                 className="custom-select-small"
-                style={{ width: '100%', height: '40px' }}
+                style={{ width: '100%', height: '38px' }}
               >
                 <option value="todos">Todos os Cargos ({listaCargos.length})</option>
                 {listaCargos.map(cargo => (
@@ -748,15 +859,15 @@ export const Relatorios: React.FC = () => {
 
             {/* 4. Filtro de Estado (UF) */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Estado (UF)</label>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Estado (UF)</label>
               <select
                 value={filtroEstado}
                 onChange={e => {
                   setFiltroEstado(e.target.value);
-                  setFiltroCidade('todos'); // reset cidade ao trocar UF
+                  setFiltroCidade('todos');
                 }}
                 className="custom-select-small"
-                style={{ width: '100%', height: '40px' }}
+                style={{ width: '100%', height: '38px' }}
               >
                 <option value="todos">Todas as UFs ({listaEstados.length})</option>
                 {listaEstados.map(uf => (
@@ -765,14 +876,14 @@ export const Relatorios: React.FC = () => {
               </select>
             </div>
 
-            {/* 5. Filtro de Cidade Dinâmica */}
+            {/* 5. Filtro de Cidade */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cidade / Município</label>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cidade</label>
               <select
                 value={filtroCidade}
                 onChange={e => setFiltroCidade(e.target.value)}
                 className="custom-select-small"
-                style={{ width: '100%', height: '40px' }}
+                style={{ width: '100%', height: '38px' }}
                 disabled={listaCidades.length === 0}
               >
                 <option value="todos">Todas as Cidades ({listaCidades.length})</option>
@@ -782,77 +893,46 @@ export const Relatorios: React.FC = () => {
               </select>
             </div>
 
-            {/* 6. Período: Data Inicial */}
+            {/* 6. Período: De */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cadastrado a partir de</label>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>De (Cadastro)</label>
               <input
                 type="date"
                 value={dataInicio}
                 onChange={e => setDataInicio(e.target.value)}
                 className="custom-select-small"
-                style={{ width: '100%', height: '40px' }}
+                style={{ width: '100%', height: '38px' }}
               />
             </div>
 
-            {/* 7. Período: Data Final */}
+            {/* 7. Período: Até */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Cadastrado até</label>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Até (Cadastro)</label>
               <input
                 type="date"
                 value={dataFim}
                 onChange={e => setDataFim(e.target.value)}
                 className="custom-select-small"
-                style={{ width: '100%', height: '40px' }}
+                style={{ width: '100%', height: '38px' }}
               />
             </div>
 
-            {/* 8. Filtro por Campo Personalizado Específico */}
-            {campos.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Filtrar Campo Customizado</label>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  <select
-                    value={filtroCampoId}
-                    onChange={e => setFiltroCampoId(e.target.value)}
-                    className="custom-select-small"
-                    style={{ flex: 1, height: '40px' }}
-                  >
-                    <option value="todos">Selecione um Campo...</option>
-                    {campos.map(cmp => (
-                      <option key={cmp.id} value={String(cmp.id)}>{cmp.nome}</option>
-                    ))}
-                  </select>
-
-                  {filtroCampoId !== 'todos' && (
-                    <input
-                      type="text"
-                      placeholder="Valor..."
-                      value={filtroCampoValor}
-                      onChange={e => setFiltroCampoValor(e.target.value)}
-                      className="custom-select-small"
-                      style={{ width: '100px', height: '40px' }}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* 9. Ordenação & Botão Limpar */}
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            {/* 8. Ordenação & Reset */}
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-                <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ordenação</label>
+                <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ordem</label>
                 <select
                   value={ordenacao}
                   onChange={e => setOrdenacao(e.target.value as any)}
                   className="custom-select-small"
-                  style={{ width: '100%', height: '40px' }}
+                  style={{ width: '100%', height: '38px' }}
                 >
                   <option value="nome_asc">Nome (A - Z)</option>
                   <option value="nome_desc">Nome (Z - A)</option>
                   <option value="id_desc">ID (Mais Recente)</option>
                   <option value="id_asc">ID (Mais Antigo)</option>
-                  <option value="data_desc">Data Cadastro (Decrescente)</option>
-                  <option value="data_asc">Data Cadastro (Crescente)</option>
+                  <option value="data_desc">Data (Decrescente)</option>
+                  <option value="data_asc">Data (Crescente)</option>
                 </select>
               </div>
 
@@ -860,57 +940,15 @@ export const Relatorios: React.FC = () => {
                 type="button"
                 onClick={handleResetFiltros}
                 className="btn-secondary"
-                style={{ height: '40px', padding: '0 14px', display: 'flex', alignItems: 'center', gap: '6px', marginTop: 'auto' }}
+                style={{ height: '38px', padding: '0 12px', display: 'flex', alignItems: 'center', gap: '5px', marginTop: 'auto' }}
                 title="Limpar todos os filtros"
               >
-                <RotateCcw size={16} /> Limpar
+                <RotateCcw size={15} /> Limpar
               </button>
             </div>
           </div>
         </div>
       )}
-
-      {/* CARDS DE RESUMO E INDICADORES (Oculto na Impressão) */}
-      <div className="no-print" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        <div className="glass-panel" style={{ padding: '16px 20px', borderRadius: '14px', borderLeft: '4px solid #6366f1' }}>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Total Listados</span>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '4px', color: '#f8fafc' }}>
-            {tipo === 'rbac' ? usuarios.length : colaboradoresFiltrados.length}
-          </div>
-        </div>
-
-        {tipo !== 'rbac' && (
-          <>
-            <div className="glass-panel" style={{ padding: '16px 20px', borderRadius: '14px', borderLeft: '4px solid #34d399' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Colaboradores Ativos</span>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '4px', color: '#34d399' }}>
-                {colaboradoresFiltrados.filter(c => c.ativo !== false).length}
-              </div>
-            </div>
-
-            <div className="glass-panel" style={{ padding: '16px 20px', borderRadius: '14px', borderLeft: '4px solid #fb7185' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Colaboradores Inativos</span>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '4px', color: '#fb7185' }}>
-                {colaboradoresFiltrados.filter(c => c.ativo === false).length}
-              </div>
-            </div>
-
-            <div className="glass-panel" style={{ padding: '16px 20px', borderRadius: '14px', borderLeft: '4px solid #38bdf8' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Cargos Únicos</span>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '4px', color: '#38bdf8' }}>
-                {listaCargos.length}
-              </div>
-            </div>
-
-            <div className="glass-panel" style={{ padding: '16px 20px', borderRadius: '14px', borderLeft: '4px solid #fbbf24' }}>
-              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 700 }}>Municípios Atendidos</span>
-              <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '4px', color: '#fbbf24' }}>
-                {dadosGeo.length}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
 
       {/* ÁREA DE IMPRESSÃO / PRÉ-VISUALIZAÇÃO DO RELATÓRIO */}
       <div className="printable-report-area glass-panel" style={{ padding: '32px', borderRadius: '20px' }}>
@@ -918,27 +956,30 @@ export const Relatorios: React.FC = () => {
         <div className="pdf-header-only" style={{ marginBottom: '20px', borderBottom: '2px solid #6366f1', paddingBottom: '12px' }}>
           <h2 style={{ fontSize: '1.6rem', color: '#0f172a', margin: 0 }}>REGZ GESTÃO DE PESSOAS</h2>
           <p style={{ fontSize: '0.9rem', color: '#475569', margin: '4px 0' }}>
-            Relatório de {tipo === 'headcount' ? 'Quadro de Colaboradores' : tipo === 'campos' ? 'Campos Personalizados' : tipo === 'geo' ? 'Distribuição Geográfica' : 'Usuários e Permissões (RBAC)'}
+            {modo === 'construtor' && 'Relatório Personalizado de Colaboradores & Campos'}
+            {modo === 'geo' && 'Relatório de Distribuição Geográfica'}
+            {modo === 'rbac' && 'Relatório de Usuários e Permissões (RBAC)'}
           </p>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Gerado em: {new Date().toLocaleString('pt-BR')} • {totalColunasAtivas} colunas ativas</span>
+          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+            Gerado em: {new Date().toLocaleString('pt-BR')} • {modo === 'construtor' ? `${colunasAtivasConstrutor.length} colunas exibidas` : ''}
+          </span>
         </div>
 
-        {/* Título do Relatório */}
+        {/* Resumo e Indicadores do Relatório */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
           <div>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>
-              {tipo === 'headcount' && 'Relatório do Quadro de Colaboradores'}
-              {tipo === 'campos' && 'Relatório de Campos Personalizados'}
-              {tipo === 'geo' && 'Relatório de Distribuição Geográfica'}
-              {tipo === 'rbac' && 'Relatório de Usuários do Sistema (RBAC)'}
+              {modo === 'construtor' && 'Relatório Personalizado de Colaboradores'}
+              {modo === 'geo' && 'Relatório de Distribuição Geográfica'}
+              {modo === 'rbac' && 'Relatório de Usuários do Sistema (RBAC)'}
             </h2>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Total de registros listados: <strong>{tipo === 'rbac' ? usuarios.length : tipo === 'geo' ? dadosGeo.length : colaboradoresFiltrados.length}</strong>
+              Total de registros listados: <strong>{modo === 'rbac' ? usuarios.length : modo === 'geo' ? dadosGeo.length : colaboradoresFiltrados.length}</strong>
             </span>
           </div>
 
           <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem' }}>
-            {tipo !== 'rbac' && tipo !== 'geo' && (
+            {modo === 'construtor' && (
               <>
                 <span style={{ color: '#34d399', fontWeight: 600 }}>
                   ● {colaboradoresFiltrados.filter(c => c.ativo !== false).length} Ativos
@@ -955,147 +996,109 @@ export const Relatorios: React.FC = () => {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
             <RefreshCw className="spin" size={28} color="#6366f1" style={{ marginBottom: '8px' }} />
-            <p>Carregando registros do relatório...</p>
+            <p>Carregando dados do relatório...</p>
           </div>
         ) : (
           <div className="table-flex-wrapper" style={{ overflowX: 'auto' }}>
-            {/* TIPO 1: HEADCOUNT */}
-            {tipo === 'headcount' && (
-              <table className="custom-table">
-                <thead>
-                  <tr>
-                    {headcountCols.id && <th style={{ width: '60px' }}>ID</th>}
-                    {headcountCols.foto && <th style={{ width: '60px' }}>Foto</th>}
-                    {headcountCols.nome && <th>Nome do Colaborador</th>}
-                    {headcountCols.cpf && <th>CPF</th>}
-                    {headcountCols.cargo && <th>Cargo / Função</th>}
-                    {headcountCols.cbo && <th>CBO</th>}
-                    {headcountCols.endereco && <th>Endereço Completo</th>}
-                    {headcountCols.cidade_uf && <th>Cidade / UF</th>}
-                    {headcountCols.criado_em && <th>Data Cadastro</th>}
-                    {headcountCols.status && <th style={{ textAlign: 'center', width: '100px' }}>Status</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {colaboradoresFiltrados.length === 0 ? (
-                    <tr>
-                      <td colSpan={totalColunasAtivas || 6} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
-                        Nenhum colaborador encontrado com os filtros aplicados.
-                      </td>
-                    </tr>
-                  ) : (
-                    colaboradoresFiltrados.map(c => (
-                      <tr key={c.id}>
-                        {headcountCols.id && <td>#{c.id}</td>}
-                        {headcountCols.foto && (
-                          <td>
-                            {c.foto_url ? (
-                              <img src={c.foto_url} alt={c.nome} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
-                            ) : (
-                              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', fontSize: '0.8rem', fontWeight: 700 }}>
-                                {c.nome.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                          </td>
-                        )}
-                        {headcountCols.nome && <td style={{ fontWeight: 600 }}>{c.nome}</td>}
-                        {headcountCols.cpf && <td>{c.cpf || '-'}</td>}
-                        {headcountCols.cargo && (
-                          <td>
-                            <span className="cargo-badge" style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '0.8rem' }}>
-                              {c.cargo || 'Não definido'}
-                            </span>
-                          </td>
-                        )}
-                        {headcountCols.cbo && <td>{c.cbo_codigo || '-'}</td>}
-                        {headcountCols.endereco && (
-                          <td>
-                            {c.logradouro ? `${c.logradouro}, ${c.numero || 'S/N'} - ${c.bairro || ''}` : '-'}
-                          </td>
-                        )}
-                        {headcountCols.cidade_uf && <td>{c.cidade ? `${c.cidade} - ${c.estado || ''}` : '-'}</td>}
-                        {headcountCols.criado_em && (
-                          <td>
-                            {c.criado_em ? new Date(c.criado_em).toLocaleDateString('pt-BR') : '-'}
-                          </td>
-                        )}
-                        {headcountCols.status && (
-                          <td style={{ textAlign: 'center' }}>
-                            <span style={{
-                              color: c.ativo !== false ? '#34d399' : '#fb7185',
-                              fontWeight: 700,
-                              fontSize: '0.78rem'
-                            }}>
-                              {c.ativo !== false ? 'ATIVO' : 'INATIVO'}
-                            </span>
-                          </td>
-                        )}
+            {/* MODO 1: CONSTRUTOR LIVRE DE COLUNAS */}
+            {modo === 'construtor' && (
+              <>
+                {colunasAtivasConstrutor.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text-muted)' }}>
+                    <Sliders size={36} color="#818cf8" style={{ marginBottom: '12px', opacity: 0.7 }} />
+                    <h3 style={{ margin: '0 0 6px 0', color: '#f8fafc' }}>Nenhuma coluna selecionada</h3>
+                    <p style={{ margin: 0, fontSize: '0.9rem' }}>
+                      Clique nas colunas desejadas no painel acima para construir o seu relatório personalizado.
+                    </p>
+                  </div>
+                ) : (
+                  <table className="custom-table">
+                    <thead>
+                      <tr>
+                        {colunasAtivasConstrutor.map(col => (
+                          <th key={col.key}>
+                            {col.label}
+                          </th>
+                        ))}
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody>
+                      {colaboradoresFiltrados.length === 0 ? (
+                        <tr>
+                          <td colSpan={colunasAtivasConstrutor.length} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                            Nenhum colaborador encontrado com os filtros aplicados.
+                          </td>
+                        </tr>
+                      ) : (
+                        colaboradoresFiltrados.map(c => (
+                          <tr key={c.id}>
+                            {colunasAtivasConstrutor.map(col => {
+                              // Renderização específica para foto
+                              if (col.key === 'foto') {
+                                return (
+                                  <td key={col.key}>
+                                    {c.foto_url ? (
+                                      <img src={c.foto_url} alt={c.nome} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                                    ) : (
+                                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', fontSize: '0.8rem', fontWeight: 700 }}>
+                                        {c.nome.charAt(0).toUpperCase()}
+                                      </div>
+                                    )}
+                                  </td>
+                                );
+                              }
+
+                              // Renderização específica para status
+                              if (col.key === 'status') {
+                                return (
+                                  <td key={col.key}>
+                                    <span style={{
+                                      color: c.ativo !== false ? '#34d399' : '#fb7185',
+                                      fontWeight: 700,
+                                      fontSize: '0.78rem'
+                                    }}>
+                                      {c.ativo !== false ? 'ATIVO' : 'INATIVO'}
+                                    </span>
+                                  </td>
+                                );
+                              }
+
+                              // Renderização específica para cargo
+                              if (col.key === 'cargo') {
+                                return (
+                                  <td key={col.key}>
+                                    <span className="cargo-badge" style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '0.8rem' }}>
+                                      {c.cargo || 'Não definido'}
+                                    </span>
+                                  </td>
+                                );
+                              }
+
+                              // Renderização para campos personalizados e demais valores
+                              const val = getValorCelula(c, col);
+                              return (
+                                <td key={col.key} style={col.key === 'nome' ? { fontWeight: 600 } : undefined}>
+                                  {val === 'Sim' ? (
+                                    <span style={{ color: '#34d399', fontWeight: 600 }}>✓ Sim</span>
+                                  ) : val === 'Não' ? (
+                                    <span style={{ color: '#fb7185' }}>✗ Não</span>
+                                  ) : (
+                                    val
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                )}
+              </>
             )}
 
-            {/* TIPO 2: CAMPOS PERSONALIZADOS */}
-            {tipo === 'campos' && (
-              <table className="custom-table">
-                <thead>
-                  <tr>
-                    {camposBaseCols.id && <th style={{ width: '60px' }}>ID</th>}
-                    {camposBaseCols.nome && <th>Colaborador</th>}
-                    {camposBaseCols.cargo && <th>Cargo</th>}
-                    {camposBaseCols.cidade_uf && <th>Cidade / UF</th>}
-                    {camposBaseCols.status && <th style={{ textAlign: 'center' }}>Status</th>}
-                    {camposExibicao.map(cmp => (
-                      <th key={cmp.id}>{cmp.nome}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {colaboradoresFiltrados.length === 0 ? (
-                    <tr>
-                      <td colSpan={totalColunasAtivas || 4} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
-                        Nenhum registro encontrado com os filtros aplicados.
-                      </td>
-                    </tr>
-                  ) : (
-                    colaboradoresFiltrados.map(c => (
-                      <tr key={c.id}>
-                        {camposBaseCols.id && <td>#{c.id}</td>}
-                        {camposBaseCols.nome && <td style={{ fontWeight: 600 }}>{c.nome}</td>}
-                        {camposBaseCols.cargo && <td>{c.cargo || '-'}</td>}
-                        {camposBaseCols.cidade_uf && <td>{c.cidade ? `${c.cidade}/${c.estado || ''}` : '-'}</td>}
-                        {camposBaseCols.status && (
-                          <td style={{ textAlign: 'center' }}>
-                            <span style={{ color: c.ativo !== false ? '#34d399' : '#fb7185', fontWeight: 700, fontSize: '0.78rem' }}>
-                              {c.ativo !== false ? 'ATIVO' : 'INATIVO'}
-                            </span>
-                          </td>
-                        )}
-                        {camposExibicao.map(cmp => {
-                          const val = getCustomFieldValue(c, cmp);
-                          return (
-                            <td key={cmp.id}>
-                              {val === 'Sim' ? (
-                                <span style={{ color: '#34d399', fontWeight: 600 }}>✓ Sim</span>
-                              ) : val === 'Não' ? (
-                                <span style={{ color: '#fb7185' }}>✗ Não</span>
-                              ) : (
-                                val
-                              )}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            )}
-
-            {/* TIPO 3: DISTRIBUIÇÃO GEOGRÁFICA */}
-            {tipo === 'geo' && (
+            {/* MODO 2: DISTRIBUIÇÃO GEOGRÁFICA */}
+            {modo === 'geo' && (
               <table className="custom-table">
                 <thead>
                   <tr>
@@ -1110,7 +1113,7 @@ export const Relatorios: React.FC = () => {
                 <tbody>
                   {dadosGeo.length === 0 ? (
                     <tr>
-                      <td colSpan={totalColunasAtivas || 4} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                      <td colSpan={Object.values(geoCols).filter(Boolean).length || 4} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
                         Nenhum registro geográfico encontrado.
                       </td>
                     </tr>
@@ -1146,8 +1149,8 @@ export const Relatorios: React.FC = () => {
               </table>
             )}
 
-            {/* TIPO 4: USUÁRIOS E PERFIS (RBAC) */}
-            {tipo === 'rbac' && (
+            {/* MODO 3: USUÁRIOS E PERFIS (RBAC) */}
+            {modo === 'rbac' && (
               <table className="custom-table">
                 <thead>
                   <tr>
@@ -1162,7 +1165,7 @@ export const Relatorios: React.FC = () => {
                 <tbody>
                   {usuarios.length === 0 ? (
                     <tr>
-                      <td colSpan={totalColunasAtivas || 6} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                      <td colSpan={Object.values(rbacCols).filter(Boolean).length || 6} style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
                         Nenhum usuário cadastrado encontrado.
                       </td>
                     </tr>

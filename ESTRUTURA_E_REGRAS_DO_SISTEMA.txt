@@ -220,26 +220,21 @@ I. Isolamento Estrito de Dados Multi-Empresas (Multi-Tenancy por empresa_id):
     - Criação e edição de campos customizados (`Campos.tsx`).
     - Criação de perfis de acesso, alteração de permissões RBAC, cadastro/edição de usuários, dados da empresa e emissão/renovação de licenças (`Administracao.tsx`).
     - Cadastro, edição de dados, upload/remoção de foto, inativação e reativação de colaboradores (`Colaboradores.tsx`).
-- REGRA 165: Reformulação Completa do Painel de Relatórios & Exportações (`Relatorios.tsx`):
-  - **Filtros Avançados e Complexos**:
-    - Busca textual inteligente por Nome, CPF, Cargo, Cidade, Endereço e Bairro.
-    - Filtro de Status (Todos, Apenas Ativos, Apenas Inativos).
-    - Filtro por Cargo com contagem de colaboradores.
-    - Filtro encadeado de Estado (UF) e Cidade dinâmica (carrega apenas municípios com colaboradores daquela UF).
-    - Filtro por Intervalo de Datas (Cadastrado a partir de / Cadastrado até).
-    - Filtro por Campo Personalizado Específico (seleção de campo + valor de busca correspondente).
-    - Ordenação dinâmica por Nome (A-Z / Z-A), ID (Mais Recente / Mais Antigo) e Data de Cadastro.
-    - Botão "Limpar Filtros" rápido com reset completo e feedback via snackbar.
-  - **Controle Granular de Colunas Visíveis (Exibir / Ocultar)**:
-    - Dropdown moderno com contador de colunas ativas para todos os tipos de relatórios:
-      - *Quadro de Colaboradores (Headcount)*: ID, Foto, Nome, CPF, Cargo, CBO, Endereço Completo, Cidade/UF, Data de Cadastro e Status.
-      - *Campos Personalizados*: ID, Colaborador, Cargo, Cidade/UF, Status e cada um dos campos customizados criados (com atalhos "Marcar Todos" e "Desmarcar Todos").
-      - *Distribuição Geográfica*: Estado, Cidade, Ativos, Inativos, Total Geral e % do Headcount.
-      - *Usuários & Perfis (RBAC)*: ID, Nome, E-mail, Perfil, Tipo e Status.
-  - **Sincronização Total com PDF e Excel (CSV)**:
-    - As colunas desmarcadas são omitidas em tempo real na tabela em tela, no documento de impressão/PDF A4 e na exportação em planilha Excel (CSV).
-  - **Painel de Indicadores em Tempo Real**:
-    - Mini-cards no topo exibindo Total Listados, Ativos, Inativos, Cargos Únicos e Municípios Atendidos.
+- REGRA 165: Construtor Visual Aberto de Relatórios & Painel de Exportações (`Relatorios.tsx`):
+  - **Construtor Visual Aberto de Colunas (Sem Dropdown)**:
+    - O usuário visualiza diretamente na tela chips/botões interativos para todas as colunas cadastrais e campos dinâmicos.
+    - Seleção livre e independente: é possível montar relatórios combinando qualquer dado (ex: apenas `Nome` e o campo personalizado `PIX`, ou `Nome`, `CPF` e `Possui Filhos`).
+    - Botões de ação rápida no topo do seletor: *Selecionar Todas*, *Padrão (Nome, Cargo, Cidade, Status)*, *Nome + Campos Personalizados* e *Limpar*.
+    - Indicador de estado visual com borda iluminada azul/ciano, ícone de verificação e resumo da ordem das colunas.
+  - **Filtros Avançados e Rápidos**:
+    - Busca inteligente em tempo real por Nome, CPF, Cargo, Cidade, Endereço e valores de campos personalizados.
+    - Filtro de Status (Todos, Apenas Ativos, Apenas Inativos), Cargo, UF com encadeamento de Cidades e Período de Cadastro (De / Até).
+    - Ordenação por Nome (A-Z / Z-A), ID e Data de Cadastro, com botão "Limpar Filtros".
+  - **Sincronização Rigorosa com PDF/Impressão e Excel (CSV)**:
+    - A tabela na tela, a impressão em PDF A4 e a planilha Excel (CSV) gerada exportam única e exclusivamente as colunas marcadas no construtor.
+  - **Módulos Especializados**:
+    - Abas limpas para alternar entre *Construtor de Relatório*, *Distribuição Geográfica* e *Usuários (RBAC)*.
+
 
 
 
