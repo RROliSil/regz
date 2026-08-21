@@ -400,6 +400,9 @@ const initDb = async () => {
       UPDATE perfis_acesso SET empresa_id = 1 WHERE empresa_id IS NULL;
       UPDATE campos_customizados SET empresa_id = 1 WHERE empresa_id IS NULL;
       UPDATE usuarios SET empresa_id = 1 WHERE empresa_id IS NULL;
+
+      -- Recalibrar perfis de acesso criados na empresa 2 (Rainha Logística) salvos como empresa_id = 1
+      UPDATE perfis_acesso SET empresa_id = 2 WHERE empresa_id = 1 AND LOWER(nome) IN ('relatórios', 'relatorios', 'teste');
     `);
 
     // Garantir inicialização dos perfis de acesso RBAC padrão para TODAS as empresas cadastradas
@@ -988,7 +991,11 @@ app.get('/api/perfis-acesso', async (req: Request, res: Response) => {
 // Cadastrar novo perfil de acesso
 app.post('/api/perfis-acesso', checkPermission('administracao'), async (req: Request, res: Response) => {
   const { nome, descricao, is_admin, permissoes } = req.body;
-  const empId = getEmpresaIdFromReq(req) || 1;
+  const empId = getEmpresaIdFromReq(req);
+
+  if (!empId) {
+    return res.status(400).json({ error: 'Empresa não identificada na requisição. Certifique-se de estar autenticado.' });
+  }
 
   if (!nome || !nome.trim()) {
     return res.status(400).json({ error: 'O nome do perfil é obrigatório' });
@@ -1962,7 +1969,11 @@ app.get('/api/campos-customizados', async (req: Request, res: Response) => {
 // Cadastrar novo campo customizado
 app.post('/api/campos-customizados', checkPermission('campos'), async (req: Request, res: Response) => {
   const { nome, tipo, opcoes, obrigatorio, min_caracteres, max_caracteres } = req.body;
-  const empId = getEmpresaIdFromReq(req) || 1;
+  const empId = getEmpresaIdFromReq(req);
+
+  if (!empId) {
+    return res.status(400).json({ error: 'Empresa não identificada na requisição. Certifique-se de estar autenticado.' });
+  }
 
   if (!nome || !nome.trim()) {
     return res.status(400).json({ error: 'O nome do campo é obrigatório' });
@@ -2240,7 +2251,11 @@ app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
 // Cadastrar novo colaborador
 app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Request, res: Response) => {
   const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, valores_customizados } = req.body;
-  const empId = getEmpresaIdFromReq(req) || 1;
+  const empId = getEmpresaIdFromReq(req);
+
+  if (!empId) {
+    return res.status(400).json({ error: 'Empresa não identificada na requisição. Certifique-se de estar autenticado.' });
+  }
 
   if (!nome || !cpf) {
     return res.status(400).json({ error: 'Campos Nome e CPF são obrigatórios' });

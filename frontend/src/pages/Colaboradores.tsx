@@ -433,14 +433,14 @@ export const Colaboradores: React.FC = () => {
   const handleGerarPessoa = async (autoSave: boolean = false) => {
     setGerandoPessoa(true);
     try {
-      const res = await fetch('/api/gerar-pessoa');
+      const res = await fetch('/api/gerar-pessoa', { headers: getAuthHeaders() });
       if (res.ok) {
         const p = await res.json();
         
         if (autoSave) {
           const postRes = await fetch('/api/colaboradores', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(p)
           });
           if (postRes.ok) {
@@ -573,7 +573,7 @@ export const Colaboradores: React.FC = () => {
         try {
           const res = await fetch(`/api/colaboradores/${targetPhotoColaborador.id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ ...targetPhotoColaborador, foto_url: base64 })
           });
           if (res.ok) {
@@ -593,7 +593,7 @@ export const Colaboradores: React.FC = () => {
       try {
         const res = await fetch(`/api/colaboradores/${targetPhotoColaborador.id}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getAuthHeaders(),
           body: JSON.stringify({ ...targetPhotoColaborador, foto_url: null })
         });
         if (res.ok) {
@@ -659,7 +659,7 @@ export const Colaboradores: React.FC = () => {
 
     if (c.id) {
       try {
-        const res = await fetch(`/api/colaboradores/${c.id}/valores-customizados`);
+        const res = await fetch(`/api/colaboradores/${c.id}/valores-customizados`, { headers: getAuthHeaders() });
         if (res.ok) {
           const vals = await res.json();
           setValoresCustomizados(vals);
@@ -744,7 +744,7 @@ export const Colaboradores: React.FC = () => {
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload)
       });
 
@@ -768,7 +768,7 @@ export const Colaboradores: React.FC = () => {
   const handleInativar = async (id: number, nome: string) => {
     if (confirm(`Deseja inativar o colaborador "${nome}"? Ele será movido para a aba Inativados.`)) {
       try {
-        const res = await fetch(`/api/colaboradores/${id}/inativar`, { method: 'PUT' });
+        const res = await fetch(`/api/colaboradores/${id}/inativar`, { method: 'PUT', headers: getAuthHeaders() });
         if (res.ok) {
           fetchColaboradores();
         } else {
@@ -784,7 +784,7 @@ export const Colaboradores: React.FC = () => {
   const handleReativar = async (id: number, nome: string) => {
     if (confirm(`Deseja reativar o cadastro de "${nome}"?`)) {
       try {
-        const res = await fetch(`/api/colaboradores/${id}/reativar`, { method: 'PUT' });
+        const res = await fetch(`/api/colaboradores/${id}/reativar`, { method: 'PUT', headers: getAuthHeaders() });
         if (res.ok) {
           fetchColaboradores();
         } else {

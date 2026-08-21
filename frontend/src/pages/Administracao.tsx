@@ -483,7 +483,7 @@ export const Administracao: React.FC = () => {
     try {
       const res = await fetch('/api/licencas', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           usuario_id: newLicencaUsuarioId ? parseInt(newLicencaUsuarioId, 10) : null,
           tipo_licenca: newLicencaTipo,
@@ -548,7 +548,7 @@ export const Administracao: React.FC = () => {
 
       const res = await fetch(`/api/licencas/${selectedLicencaRenovar.id}/renovar`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ dias, tipo_licenca, redefinir })
       });
       if (res.ok) {
@@ -571,7 +571,7 @@ export const Administracao: React.FC = () => {
     try {
       const res = await fetch(`/api/licencas/${id}/status`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ status: nextStatus })
       });
       if (res.ok) {
@@ -588,7 +588,7 @@ export const Administracao: React.FC = () => {
   const handleDeleteLicenca = async (id: number, chave: string) => {
     if (!window.confirm(`Tem certeza que deseja excluir a chave de licença ${chave}?`)) return;
     try {
-      const res = await fetch(`/api/licencas/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/licencas/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
       if (res.ok) {
         setLicencaSuccess('Chave de licença removida com sucesso!');
         fetchLicencas();
@@ -636,7 +636,7 @@ export const Administracao: React.FC = () => {
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           nome: userNome.trim(),
           email: userEmail.trim(),
@@ -667,7 +667,7 @@ export const Administracao: React.FC = () => {
     try {
       const res = await fetch(`/api/usuarios/${id}/status`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ ativo: !statusAtual })
       });
       if (res.ok) fetchUsuarios();
@@ -734,7 +734,7 @@ export const Administracao: React.FC = () => {
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           nome: perfilNome.trim(),
           descricao: perfilDescricao.trim() || null,
@@ -763,7 +763,7 @@ export const Administracao: React.FC = () => {
   const handleDeletePerfil = async (id: number, nome: string) => {
     if (window.confirm(`Deseja realmente excluir o perfil "${nome}"?`)) {
       try {
-        const res = await fetch(`/api/perfis-acesso/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/perfis-acesso/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         const data = await res.json();
         if (res.ok) {
           fetchPerfis();

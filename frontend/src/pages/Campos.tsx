@@ -175,7 +175,7 @@ export const Campos: React.FC = () => {
     try {
       const res = await fetch('/api/campos-customizados', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload)
       });
 
@@ -220,7 +220,7 @@ export const Campos: React.FC = () => {
   const handleDeleteCampo = async (id: number, nome: string) => {
     if (confirm(`Deseja realmente remover o campo "${nome}"? Os dados preenchidos pelos colaboradores neste campo serão excluídos.`)) {
       try {
-        const res = await fetch(`/api/campos-customizados/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/campos-customizados/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         if (res.ok) {
           fetchCampos();
         } else {

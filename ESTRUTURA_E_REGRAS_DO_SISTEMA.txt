@@ -188,6 +188,10 @@ I. Isolamento Estrito de Dados Multi-Empresas (Multi-Tenancy por empresa_id):
   - No banco de dados central ('pool') permanecem exclusivamente os dados institucionais e de autenticação ('empresas', 'usuarios' e 'chaves_licenca').
   - Para as empresas de teste (Empresa 1 - Regz e Empresa 2 - Rainha Logística), os dados operacionais (colaboradores, campos, perfis) continuam armazenados no banco central.
   - Para a Empresa 3 e demais clientes registrados com configurações de banco próprio ('db_host', 'db_port', 'db_user', 'db_pass', 'db_name'), o backend utiliza o gerenciador 'getPoolForEmpresa(empresaId)' para abrir uma conexão dedicada com o banco de dados do cliente, criar a estrutura de tabelas operacionais automaticamente ('initTenantDb') e direcionar 100% das operações de leitura/escrita para o banco próprio do cliente.
+- REGRA 156: Obrigatoriedade de Cabeçalhos de Autenticação e Empresa no Client Fetch e Validação Estrita no Backend:
+  - Todas as chamadas fetch no frontend para criar, editar ou excluir recursos (como perfis de acesso, colaboradores, campos e licenças) devem utilizar obrigatoriamente a função 'getAuthHeaders()', que insere 'Authorization: Bearer ${token}' e 'x-empresa-id: ${usuario.empresa_id}'.
+  - No backend, os endpoints de criação ('POST /api/perfis-acesso', 'POST /api/campos-customizados', 'POST /api/colaboradores') exigem a identificação válida de 'empresa_id'. Caso a requisição não contenha os cabeçalhos de autenticação, a API rejeita o registro com erro HTTP 400 em vez de fallback genérico.
+  - Migração de banco inclusa no 'initDb' para recalibrar automaticamente o 'empresa_id' dos registros cadastrados sem o cabeçalho no frontend.
 
 
 4. INSTRUÇÕES DE EXECUÇÃO E DEPLOY NO PORTAINER.IO
