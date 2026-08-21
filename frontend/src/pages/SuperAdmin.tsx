@@ -529,14 +529,20 @@ export const SuperAdmin: React.FC = () => {
     setModalCreateUserOpen(true);
 
     try {
-      const resPerfis = await fetch('/api/perfis-acesso');
+      const token = localStorage.getItem('regz_token');
+      const headers: Record<string, string> = {
+        'x-empresa-id': String(emp.id)
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const resPerfis = await fetch(`/api/perfis-acesso?empresa_id=${emp.id}`, { headers });
       if (resPerfis.ok) {
         const perfis = await resPerfis.json();
         setPerfisDisponiveis(perfis);
         if (perfis.length > 0) setNewUserPerfilId(perfis[0].id);
       }
 
-      const resLic = await fetch(`/api/empresas/${emp.id}/licencas`);
+      const resLic = await fetch(`/api/empresas/${emp.id}/licencas`, { headers });
       if (resLic.ok) {
         const lics: Licenca[] = await resLic.json();
         const avulsas = lics.filter((l: any) => !l.usuario_id || l.usuario_nome === 'Não Vinculado');

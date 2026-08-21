@@ -613,6 +613,10 @@ const getEmpresaIdFromReq = (req: Request): number | null => {
   if (headerEmpId && !isNaN(Number(headerEmpId))) {
     return parseInt(headerEmpId as string, 10);
   }
+  const queryEmpId = req.query.empresa_id;
+  if (queryEmpId && !isNaN(Number(queryEmpId))) {
+    return parseInt(queryEmpId as string, 10);
+  }
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
@@ -977,7 +981,7 @@ app.get('/api/perfis-acesso', async (req: Request, res: Response) => {
     let query = 'SELECT * FROM perfis_acesso';
     const params: any[] = [];
     if (empId) {
-      query += ' WHERE empresa_id = $1 OR empresa_id IS NULL';
+      query += ' WHERE empresa_id = $1';
       params.push(empId);
     }
     query += ' ORDER BY id ASC';
@@ -1823,22 +1827,13 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
 app.get('/api/empresas/:id/licencas', async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    // 1. Auto-vínculo de licenças sem empresa_id cujos usuários pertençam a esta empresa
+    // Auto-vínculo de licenças sem empresa_id cujos usuários pertençam a esta empresa
     await pool.query(`
       UPDATE chaves_licenca l
       SET empresa_id = u.empresa_id
       FROM usuarios u
       WHERE l.usuario_id = u.id AND l.empresa_id IS NULL AND u.empresa_id IS NOT NULL
     `);
-
-    // 2. Auto-vínculo para chaves soltas sem usuario_id e sem empresa_id criadas durante testes
-    if (id) {
-      await pool.query(`
-        UPDATE chaves_licenca
-        SET empresa_id = $1
-        WHERE empresa_id IS NULL AND usuario_id IS NULL
-      `, [id]);
-    }
 
     const query = `
       SELECT l.id, l.chave, l.usuario_id, l.empresa_id, l.tipo_licenca, l.data_ativacao, l.data_expiracao, l.status,
