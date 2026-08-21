@@ -3858,3 +3858,189 @@ select option,
 [data-theme="dark"] .empresa-card-razao {
   color: #a1a1aa !important;
 }
+
+/* ========================================================= */
+/* MODAIS DO SUPER ADMIN - TEMA CLARO [data-theme="light"]   */
+/* ========================================================= */
+[data-theme="light"] .superadmin-modal-card,
+[data-theme="light"] .modal-content {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .modal-header {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .modal-header h3 {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .superadmin-modal-banner {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .superadmin-modal-banner-title {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .superadmin-modal-innerbox {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #000000 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .superadmin-modal-innerbox label,
+[data-theme="light"] .modal-form label {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .superadmin-empty-box {
+  background: #f8fafc !important;
+  border: 1px dashed #cbd5e1 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .superadmin-table-container {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .custom-table th {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .custom-table td {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+[data-theme="light"] .renovar-option-card {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #000000 !important;
+}
+
+[data-theme="light"] .renovar-option-card:hover {
+  border-color: #6366f1 !important;
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .superadmin-modal-input,
+[data-theme="light"] .modal-form input,
+[data-theme="light"] .modal-form select {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .superadmin-modal-input:focus,
+[data-theme="light"] .modal-form input:focus,
+[data-theme="light"] .modal-form select:focus {
+  border-color: #6366f1 !important;
+  background: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+}
+
+[data-theme="light"] .modal-footer {
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+/* ========================================================= */
+/* MODAIS DO SUPER ADMIN - TEMA ESCURO [data-theme="dark"]   */
+/* ========================================================= */
+[data-theme="dark"] .superadmin-modal-card,
+[data-theme="dark"] .modal-content {
+  background: #1b1b1f !important;
+  color: #f4f4f5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7) !important;
+}
+
+[data-theme="dark"] .modal-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .modal-header h3 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .superadmin-modal-banner {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .superadmin-modal-banner-title {
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .superadmin-modal-innerbox {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .superadmin-modal-innerbox label,
+[data-theme="dark"] .modal-form label {
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .superadmin-empty-box {
+  background: rgba(30, 41, 59, 0.5) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.1) !important;
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .superadmin-table-container {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .custom-table th {
+  background: rgba(30, 41, 59, 0.7) !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .custom-table td {
+  background: transparent !important;
+  color: #f4f4f5 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+[data-theme="dark"] .renovar-option-card {
+  background: rgba(30, 41, 59, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .renovar-option-card:hover {
+  border-color: #818cf8 !important;
+  background: rgba(99, 102, 241, 0.18) !important;
+}
+
+[data-theme="dark"] .superadmin-modal-input,
+[data-theme="dark"] .modal-form input,
+[data-theme="dark"] .modal-form select {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .modal-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+

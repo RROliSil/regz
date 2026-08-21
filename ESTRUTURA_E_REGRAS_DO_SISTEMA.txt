@@ -208,10 +208,12 @@ I. Isolamento Estrito de Dados Multi-Empresas (Multi-Tenancy por empresa_id):
   - A rota canônica e exclusiva do Portal Super Admin é `http://192.168.2.72:8280/superadmrgz` (`/superadmrgz`).
   - Usuários com perfil Super Admin são redirecionados automaticamente para `/superadmrgz` após o login.
   - O painel Super Admin (`SuperAdmin.tsx` e `index.css`) respeita 100% o tema escolhido na tela de login ou dentro do sistema:
-    - Modo Claro (`light`): Fundo claro (`#f8fafc`), header e cards de empresas brancos (`#ffffff`) com bordas `#cbd5e1`, títulos e textos em preto (`#000000` / `#0f172a`), botões de ação estilizados e modais claros.
-    - Modo Escuro (`dark`): Fundo monocromático escuro (`#18181b` / `#09090b`), cards `#1b1b1f` e textos claros (`#f4f4f5`).
+    - Modo Claro (`light`): Fundo claro (`#f8fafc`), header e cards de empresas brancos (`#ffffff`) com bordas `#cbd5e1`, títulos e textos em preto (`#000000` / `#0f172a`), botões de ação com contraste nítido.
+    - Modais no Modo Claro (`light`): Todos os 5 modais (Gerenciador de Licenças Master, Colaboradores Cadastrados, Editar Empresa & Banco Local, Confirmar Exclusão de Empresa, Cadastrar Novo Usuário, Emitir Licença e Renovar) possuem fundo branco (`#ffffff`), bordas claras (`#cbd5e1`), banners internos e caixas de configuração (PostgreSQL e ViaCEP) em fundo branco (`#ffffff`), tabelas com linhas brancas e cabeçalhos cinza claro (`#f8fafc`), títulos e textos principais em preto (`#000000` / `#0f172a`), e inputs brancos com textos escuros.
+    - Modo Escuro (`dark`): Fundo monocromático escuro (`#18181b` / `#09090b`), cards e modais `#1b1b1f` e textos claros (`#f4f4f5`).
     - Modo Padrão (`padrao`): Visual Deep Indigo Glassmorphism.
-  - O header do Super Admin inclui o botão flutuante de alternância rápida de tema ao lado do botão 'SAIR DO PORTAL'.
+  - O header do Super Admin inclui o botão de alternância rápida de tema ao lado do botão 'SAIR DO PORTAL'.
+
 
 
 4. INSTRUÇÕES DE EXECUÇÃO E DEPLOY NO PORTAINER.IO

@@ -926,17 +926,17 @@ export const SuperAdmin: React.FC = () => {
       {/* ======================================================== */}
       {selectedEmpresaLicencas && (
         <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: '1400px', width: '96vw', maxHeight: '92vh', background: '#0f172a', border: '1px solid rgba(56, 189, 248, 0.4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div className="modal-header" style={{ padding: '20px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <div className="modal-content superadmin-modal-card" style={{ maxWidth: '1400px', width: '96vw', maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div className="modal-header" style={{ padding: '20px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                 <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '10px', borderRadius: '12px', color: '#38bdf8' }}>
                   <Key size={26} />
                 </div>
                 <div>
-                  <h3 style={{ color: '#ffffff', margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
+                  <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800 }}>
                     Gerenciador de Licenças Master - {selectedEmpresaLicencas.nome_fantasia}
                   </h3>
-                  <span style={{ fontSize: '0.82rem', color: '#94a3b8' }}>{selectedEmpresaLicencas.razao_social} ({selectedEmpresaLicencas.cnpj})</span>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{selectedEmpresaLicencas.razao_social} ({selectedEmpresaLicencas.cnpj})</span>
                 </div>
               </div>
               <button onClick={() => setSelectedEmpresaLicencas(null)} className="btn-close">
@@ -945,10 +945,10 @@ export const SuperAdmin: React.FC = () => {
             </div>
 
             <div className="custom-scrollbar" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(30, 41, 59, 0.6)', padding: '14px 20px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div className="superadmin-modal-banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderRadius: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Shield size={20} color="#38bdf8" />
-                  <span style={{ fontSize: '0.95rem', color: '#f8fafc', fontWeight: 700 }}>
+                  <span className="superadmin-modal-banner-title" style={{ fontSize: '0.95rem', fontWeight: 700 }}>
                     Chaves de Licença Master Emitidas para esta Empresa ({empresaLicencas.length})
                   </span>
                 </div>
@@ -958,7 +958,7 @@ export const SuperAdmin: React.FC = () => {
                     disabled={submittingLicenca}
                     style={{
                       background: 'rgba(52, 211, 153, 0.15)',
-                      color: '#34d399',
+                      color: '#059669',
                       border: '1px solid rgba(52, 211, 153, 0.4)',
                       padding: '10px 16px',
                       fontSize: '0.86rem',
@@ -990,14 +990,14 @@ export const SuperAdmin: React.FC = () => {
               {loadingEmpresaLicencas ? (
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <Loader2 className="spin" size={26} color="#38bdf8" style={{ margin: '0 auto' }} />
-                  <span style={{ display: 'block', marginTop: '8px', color: '#94a3b8' }}>Carregando chaves de licença...</span>
+                  <span style={{ display: 'block', marginTop: '8px', color: 'var(--text-muted)' }}>Carregando chaves de licença...</span>
                 </div>
               ) : empresaLicencas.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '12px', color: '#94a3b8' }}>
+                <div className="superadmin-empty-box" style={{ textAlign: 'center', padding: '40px', borderRadius: '12px', color: 'var(--text-muted)' }}>
                   Nenhuma chave emitida para esta empresa. Clique em "+ Emitir Nova Chave de Licença Master".
                 </div>
               ) : (
-                <div style={{ overflowX: 'auto', background: 'rgba(15, 23, 42, 0.6)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div className="superadmin-table-container" style={{ overflowX: 'auto', borderRadius: '12px' }}>
                   <table className="custom-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
@@ -1018,12 +1018,12 @@ export const SuperAdmin: React.FC = () => {
                           <tr key={lic.id}>
                             <td>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.88rem', color: '#38bdf8' }}>
+                                <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.88rem', color: '#0284c7' }}>
                                   {lic.chave}
                                 </span>
                                 <button
                                   onClick={() => handleCopyKey(lic.chave)}
-                                  style={{ background: 'transparent', border: 'none', color: copiedKey === lic.chave ? '#34d399' : '#94a3b8', cursor: 'pointer', padding: '2px' }}
+                                  style={{ background: 'transparent', border: 'none', color: copiedKey === lic.chave ? '#059669' : '#64748b', cursor: 'pointer', padding: '2px' }}
                                   title="Copiar Chave"
                                 >
                                   {copiedKey === lic.chave ? <Check size={14} /> : <Copy size={14} />}
@@ -1033,11 +1033,11 @@ export const SuperAdmin: React.FC = () => {
 
                             <td>
                               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#f8fafc' }}>
+                                <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-main)' }}>
                                   {lic.usuario_nome || 'Empresa / Avulso'}
                                 </span>
                                 {lic.usuario_email && (
-                                  <span style={{ fontSize: '0.76rem', color: '#94a3b8' }}>
+                                  <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)' }}>
                                     {lic.usuario_email}
                                   </span>
                                 )}
@@ -1050,9 +1050,9 @@ export const SuperAdmin: React.FC = () => {
                                 padding: '3px 9px',
                                 borderRadius: '6px',
                                 fontWeight: 700,
-                                background: lic.tipo_licenca === 'Enterprise' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(56, 189, 248, 0.2)',
-                                color: lic.tipo_licenca === 'Enterprise' ? '#818cf8' : '#38bdf8',
-                                border: lic.tipo_licenca === 'Enterprise' ? '1px solid rgba(99, 102, 241, 0.4)' : '1px solid rgba(56, 189, 248, 0.4)'
+                                background: lic.tipo_licenca === 'Enterprise' ? 'rgba(99, 102, 241, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+                                color: lic.tipo_licenca === 'Enterprise' ? '#4f46e5' : '#0284c7',
+                                border: lic.tipo_licenca === 'Enterprise' ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid rgba(56, 189, 248, 0.3)'
                               }}>
                                 {lic.tipo_licenca || 'Enterprise'}
                               </span>
@@ -1060,11 +1060,11 @@ export const SuperAdmin: React.FC = () => {
 
                             <td>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <Calendar size={13} color="#94a3b8" />
+                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Calendar size={13} color="#64748b" />
                                   {new Date(lic.data_expiracao).toLocaleDateString('pt-BR')}
                                 </span>
-                                <span style={{ fontSize: '0.74rem', color: isExpirada ? '#f87171' : '#94a3b8' }}>
+                                <span style={{ fontSize: '0.74rem', color: isExpirada ? '#dc2626' : 'var(--text-muted)' }}>
                                   {isExpirada ? `Expirada há ${Math.abs(lic.dias_restantes)}d` : `Faltam ${lic.dias_restantes} dias`}
                                 </span>
                               </div>
@@ -1072,15 +1072,15 @@ export const SuperAdmin: React.FC = () => {
 
                             <td>
                               {isSuspensa ? (
-                                <span style={{ fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                                <span style={{ fontSize: '0.75rem', background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
                                   Suspensa
                                 </span>
                               ) : isExpirada ? (
-                                <span style={{ fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                                <span style={{ fontSize: '0.75rem', background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
                                   Expirada
                                 </span>
                               ) : (
-                                <span style={{ fontSize: '0.75rem', background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
+                                <span style={{ fontSize: '0.75rem', background: 'rgba(16, 185, 129, 0.15)', color: '#047857', border: '1px solid rgba(16, 185, 129, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700 }}>
                                   Ativa
                                 </span>
                               )}
@@ -1092,7 +1092,7 @@ export const SuperAdmin: React.FC = () => {
                                   <button
                                     onClick={() => handleDesvincularLicenca(lic.id)}
                                     className="btn-action"
-                                    style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#f87171' }}
+                                    style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626' }}
                                     title="Desvincular Licença do Usuário"
                                   >
                                     <Unlink size={14} />
@@ -1111,8 +1111,8 @@ export const SuperAdmin: React.FC = () => {
                                   onClick={() => handleToggleStatusLicenca(lic.id, lic.status)}
                                   className="btn-action"
                                   style={{
-                                    background: lic.status === 'Ativa' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(52, 211, 153, 0.15)',
-                                    color: lic.status === 'Ativa' ? '#fbbf24' : '#34d399'
+                                    background: lic.status === 'Ativa' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                    color: lic.status === 'Ativa' ? '#d97706' : '#047857'
                                   }}
                                   title={lic.status === 'Ativa' ? 'Suspender Licença' : 'Ativar Licença'}
                                 >
@@ -1151,15 +1151,15 @@ export const SuperAdmin: React.FC = () => {
       {/* ======================================================== */}
       {selectedEmpresaUsuarios && (
         <div className="modal-backdrop">
-          <div className="modal-content" style={{ maxWidth: '1200px', width: '94vw', maxHeight: '90vh', background: '#0f172a', border: '1px solid rgba(99, 102, 241, 0.4)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div className="modal-header" style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <div className="modal-content superadmin-modal-card" style={{ maxWidth: '1200px', width: '94vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div className="modal-header" style={{ padding: '18px 24px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ background: 'rgba(99, 102, 241, 0.15)', padding: '10px', borderRadius: '12px', color: '#818cf8' }}>
                   <Users size={24} />
                 </div>
                 <div>
-                  <h3 style={{ color: '#ffffff', margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Colaboradores Cadastrados - {selectedEmpresaUsuarios.nome_fantasia}</h3>
-                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{selectedEmpresaUsuarios.razao_social} ({selectedEmpresaUsuarios.cnpj})</span>
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Colaboradores Cadastrados - {selectedEmpresaUsuarios.nome_fantasia}</h3>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{selectedEmpresaUsuarios.razao_social} ({selectedEmpresaUsuarios.cnpj})</span>
                 </div>
               </div>
               <button onClick={() => setSelectedEmpresaUsuarios(null)} className="btn-close">
@@ -1168,10 +1168,10 @@ export const SuperAdmin: React.FC = () => {
             </div>
 
             <div className="custom-scrollbar" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto', flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(30, 41, 59, 0.6)', padding: '14px 20px', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <div className="superadmin-modal-banner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderRadius: '14px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Users size={20} color="#818cf8" />
-                  <span style={{ fontSize: '0.95rem', color: '#f8fafc', fontWeight: 700 }}>
+                  <span className="superadmin-modal-banner-title" style={{ fontSize: '0.95rem', fontWeight: 700 }}>
                     Usuários Cadastrados nesta Empresa ({empresaUsuarios.length})
                   </span>
                 </div>
@@ -1189,11 +1189,11 @@ export const SuperAdmin: React.FC = () => {
                   <Loader2 className="spin" size={24} color="#818cf8" style={{ margin: '0 auto' }} />
                 </div>
               ) : empresaUsuarios.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '30px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '10px', color: '#94a3b8' }}>
+                <div className="superadmin-empty-box" style={{ textAlign: 'center', padding: '30px', borderRadius: '10px', color: 'var(--text-muted)' }}>
                   Nenhum colaborador registrado nesta empresa até o momento.
                 </div>
               ) : (
-                <div style={{ overflowX: 'auto' }}>
+                <div className="superadmin-table-container" style={{ overflowX: 'auto', borderRadius: '12px' }}>
                   <table className="custom-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
@@ -1207,19 +1207,19 @@ export const SuperAdmin: React.FC = () => {
                     <tbody>
                       {empresaUsuarios.map((u: any) => (
                         <tr key={u.id}>
-                          <td style={{ fontWeight: 700, color: '#f8fafc', fontSize: '0.88rem' }}>
+                          <td style={{ fontWeight: 700, color: 'var(--text-main)', fontSize: '0.88rem' }}>
                             {u.nome}
                           </td>
-                          <td style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+                          <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
                             {u.email}
                           </td>
                           <td>
-                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '6px', background: u.is_admin ? 'rgba(99, 102, 241, 0.2)' : 'rgba(56, 189, 248, 0.2)', color: u.is_admin ? '#818cf8' : '#38bdf8', fontWeight: 700 }}>
+                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '6px', background: u.is_admin ? 'rgba(99, 102, 241, 0.15)' : 'rgba(56, 189, 248, 0.15)', color: u.is_admin ? '#4f46e5' : '#0284c7', fontWeight: 700 }}>
                               {u.perfil_nome || (u.is_admin ? 'ADMIN' : 'Operador')}
                             </span>
                           </td>
                           <td>
-                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '6px', background: u.ativo ? 'rgba(52, 211, 153, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: u.ativo ? '#34d399' : '#f87171', fontWeight: 700 }}>
+                            <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '6px', background: u.ativo ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: u.ativo ? '#047857' : '#dc2626', fontWeight: 700 }}>
                               {u.ativo ? 'Ativo' : 'Inativo'}
                             </span>
                           </td>
@@ -1228,8 +1228,8 @@ export const SuperAdmin: React.FC = () => {
                               onClick={() => handleToggleEmpresaUserStatus(u.id, u.ativo)}
                               className="btn-action"
                               style={{
-                                background: u.ativo ? 'rgba(239, 68, 68, 0.15)' : 'rgba(52, 211, 153, 0.15)',
-                                color: u.ativo ? '#f87171' : '#34d399',
+                                background: u.ativo ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                color: u.ativo ? '#dc2626' : '#047857',
                                 fontSize: '0.78rem',
                                 padding: '4px 10px'
                               }}
@@ -1261,11 +1261,11 @@ export const SuperAdmin: React.FC = () => {
       {/* ======================================================== */}
       {modalEmpresaOpen && (
         <div className="modal-backdrop" style={{ zIndex: 2000 }}>
-          <div className="modal-content" style={{ maxWidth: '720px', width: '90%', background: '#0f172a', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+          <div className="modal-content superadmin-modal-card" style={{ maxWidth: '720px', width: '90%' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Building2 size={22} color="#818cf8" />
-                <h3 style={{ color: '#ffffff' }}>{editingEmpresaId ? 'Editar Empresa & Banco Local' : 'Cadastrar Empresa Cliente (On-Premise)'}</h3>
+                <h3>{editingEmpresaId ? 'Editar Empresa & Banco Local' : 'Cadastrar Empresa Cliente (On-Premise)'}</h3>
               </div>
               <button onClick={() => setModalEmpresaOpen(false)} className="btn-close">
                 ✕
@@ -1318,9 +1318,9 @@ export const SuperAdmin: React.FC = () => {
               </div>
 
               {/* Seção Banco de Dados Próprio (On-Premise) */}
-              <div style={{ background: 'rgba(30, 41, 59, 0.8)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+              <div className="superadmin-modal-innerbox" style={{ padding: '14px 16px', borderRadius: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.9rem', color: '#38bdf8' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.9rem', color: '#0284c7' }}>
                     <Database size={16} /> Parâmetros do Banco de Dados Próprio da Empresa (PostgreSQL)
                   </div>
                   <button
@@ -1328,7 +1328,7 @@ export const SuperAdmin: React.FC = () => {
                     onClick={handleAutoFillDbCredentials}
                     style={{
                       background: 'rgba(99, 102, 241, 0.12)',
-                      color: '#a5b4fc',
+                      color: '#4f46e5',
                       border: '1px solid rgba(99, 102, 241, 0.3)',
                       padding: '4px 10px',
                       borderRadius: '6px',
@@ -1406,7 +1406,7 @@ export const SuperAdmin: React.FC = () => {
                     disabled={testingDb}
                     style={{
                       background: 'rgba(56, 189, 248, 0.15)',
-                      color: '#38bdf8',
+                      color: '#0284c7',
                       border: '1px solid rgba(56, 189, 248, 0.4)',
                       padding: '8px 16px',
                       borderRadius: '8px',
@@ -1430,7 +1430,7 @@ export const SuperAdmin: React.FC = () => {
                       padding: '6px 12px',
                       borderRadius: '8px',
                       background: testingDbResult.success ? 'rgba(52, 211, 153, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                      color: testingDbResult.success ? '#34d399' : '#f87171',
+                      color: testingDbResult.success ? '#047857' : '#dc2626',
                       border: testingDbResult.success ? '1px solid rgba(52, 211, 153, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
                       display: 'flex',
                       alignItems: 'center',
@@ -1444,8 +1444,8 @@ export const SuperAdmin: React.FC = () => {
               </div>
 
               {/* Seção Endereço ViaCEP */}
-              <div style={{ background: 'rgba(30, 41, 59, 0.8)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontWeight: 700, fontSize: '0.9rem', color: '#818cf8' }}>
+              <div className="superadmin-modal-innerbox" style={{ padding: '14px 16px', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontWeight: 700, fontSize: '0.9rem', color: '#4f46e5' }}>
                   <MapPin size={16} /> Endereço & Localização (ViaCEP)
                 </div>
 
@@ -1464,7 +1464,7 @@ export const SuperAdmin: React.FC = () => {
                         <Loader2 className="spin" size={14} style={{ position: 'absolute', right: '10px', top: '12px', color: '#818cf8' }} />
                       )}
                     </div>
-                    {cepErrorEmpresa && <span style={{ fontSize: '0.72rem', color: '#f87171', marginTop: '2px', display: 'block' }}>{cepErrorEmpresa}</span>}
+                    {cepErrorEmpresa && <span style={{ fontSize: '0.72rem', color: '#dc2626', marginTop: '2px', display: 'block' }}>{cepErrorEmpresa}</span>}
                   </div>
 
                   <div className="form-group" style={{ margin: 0 }}>
@@ -1579,11 +1579,11 @@ export const SuperAdmin: React.FC = () => {
       {/* ======================================================== */}
       {modalLicencaOpen && (
         <div className="modal-backdrop" style={{ zIndex: 2000 }}>
-          <div className="modal-content" style={{ maxWidth: '520px', background: '#0f172a', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+          <div className="modal-content superadmin-modal-card" style={{ maxWidth: '520px' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Key size={22} color="#38bdf8" />
-                <h3 style={{ color: '#ffffff' }}>Emitir Nova Chave de Licença Master</h3>
+                <Key size={22} color="#0284c7" />
+                <h3>Emitir Nova Chave de Licença Master</h3>
               </div>
               <button onClick={() => setModalLicencaOpen(false)} className="btn-close">
                 ✕
@@ -1651,11 +1651,11 @@ export const SuperAdmin: React.FC = () => {
       {/* ======================================================== */}
       {modalRenovarOpen && selectedLicencaRenovar && (
         <div className="modal-backdrop" style={{ zIndex: 2000 }}>
-          <div className="modal-content renovar-modal-card" style={{ maxWidth: '520px', background: '#0f172a', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+          <div className="modal-content superadmin-modal-card" style={{ maxWidth: '520px' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <RefreshCw size={22} color="#38bdf8" />
-                <h3 style={{ color: '#ffffff' }}>Renovar / Alterar Validade da Chave</h3>
+                <RefreshCw size={22} color="#0284c7" />
+                <h3>Renovar / Alterar Validade da Chave</h3>
               </div>
               <button onClick={() => setModalRenovarOpen(false)} className="btn-close">
                 ✕
@@ -1663,9 +1663,9 @@ export const SuperAdmin: React.FC = () => {
             </div>
 
             <div style={{ padding: '16px 0', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ background: 'rgba(30, 41, 59, 0.8)', padding: '12px 16px', borderRadius: '10px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Chave Selecionada:</span>
-                <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.92rem', color: '#38bdf8', display: 'block', marginTop: '2px' }}>
+              <div className="superadmin-modal-innerbox" style={{ padding: '12px 16px', borderRadius: '10px' }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Chave Selecionada:</span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.92rem', color: '#0284c7', display: 'block', marginTop: '2px' }}>
                   {selectedLicencaRenovar.chave}
                 </span>
               </div>
@@ -1673,27 +1673,27 @@ export const SuperAdmin: React.FC = () => {
               <div className="form-group">
                 <label>Selecione a Opção de Renovação / Alteração</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
-                  <label className="renovar-option-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '10px', background: renovarOpcao === 'renovar_30' ? 'rgba(99, 102, 241, 0.18)' : 'rgba(30, 41, 59, 0.5)', border: renovarOpcao === 'renovar_30' ? '1px solid #818cf8' : '1px solid rgba(255, 255, 255, 0.1)', cursor: 'pointer' }}>
+                  <label className="renovar-option-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '10px', cursor: 'pointer' }}>
                     <input type="radio" name="renovarOpcao" value="renovar_30" checked={renovarOpcao === 'renovar_30'} onChange={() => setRenovarOpcao('renovar_30')} />
                     <div>
-                      <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#f8fafc' }}>+ 30 Dias adicionais</span>
-                      <span style={{ display: 'block', fontSize: '0.76rem', color: '#94a3b8' }}>Soma 30 dias à validade atual da chave</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>+ 30 Dias adicionais</span>
+                      <span style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-muted)' }}>Soma 30 dias à validade atual da chave</span>
                     </div>
                   </label>
 
-                  <label className="renovar-option-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '10px', background: renovarOpcao === 'add_120' ? 'rgba(99, 102, 241, 0.18)' : 'rgba(30, 41, 59, 0.5)', border: renovarOpcao === 'add_120' ? '1px solid #818cf8' : '1px solid rgba(255, 255, 255, 0.1)', cursor: 'pointer' }}>
+                  <label className="renovar-option-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '10px', cursor: 'pointer' }}>
                     <input type="radio" name="renovarOpcao" value="add_120" checked={renovarOpcao === 'add_120'} onChange={() => setRenovarOpcao('add_120')} />
                     <div>
-                      <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#f8fafc' }}>+ 120 Dias (4 Meses)</span>
-                      <span style={{ display: 'block', fontSize: '0.76rem', color: '#94a3b8' }}>Adiciona 120 dias ao prazo atual</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>+ 120 Dias (4 Meses)</span>
+                      <span style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-muted)' }}>Adiciona 120 dias ao prazo atual</span>
                     </div>
                   </label>
 
-                  <label className="renovar-option-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '10px', background: renovarOpcao === 'add_365' ? 'rgba(99, 102, 241, 0.18)' : 'rgba(30, 41, 59, 0.5)', border: renovarOpcao === 'add_365' ? '1px solid #818cf8' : '1px solid rgba(255, 255, 255, 0.1)', cursor: 'pointer' }}>
+                  <label className="renovar-option-card" style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '10px', cursor: 'pointer' }}>
                     <input type="radio" name="renovarOpcao" value="add_365" checked={renovarOpcao === 'add_365'} onChange={() => setRenovarOpcao('add_365')} />
                     <div>
-                      <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#f8fafc' }}>+ 365 Dias (1 Ano Anual)</span>
-                      <span style={{ display: 'block', fontSize: '0.76rem', color: '#94a3b8' }}>Adiciona 1 ano completo de acesso</span>
+                      <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-main)' }}>+ 365 Dias (1 Ano Anual)</span>
+                      <span style={{ display: 'block', fontSize: '0.76rem', color: 'var(--text-muted)' }}>Adiciona 1 ano completo de acesso</span>
                     </div>
                   </label>
                 </div>
@@ -1729,11 +1729,11 @@ export const SuperAdmin: React.FC = () => {
       {/* ======================================================== */}
       {empresaToDelete && (
         <div className="modal-backdrop" style={{ zIndex: 2000 }}>
-          <div className="modal-content" style={{ maxWidth: '520px', background: '#0f172a', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
+          <div className="modal-content superadmin-modal-card" style={{ maxWidth: '520px', border: '1px solid rgba(239, 68, 68, 0.4)' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <AlertTriangle size={24} color="#f87171" />
-                <h3 style={{ color: '#ffffff', margin: 0 }}>Confirmar Exclusão de Empresa</h3>
+                <AlertTriangle size={24} color="#dc2626" />
+                <h3 style={{ margin: 0 }}>Confirmar Exclusão de Empresa</h3>
               </div>
               <button onClick={() => setEmpresaToDelete(null)} className="btn-close">
                 ✕
@@ -1741,23 +1741,22 @@ export const SuperAdmin: React.FC = () => {
             </div>
 
             <form onSubmit={handleConfirmDeleteEmpresa} className="modal-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px 0' }}>
-              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '14px 16px', borderRadius: '12px', color: '#fca5a5', fontSize: '0.88rem', lineHeight: '1.5' }}>
+              <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '14px 16px', borderRadius: '12px', color: '#b91c1c', fontSize: '0.88rem', lineHeight: '1.5' }}>
                 <strong>Atenção:</strong> Você está prestes a excluir permanentemente a empresa <strong>"{empresaToDelete.nome}"</strong> e todas as suas licenças e vínculos. Esta ação é irreversível.
               </div>
 
               <div className="form-group" style={{ margin: 0 }}>
-                <label style={{ color: '#f8fafc', fontWeight: 600 }}>
-                  Para confirmar a exclusão, digite <span style={{ color: '#f87171', fontWeight: 800 }}>SIM</span> abaixo:
+                <label style={{ color: 'var(--text-main)', fontWeight: 600 }}>
+                  Para confirmar a exclusão, digite <span style={{ color: '#dc2626', fontWeight: 800 }}>SIM</span> abaixo:
                 </label>
                 <input
                   type="text"
                   value={confirmTextDelete}
                   onChange={(e) => setConfirmTextDelete(e.target.value)}
                   placeholder="Digite SIM para confirmar"
+                  className="superadmin-modal-input"
                   style={{
-                    borderColor: confirmTextDelete.trim().toUpperCase() === 'SIM' ? '#34d399' : 'rgba(255, 255, 255, 0.2)',
-                    background: 'rgba(30, 41, 59, 0.8)',
-                    color: '#ffffff',
+                    borderColor: confirmTextDelete.trim().toUpperCase() === 'SIM' ? '#059669' : undefined,
                     fontWeight: 700,
                     fontSize: '1rem',
                     letterSpacing: '1px'
@@ -1788,7 +1787,7 @@ export const SuperAdmin: React.FC = () => {
                     gap: '8px',
                     opacity: confirmTextDelete.trim().toUpperCase() === 'SIM' ? 1 : 0.4,
                     cursor: confirmTextDelete.trim().toUpperCase() === 'SIM' ? 'pointer' : 'not-allowed',
-                    background: confirmTextDelete.trim().toUpperCase() === 'SIM' ? '#ef4444' : 'rgba(239, 68, 68, 0.2)',
+                    background: '#dc2626',
                     color: '#ffffff',
                     border: 'none'
                   }}
@@ -1807,11 +1806,11 @@ export const SuperAdmin: React.FC = () => {
       {/* ======================================================== */}
       {modalCreateUserOpen && selectedEmpresaUsuarios && (
         <div className="modal-backdrop" style={{ zIndex: 2000 }}>
-          <div className="modal-content" style={{ maxWidth: '580px', background: '#0f172a', border: '1px solid rgba(99, 102, 241, 0.4)', borderRadius: '16px' }}>
+          <div className="modal-content superadmin-modal-card" style={{ maxWidth: '580px', borderRadius: '16px' }}>
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <UserPlus size={22} color="#818cf8" />
-                <h3 style={{ color: '#ffffff' }}>Cadastrar Novo Usuário - {selectedEmpresaUsuarios.nome_fantasia}</h3>
+                <UserPlus size={22} color="#4f46e5" />
+                <h3>Cadastrar Novo Usuário - {selectedEmpresaUsuarios.nome_fantasia}</h3>
               </div>
               <button onClick={() => setModalCreateUserOpen(false)} className="btn-close">
                 ✕
@@ -1827,7 +1826,6 @@ export const SuperAdmin: React.FC = () => {
                   placeholder="Ex: João da Silva"
                   value={newUserNome}
                   onChange={(e) => setNewUserNome(e.target.value)}
-                  style={{ background: 'rgba(30, 41, 59, 0.8)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '10px 14px', borderRadius: '8px' }}
                 />
               </div>
 
@@ -1839,7 +1837,6 @@ export const SuperAdmin: React.FC = () => {
                   placeholder="usuario@empresa.com.br"
                   value={newUserEmail}
                   onChange={(e) => setNewUserEmail(e.target.value)}
-                  style={{ background: 'rgba(30, 41, 59, 0.8)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '10px 14px', borderRadius: '8px' }}
                 />
               </div>
 
@@ -1852,7 +1849,6 @@ export const SuperAdmin: React.FC = () => {
                   placeholder="Mínimo de 6 caracteres"
                   value={newUserSenha}
                   onChange={(e) => setNewUserSenha(e.target.value)}
-                  style={{ background: 'rgba(30, 41, 59, 0.8)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '10px 14px', borderRadius: '8px' }}
                 />
               </div>
 
@@ -1861,7 +1857,6 @@ export const SuperAdmin: React.FC = () => {
                 <select
                   value={newUserPerfilId}
                   onChange={(e) => setNewUserPerfilId(e.target.value)}
-                  style={{ background: 'rgba(30, 41, 59, 0.8)', color: '#ffffff', border: '1px solid rgba(255, 255, 255, 0.1)', padding: '10px 14px', borderRadius: '8px' }}
                 >
                   {perfisDisponiveis.map((p: any) => (
                     <option key={p.id} value={p.id}>
@@ -1874,14 +1869,14 @@ export const SuperAdmin: React.FC = () => {
               <div className="form-group">
                 <label>Vincular Chave de Licença Master Avulsa *</label>
                 {licencasAvulsas.length === 0 ? (
-                  <div style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '12px', borderRadius: '8px', fontSize: '0.84rem' }}>
+                  <div style={{ background: 'rgba(239, 68, 68, 0.12)', color: '#dc2626', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '12px', borderRadius: '8px', fontSize: '0.84rem' }}>
                     ⚠️ Nenhuma chave de licença master avulsa disponível para esta empresa. Por favor, emita uma nova chave master no card da empresa primeiro.
                   </div>
                 ) : (
                   <select
                     value={newUserChaveLicenca}
                     onChange={(e) => setNewUserChaveLicenca(e.target.value)}
-                    style={{ background: 'rgba(30, 41, 59, 0.8)', color: '#ffffff', border: '1px solid rgba(99, 102, 241, 0.4)', padding: '10px 14px', borderRadius: '8px', fontWeight: 600 }}
+                    style={{ fontWeight: 600 }}
                   >
                     {licencasAvulsas.map((l: any) => (
                       <option key={l.id} value={l.chave}>
