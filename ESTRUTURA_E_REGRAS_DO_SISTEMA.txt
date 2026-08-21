@@ -220,7 +220,11 @@ I. Isolamento Estrito de Dados Multi-Empresas (Multi-Tenancy por empresa_id):
     - Criação e edição de campos customizados (`Campos.tsx`).
     - Criação de perfis de acesso, alteração de permissões RBAC, cadastro/edição de usuários, dados da empresa e emissão/renovação de licenças (`Administracao.tsx`).
     - Cadastro, edição de dados, upload/remoção de foto, inativação e reativação de colaboradores (`Colaboradores.tsx`).
-    - Cadastro de empresas, emissão de licenças, cadastro de usuários e cópia de chaves de licença no Super Admin (`SuperAdmin.tsx`).
+- REGRA 164: Agregação e Exibição de Campos Personalizados em Relatórios e Impressão PDF:
+  - Os endpoints `GET /api/colaboradores` e `GET /api/colaboradores/:id` no backend agregam nativamente via subconsultas PostgreSQL (`jsonb_object_agg`) todos os valores vinculados na tabela `colaboradores_valores_customizados`.
+  - Retornam os mapas `campos_customizados` (indexado por nome do campo) e `valores_customizados` (indexado por ID do campo).
+  - No módulo de Relatórios (`Relatorios.tsx`), a visão de **Campos Personalizados**, a exportação para Excel (CSV) e a emissão em PDF / Impressão renderizam com precisão todos os valores preenchidos pelos colaboradores (incluindo tratamento visual para booleanos/alternativas "✓ Sim" e "✗ Não", números, textos e opções de dropdown).
+
 
 
 

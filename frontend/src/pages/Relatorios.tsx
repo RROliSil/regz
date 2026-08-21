@@ -149,6 +149,27 @@ export const Relatorios: React.FC = () => {
     });
   }, [colaboradores, filtroStatus, filtroCargo, filtroEstado, search]);
 
+  // Helper para obter e formatar o valor de um campo customizado do colaborador
+  const getCustomFieldValue = (c: Colaborador, cmp: CampoCustomizado): string => {
+    const rawVal = c.campos_customizados?.[cmp.nome] ??
+                   (c as any).valores_customizados?.[cmp.id] ??
+                   (c as any).valores_customizados?.[String(cmp.id)];
+
+    if (rawVal === undefined || rawVal === null || String(rawVal).trim() === '') {
+      return '-';
+    }
+
+    const strVal = String(rawVal).trim();
+    if (rawVal === true || strVal === 'true' || strVal.toLowerCase() === 'sim') {
+      return 'Sim';
+    }
+    if (rawVal === false || strVal === 'false' || strVal.toLowerCase() === 'não' || strVal.toLowerCase() === 'nao') {
+      return 'Não';
+    }
+
+    return strVal;
+  };
+
   // Exportar para CSV / Excel
   const exportarCSV = () => {
     let headersCSV: string[] = [];
@@ -172,12 +193,7 @@ export const Relatorios: React.FC = () => {
       const nomesCampos = campos.map(cmp => cmp.nome);
       headersCSV = ['ID', 'Nome Colaborador', 'Cargo', ...nomesCampos];
       rowsCSV = colaboradoresFiltrados.map(c => {
-        const valoresCustom = campos.map(cmp => {
-          const val = c.campos_customizados?.[cmp.nome];
-          if (val === true) return 'Sim';
-          if (val === false) return 'Não';
-          return val !== undefined && val !== null ? String(val) : '-';
-        });
+        const valoresCustom = campos.map(cmp => getCustomFieldValue(c, cmp));
         return [String(c.id), c.nome, c.cargo || '', ...valoresCustom];
       });
     } else if (tipo === 'geo') {
@@ -456,15 +472,15 @@ export const Relatorios: React.FC = () => {
                         <td style={{ fontWeight: 600 }}>{c.nome}</td>
                         <td>{c.cargo || '-'}</td>
                         {campos.map(cmp => {
-                          const val = c.campos_customizados?.[cmp.nome];
+                          const val = getCustomFieldValue(c, cmp);
                           return (
                             <td key={cmp.id}>
-                              {val === true ? (
+                              {val === 'Sim' ? (
                                 <span style={{ color: '#34d399', fontWeight: 600 }}>✓ Sim</span>
-                              ) : val === false ? (
+                              ) : val === 'Não' ? (
                                 <span style={{ color: '#fb7185' }}>✗ Não</span>
                               ) : (
-                                val !== undefined && val !== null ? String(val) : '-'
+                                val
                               )}
                             </td>
                           );

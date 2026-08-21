@@ -2200,26 +2200,47 @@ app.get('/api/colaboradores', async (req: Request, res: Response) => {
 
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    let query = 'SELECT * FROM colaboradores';
+    let query = `
+      SELECT 
+        c.*,
+        COALESCE(
+          (
+            SELECT jsonb_object_agg(cc.nome, v.valor)
+            FROM colaboradores_valores_customizados v
+            JOIN campos_customizados cc ON cc.id = v.campo_id
+            WHERE v.colaborador_id = c.id
+          ),
+          '{}'::jsonb
+        ) as campos_customizados,
+        COALESCE(
+          (
+            SELECT jsonb_object_agg(v.campo_id::text, v.valor)
+            FROM colaboradores_valores_customizados v
+            WHERE v.colaborador_id = c.id
+          ),
+          '{}'::jsonb
+        ) as valores_customizados
+      FROM colaboradores c
+    `;
     const values: any[] = [];
 
     if (empId) {
-      query += ' WHERE (empresa_id = $1 OR empresa_id IS NULL)';
+      query += ' WHERE (c.empresa_id = $1 OR c.empresa_id IS NULL)';
       values.push(empId);
       if (status === 'ativos') {
-        query += ' AND ativo = true';
+        query += ' AND c.ativo = true';
       } else if (status === 'inativos') {
-        query += ' AND ativo = false';
+        query += ' AND c.ativo = false';
       }
     } else {
       if (status === 'ativos') {
-        query += ' WHERE ativo = true';
+        query += ' WHERE c.ativo = true';
       } else if (status === 'inativos') {
-        query += ' WHERE ativo = false';
+        query += ' WHERE c.ativo = false';
       }
     }
 
-    query += ' ORDER BY id DESC';
+    query += ' ORDER BY c.id DESC';
     const result = await targetPool.query(query, values);
     res.json(result.rows);
   } catch (error: any) {
@@ -2233,7 +2254,30 @@ app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
   const empId = getEmpresaIdFromReq(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    const result = await targetPool.query('SELECT * FROM colaboradores WHERE id = $1', [id]);
+    const query = `
+      SELECT 
+        c.*,
+        COALESCE(
+          (
+            SELECT jsonb_object_agg(cc.nome, v.valor)
+            FROM colaboradores_valores_customizados v
+            JOIN campos_customizados cc ON cc.id = v.campo_id
+            WHERE v.colaborador_id = c.id
+          ),
+          '{}'::jsonb
+        ) as campos_customizados,
+        COALESCE(
+          (
+            SELECT jsonb_object_agg(v.campo_id::text, v.valor)
+            FROM colaboradores_valores_customizados v
+            WHERE v.colaborador_id = c.id
+          ),
+          '{}'::jsonb
+        ) as valores_customizados
+      FROM colaboradores c
+      WHERE c.id = $1
+    `;
+    const result = await targetPool.query(query, [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
