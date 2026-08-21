@@ -4044,3 +4044,16 @@ select option,
   border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 
+.superadmin-modal-card select option,
+.modal-form select option {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+[data-theme="light"] .superadmin-modal-card select option,
+[data-theme="light"] .modal-form select option {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+
