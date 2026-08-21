@@ -3639,10 +3639,6 @@ select option,
   color: #a1a1aa !important;
 }
 
-[data-theme="dark"] .login-footer {
-  border-top-color: rgba(255, 255, 255, 0.08) !important;
-}
-
 [data-theme="dark"] .login-footer-note {
   color: #71717a !important;
 }
@@ -3658,4 +3654,207 @@ select option,
   border-color: #a1a1aa !important;
   color: #ffffff !important;
   transform: translateY(-1px);
+}
+
+/* ======================================================== */
+/* ESTILIZAÇÃO DO PORTAL SUPER ADMIN MULTI-TEMA */
+/* ======================================================== */
+.superadmin-container {
+  background: var(--bg-gradient);
+  min-height: 100vh;
+  transition: background 0.3s ease;
+}
+
+.superadmin-header {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  transition: all 0.3s ease;
+}
+
+.superadmin-title {
+  background: linear-gradient(90deg, #ffffff, #a5b4fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.superadmin-stat-card,
+.superadmin-section-header {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+  transition: all 0.3s ease;
+}
+
+/* Modo Claro no Portal Super Admin */
+[data-theme="light"] .superadmin-container {
+  background: var(--bg-gradient) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .superadmin-header {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .superadmin-title {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  -webkit-text-fill-color: initial !important;
+  color: #000000 !important;
+}
+
+[data-theme="light"] .superadmin-subtitle {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .superadmin-stat-card,
+[data-theme="light"] .superadmin-section-header {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .superadmin-stat-card h3,
+[data-theme="light"] .superadmin-section-header h3 {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .superadmin-theme-btn {
+  background: #fef3c7 !important;
+  color: #d97706 !important;
+  border: 1.5px solid #ffffff !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .superadmin-theme-btn:hover {
+  background: #f59e0b !important;
+  color: #0f172a !important;
+  border: 1.5px solid #ffffff !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+[data-theme="light"] .empresa-card {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .empresa-card-nome {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .empresa-card-razao {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .empresa-card-cnpj-badge {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .empresa-card-label {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .empresa-card-val {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .empresa-card-actions {
+  border-top-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .empresa-action-btn.licencas {
+  background: rgba(99, 102, 241, 0.12) !important;
+  color: #4338ca !important;
+  border: 1px solid rgba(99, 102, 241, 0.3) !important;
+}
+
+[data-theme="light"] .empresa-action-btn.usuarios {
+  background: rgba(56, 189, 248, 0.12) !important;
+  color: #0369a1 !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+}
+
+[data-theme="light"] .empresa-action-btn.editar {
+  background: rgba(245, 158, 11, 0.12) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+[data-theme="light"] .empresa-action-btn.excluir {
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #b91c1c !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+}
+
+[data-theme="light"] .empresa-card-status-badge.ativa {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #047857 !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+}
+
+/* Modo Escuro no Portal Super Admin */
+[data-theme="dark"] .superadmin-container {
+  background: var(--bg-gradient) !important;
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .superadmin-header {
+  background: #1b1b1f !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme="dark"] .superadmin-title {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  -webkit-text-fill-color: initial !important;
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .superadmin-subtitle {
+  color: #a1a1aa !important;
+}
+
+[data-theme="dark"] .superadmin-stat-card,
+[data-theme="dark"] .superadmin-section-header {
+  background: #1b1b1f !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .superadmin-stat-card h3,
+[data-theme="dark"] .superadmin-section-header h3 {
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .superadmin-theme-btn {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #f4f4f5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .superadmin-theme-btn:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: #a1a1aa !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .empresa-card {
+  background: #1b1b1f !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-theme="dark"] .empresa-card-nome {
+  color: #f4f4f5 !important;
+}
+
+[data-theme="dark"] .empresa-card-razao {
+  color: #a1a1aa !important;
 }
