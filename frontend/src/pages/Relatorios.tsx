@@ -501,63 +501,24 @@ export const Relatorios: React.FC = () => {
 
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           {/* Abas de Modo de Relatório */}
-          <div style={{ display: 'flex', background: 'var(--card-bg)', padding: '4px', borderRadius: '12px', border: '1px solid var(--accent-purple)', gap: '4px' }}>
+          <div className="relatorio-tab-group">
             <button
               onClick={() => setModo('construtor')}
-              style={{
-                background: modo === 'construtor' ? '#6366f1' : 'transparent',
-                color: modo === 'construtor' ? '#ffffff' : 'var(--text-main)',
-                border: 'none',
-                padding: '7px 14px',
-                borderRadius: '8px',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s ease'
-              }}
+              className={`relatorio-tab-btn ${modo === 'construtor' ? 'active' : ''}`}
             >
               <Sparkles size={15} /> Construtor de Relatório
             </button>
 
             <button
               onClick={() => setModo('geo')}
-              style={{
-                background: modo === 'geo' ? '#6366f1' : 'transparent',
-                color: modo === 'geo' ? '#ffffff' : 'var(--text-main)',
-                border: 'none',
-                padding: '7px 14px',
-                borderRadius: '8px',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s ease'
-              }}
+              className={`relatorio-tab-btn ${modo === 'geo' ? 'active' : ''}`}
             >
               <MapPin size={15} /> Distribuição Geográfica
             </button>
 
             <button
               onClick={() => setModo('rbac')}
-              style={{
-                background: modo === 'rbac' ? '#6366f1' : 'transparent',
-                color: modo === 'rbac' ? '#ffffff' : 'var(--text-main)',
-                border: 'none',
-                padding: '7px 14px',
-                borderRadius: '8px',
-                fontSize: '0.85rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s ease'
-              }}
+              className={`relatorio-tab-btn ${modo === 'rbac' ? 'active' : ''}`}
             >
               <Shield size={15} /> Usuários (RBAC)
             </button>
@@ -569,7 +530,7 @@ export const Relatorios: React.FC = () => {
           <button onClick={exportarCSV} className="btn-secondary btn-export-excel" title="Exportar Tabela para Excel/CSV">
             <FileSpreadsheet size={16} /> Exportar Excel (CSV)
           </button>
-          <button onClick={imprimirPDF} className="btn-primary" title="Imprimir ou Salvar em PDF A4">
+          <button onClick={imprimirPDF} className="btn-primary btn-relatorio-primary" title="Imprimir ou Salvar em PDF A4">
             <Printer size={16} /> PDF / Imprimir
           </button>
         </div>
@@ -577,15 +538,15 @@ export const Relatorios: React.FC = () => {
 
       {/* PAINEL VISUAL ABERTO: CONSTRUTOR DE COLUNAS (SEM DROPDOWN) */}
       {modo === 'construtor' && (
-        <div className="glass-panel no-print" style={{ padding: '22px 24px', borderRadius: '18px', marginBottom: '24px', border: '1px solid rgba(99, 102, 241, 0.35)', background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)' }}>
+        <div className="glass-panel no-print panel-builder-container" style={{ padding: '22px 24px', borderRadius: '18px', marginBottom: '24px' }}>
           {/* Cabeçalho do Construtor */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <div style={{ background: 'rgba(99, 102, 241, 0.2)', padding: '6px 10px', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.4)' }}>
-                <Sliders size={18} color="#818cf8" />
+              <div className="builder-header-icon">
+                <Sliders size={18} />
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#f8fafc' }}>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-main)' }}>
                   Quais colunas você deseja exibir no relatório?
                 </h3>
                 <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
@@ -599,16 +560,14 @@ export const Relatorios: React.FC = () => {
               <button
                 type="button"
                 onClick={selecionarTodasColunas}
-                className="btn-secondary"
-                style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                className="btn-secondary btn-builder-action"
               >
                 <CheckSquare size={13} color="#34d399" /> Selecionar Todas
               </button>
               <button
                 type="button"
                 onClick={selecionarPadrao}
-                className="btn-secondary"
-                style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '5px' }}
+                className="btn-secondary btn-builder-action"
               >
                 <RotateCcw size={13} color="#818cf8" /> Padrão
               </button>
@@ -616,8 +575,7 @@ export const Relatorios: React.FC = () => {
                 <button
                   type="button"
                   onClick={selecionarNomeECamposCustom}
-                  className="btn-secondary"
-                  style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#38bdf8', color: '#38bdf8' }}
+                  className="btn-secondary btn-builder-action btn-builder-custom-action"
                 >
                   <Sparkles size={13} /> Nome + Campos Personalizados
                 </button>
@@ -625,8 +583,7 @@ export const Relatorios: React.FC = () => {
               <button
                 type="button"
                 onClick={limparSelecaoColunas}
-                className="btn-secondary"
-                style={{ padding: '5px 12px', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '5px', color: '#fb7185' }}
+                className="btn-secondary btn-builder-action btn-builder-clear"
               >
                 <Square size={13} /> Limpar
               </button>
@@ -635,7 +592,7 @@ export const Relatorios: React.FC = () => {
 
           {/* Grupo 1: Dados Cadastrais Básicos */}
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
+            <div className="builder-group-title cadastral">
               📋 Dados Cadastrais do Colaborador
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -646,23 +603,9 @@ export const Relatorios: React.FC = () => {
                     key={col.key}
                     type="button"
                     onClick={() => toggleColuna(col.key)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '7px 14px',
-                      borderRadius: '10px',
-                      fontSize: '0.85rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      border: ativa ? '1.5px solid #6366f1' : '1px solid var(--card-border)',
-                      background: ativa ? 'rgba(99, 102, 241, 0.25)' : 'rgba(30, 41, 59, 0.4)',
-                      color: ativa ? '#f8fafc' : 'var(--text-muted)',
-                      boxShadow: ativa ? '0 0 12px rgba(99, 102, 241, 0.3)' : 'none',
-                      transition: 'all 0.15s ease'
-                    }}
+                    className={`btn-column-chip ${ativa ? 'active' : ''}`}
                   >
-                    {ativa ? <Check size={14} color="#38bdf8" /> : <Plus size={14} color="var(--text-muted)" />}
+                    {ativa ? <Check size={14} className="chip-check-icon" /> : <Plus size={14} className="chip-plus-icon" />}
                     <span>{col.label}</span>
                   </button>
                 );
@@ -673,7 +616,7 @@ export const Relatorios: React.FC = () => {
           {/* Grupo 2: Campos Personalizados Criados */}
           {campos.length > 0 && (
             <div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
+              <div className="builder-group-title custom">
                 🧩 Campos Personalizados Cadastrados ({campos.length})
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -685,25 +628,11 @@ export const Relatorios: React.FC = () => {
                       key={cmp.id}
                       type="button"
                       onClick={() => toggleColuna(key)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '7px 14px',
-                        borderRadius: '10px',
-                        fontSize: '0.85rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        border: ativa ? '1.5px solid #38bdf8' : '1px solid var(--card-border)',
-                        background: ativa ? 'rgba(56, 189, 248, 0.22)' : 'rgba(30, 41, 59, 0.4)',
-                        color: ativa ? '#ffffff' : 'var(--text-muted)',
-                        boxShadow: ativa ? '0 0 12px rgba(56, 189, 248, 0.3)' : 'none',
-                        transition: 'all 0.15s ease'
-                      }}
+                      className={`btn-column-chip custom ${ativa ? 'active' : ''}`}
                     >
-                      {ativa ? <Check size={14} color="#34d399" /> : <Plus size={14} color="var(--text-muted)" />}
+                      {ativa ? <Check size={14} className="chip-check-icon" /> : <Plus size={14} className="chip-plus-icon" />}
                       <span>{cmp.nome}</span>
-                      <span style={{ fontSize: '0.7rem', opacity: 0.75, background: 'rgba(0,0,0,0.25)', padding: '1px 6px', borderRadius: '4px' }}>
+                      <span className="chip-type-tag">
                         {cmp.tipo}
                       </span>
                     </button>
@@ -714,9 +643,9 @@ export const Relatorios: React.FC = () => {
           )}
 
           {/* Resumo da Seleção Atual */}
-          <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+          <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px solid var(--card-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
             <span>
-              Colunas ativas no relatório: <strong style={{ color: '#38bdf8' }}>{colunasAtivasConstrutor.length}</strong> de {COLUNAS_CADASTRAIS.length + campos.length}
+              Colunas ativas no relatório: <strong style={{ color: 'var(--text-main)' }}>{colunasAtivasConstrutor.length}</strong> de {COLUNAS_CADASTRAIS.length + campos.length}
             </span>
             <span style={{ fontStyle: 'italic' }}>
               Ordem de exibição: {colunasAtivasConstrutor.map(c => c.label).join(' → ') || 'Nenhuma coluna selecionada'}
@@ -727,8 +656,8 @@ export const Relatorios: React.FC = () => {
 
       {/* PAINEL DE SELEÇÃO DE COLUNAS DO MODO GEOGRÁFICO */}
       {modo === 'geo' && (
-        <div className="glass-panel no-print" style={{ padding: '16px 20px', borderRadius: '16px', marginBottom: '24px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-          <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', marginBottom: '10px' }}>
+        <div className="glass-panel no-print" style={{ padding: '16px 20px', borderRadius: '16px', marginBottom: '24px' }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px' }}>
             Colunas Visíveis no Relatório Geográfico
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -744,21 +673,9 @@ export const Relatorios: React.FC = () => {
                 key={col.key}
                 type="button"
                 onClick={() => setGeoCols(prev => ({ ...prev, [col.key]: !prev[col.key] }))}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  border: geoCols[col.key] ? '1.5px solid #6366f1' : '1px solid var(--card-border)',
-                  background: geoCols[col.key] ? 'rgba(99, 102, 241, 0.25)' : 'rgba(30, 41, 59, 0.4)',
-                  color: geoCols[col.key] ? '#f8fafc' : 'var(--text-muted)'
-                }}
+                className={`btn-column-chip ${geoCols[col.key] ? 'active' : ''}`}
               >
-                {geoCols[col.key] ? <Check size={13} color="#38bdf8" /> : <Plus size={13} color="var(--text-muted)" />}
+                {geoCols[col.key] ? <Check size={13} className="chip-check-icon" /> : <Plus size={13} className="chip-plus-icon" />}
                 <span>{col.label}</span>
               </button>
             ))}
@@ -768,8 +685,8 @@ export const Relatorios: React.FC = () => {
 
       {/* PAINEL DE SELEÇÃO DE COLUNAS DO MODO RBAC */}
       {modo === 'rbac' && (
-        <div className="glass-panel no-print" style={{ padding: '16px 20px', borderRadius: '16px', marginBottom: '24px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-          <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#818cf8', textTransform: 'uppercase', marginBottom: '10px' }}>
+        <div className="glass-panel no-print" style={{ padding: '16px 20px', borderRadius: '16px', marginBottom: '24px' }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px' }}>
             Colunas Visíveis no Relatório de Usuários (RBAC)
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -785,21 +702,9 @@ export const Relatorios: React.FC = () => {
                 key={col.key}
                 type="button"
                 onClick={() => setRbacCols(prev => ({ ...prev, [col.key]: !prev[col.key] }))}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  fontSize: '0.82rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  border: rbacCols[col.key] ? '1.5px solid #6366f1' : '1px solid var(--card-border)',
-                  background: rbacCols[col.key] ? 'rgba(99, 102, 241, 0.25)' : 'rgba(30, 41, 59, 0.4)',
-                  color: rbacCols[col.key] ? '#f8fafc' : 'var(--text-muted)'
-                }}
+                className={`btn-column-chip ${rbacCols[col.key] ? 'active' : ''}`}
               >
-                {rbacCols[col.key] ? <Check size={13} color="#38bdf8" /> : <Plus size={13} color="var(--text-muted)" />}
+                {rbacCols[col.key] ? <Check size={13} className="chip-check-icon" /> : <Plus size={13} className="chip-plus-icon" />}
                 <span>{col.label}</span>
               </button>
             ))}
@@ -809,19 +714,18 @@ export const Relatorios: React.FC = () => {
 
       {/* PAINEL DE FILTROS AVANÇADOS (Oculto na Impressão) */}
       {modo !== 'rbac' && (
-        <div className="glass-panel no-print" style={{ padding: '18px 24px', borderRadius: '16px', marginBottom: '24px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+        <div className="glass-panel no-print panel-filtros-container" style={{ padding: '18px 24px', borderRadius: '16px', marginBottom: '24px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', alignItems: 'flex-end' }}>
             {/* 1. Busca Geral */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Busca Rápida</label>
-              <div className="search-box" style={{ width: '100%' }}>
-                <Search size={16} color="var(--text-muted)" />
+              <div className="search-box-relatorio">
+                <Search size={16} className="search-box-icon" />
                 <input
                   type="text"
                   placeholder="Nome, CPF, Cargo, PIX..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  style={{ border: 'none', background: 'transparent', width: '100%', outline: 'none', color: 'inherit' }}
                 />
               </div>
             </div>
