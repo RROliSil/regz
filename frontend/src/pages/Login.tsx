@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Lock, Mail, Loader2, AlertCircle, ShieldCheck, Sun, Moon, Sparkles } from 'lucide-react';
+import { Lock, Mail, Loader2, AlertCircle, ShieldCheck, Sun, Moon, Container } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
@@ -33,7 +33,7 @@ export const Login: React.FC = () => {
     switch (theme) {
       case 'light': return <Sun size={18} />;
       case 'dark': return <Moon size={18} />;
-      default: return <Sparkles size={18} />;
+      default: return <Container size={18} />;
     }
   };
 
