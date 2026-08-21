@@ -195,6 +195,10 @@ I. Isolamento Estrito de Dados Multi-Empresas (Multi-Tenancy por empresa_id):
   - No Painel Super Admin (`SuperAdmin.tsx`), ao abrir o modal de cadastro de novo usuário para uma empresa (`handleOpenCreateUserEmpresa`), a busca de perfis de acesso envia explicitamente `?empresa_id=${emp.id}` e `'x-empresa-id': String(emp.id)`.
   - O dropdown de perfis RBAC exibe estritamente os perfis pertencentes àquela empresa específica (excluindo perfis criados na Empresa 1 ou outras empresas).
   - O dropdown de licenças avulsas exibe exclusivamente as chaves geradas para a empresa alvo.
+- REGRA 160: Correções Globais de Auditoria de Integração de APIs e Middleware de Segurança:
+  - Corrigida a rota de carregamento de campos customizados na página de Relatórios (`Relatorios.tsx`) de `/api/campos` para `/api/campos-customizados`, restabelecendo o fluxo 100% correto de relatórios por empresa.
+  - Reforçado o middleware `checkPermission` em `backend/src/index.ts` para negar acesso com erro 401 Unauthorized em requisições sem o token Bearer JWT.
+  - Incluídos os cabeçalhos de autenticação `getAuthHeaders()` na exclusão de empresa em `Administracao.tsx`.
 
 
 4. INSTRUÇÕES DE EXECUÇÃO E DEPLOY NO PORTAINER.IO

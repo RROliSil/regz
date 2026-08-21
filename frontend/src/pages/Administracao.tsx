@@ -922,7 +922,7 @@ export const Administracao: React.FC = () => {
   const handleDeleteEmpresa = async (id: number, nome: string) => {
     if (!window.confirm(`Tem certeza que deseja excluir a empresa "${nome}"?`)) return;
     try {
-      const res = await fetch(`/api/empresas/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/empresas/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
       if (res.ok) {
         setLicencaSuccess('Empresa removida com sucesso!');
         fetchEmpresas();

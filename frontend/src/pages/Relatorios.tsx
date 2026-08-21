@@ -78,7 +78,7 @@ export const Relatorios: React.FC = () => {
 
       const [colabRes, camposRes, userRes] = await Promise.all([
         fetch('/api/colaboradores', { headers }),
-        fetch('/api/campos', { headers }),
+        fetch('/api/campos-customizados', { headers }),
         fetch('/api/usuarios', { headers })
       ]);
 

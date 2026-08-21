@@ -939,7 +939,7 @@ const checkPermission = (aba: string) => {
   return async (req: Request, res: Response, next: any) => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return next();
+      return res.status(401).json({ error: 'Token de autenticação não fornecido' });
     }
     const token = authHeader.split(' ')[1];
     try {
