@@ -84,9 +84,11 @@ const getModuleIcon = (iconName: string) => {
 };
 
 import { useAuth } from '../context/AuthContext';
+import { useSnackbar } from '../context/SnackbarContext';
 
 export const Administracao: React.FC = () => {
   const { usuario, temPermissao } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const podeEditar = temPermissao('administracao', 'escrita');
   const isSuperAdmin = !!(usuario?.is_super_admin || (usuario?.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario?.nome === 'Administrador Regz');
   const isUserAdminTag = !!usuario?.perfil?.is_admin;
@@ -474,6 +476,7 @@ export const Administracao: React.FC = () => {
   const handleCopyKey = (chave: string) => {
     navigator.clipboard.writeText(chave);
     setCopiedKey(chave);
+    showSnackbar('Chave copiada para a área de transferência!', 'info');
     setTimeout(() => setCopiedKey(null), 3000);
   };
 
@@ -493,6 +496,7 @@ export const Administracao: React.FC = () => {
 
       if (res.ok) {
         setLicencaSuccess('Nova chave de licença gerada e ativada com sucesso!');
+        showSnackbar('Nova chave de licença gerada e ativada com sucesso!', 'success');
         setModalLicencaOpen(false);
         fetchLicencas();
         fetchUsuarios();
@@ -553,6 +557,7 @@ export const Administracao: React.FC = () => {
       });
       if (res.ok) {
         setLicencaSuccess(`Licença de ${selectedLicencaRenovar.usuario_nome || 'Usuário'} atualizada com sucesso!`);
+        showSnackbar(`Licença de ${selectedLicencaRenovar.usuario_nome || 'Usuário'} atualizada com sucesso!`, 'success');
         setModalRenovarOpen(false);
         setSelectedLicencaRenovar(null);
         fetchLicencas();
@@ -576,6 +581,7 @@ export const Administracao: React.FC = () => {
       });
       if (res.ok) {
         setLicencaSuccess(`Status da licença alterado para ${nextStatus}!`);
+        showSnackbar(`Status da licença alterado para ${nextStatus}!`, 'success');
         fetchLicencas();
         fetchUsuarios();
         setTimeout(() => setLicencaSuccess(null), 4000);
@@ -591,6 +597,7 @@ export const Administracao: React.FC = () => {
       const res = await fetch(`/api/licencas/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
       if (res.ok) {
         setLicencaSuccess('Chave de licença removida com sucesso!');
+        showSnackbar('Chave de licença removida com sucesso!', 'success');
         fetchLicencas();
         fetchUsuarios();
         setTimeout(() => setLicencaSuccess(null), 4000);
@@ -653,6 +660,7 @@ export const Administracao: React.FC = () => {
       } else {
         setModalUserOpen(false);
         setUserSuccess(`Usuário ${data.nome} salvo com sucesso!`);
+        showSnackbar(`Usuário "${data.nome}" salvo com sucesso!`, 'success');
         fetchUsuarios();
         setTimeout(() => setUserSuccess(''), 3000);
       }
@@ -670,7 +678,10 @@ export const Administracao: React.FC = () => {
         headers: getAuthHeaders(),
         body: JSON.stringify({ ativo: !statusAtual })
       });
-      if (res.ok) fetchUsuarios();
+      if (res.ok) {
+        showSnackbar(`Status do usuário alterado para ${!statusAtual ? 'Ativo' : 'Inativo'}!`, 'success');
+        fetchUsuarios();
+      }
     } catch (err) {
       alert('Erro ao alterar status');
     }
@@ -748,7 +759,9 @@ export const Administracao: React.FC = () => {
         setPerfilError(data.error || 'Erro ao salvar perfil');
       } else {
         setModalPerfilOpen(false);
-        setPerfilSuccess(isEdit ? `Perfil "${data.nome}" atualizado com sucesso!` : `Perfil "${data.nome}" criado com sucesso!`);
+        const msg = isEdit ? `Perfil "${data.nome}" atualizado com sucesso!` : `Perfil "${data.nome}" criado com sucesso!`;
+        setPerfilSuccess(msg);
+        showSnackbar(msg, 'success');
         fetchPerfis();
         fetchUsuarios();
         setTimeout(() => setPerfilSuccess(''), 3000);
@@ -766,6 +779,7 @@ export const Administracao: React.FC = () => {
         const res = await fetch(`/api/perfis-acesso/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         const data = await res.json();
         if (res.ok) {
+          showSnackbar(`Perfil "${nome}" excluído com sucesso!`, 'success');
           fetchPerfis();
         } else {
           alert(data.error || 'Erro ao excluir perfil');
@@ -904,7 +918,9 @@ export const Administracao: React.FC = () => {
       });
 
       if (res.ok) {
-        setLicencaSuccess(editingEmpresaId ? 'Empresa atualizada com sucesso!' : 'Nova empresa cadastrada com sucesso!');
+        const msg = editingEmpresaId ? 'Empresa atualizada com sucesso!' : 'Nova empresa cadastrada com sucesso!';
+        setLicencaSuccess(msg);
+        showSnackbar(msg, 'success');
         setModalEmpresaOpen(false);
         fetchEmpresas();
         setTimeout(() => setLicencaSuccess(null), 4000);
@@ -925,6 +941,7 @@ export const Administracao: React.FC = () => {
       const res = await fetch(`/api/empresas/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
       if (res.ok) {
         setLicencaSuccess('Empresa removida com sucesso!');
+        showSnackbar(`Empresa "${nome}" removida com sucesso!`, 'success');
         fetchEmpresas();
         setTimeout(() => setLicencaSuccess(null), 4000);
       }

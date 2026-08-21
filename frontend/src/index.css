@@ -3753,5 +3753,48 @@ select option,
   color: #ffffff !important;
 }
 
+/* ======================================================== */
+/* SISTEMA GLOBAL DE SNACKBAR / NOTIFICAÇÃO FLUTUANTE */
+/* ======================================================== */
+@keyframes slideInSnackbar {
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes shrinkTimer {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0%;
+  }
+}
+
+[data-theme="light"] .snackbar-toast {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12), 0 0 15px rgba(16, 185, 129, 0.2) !important;
+}
+
+[data-theme="light"] .snackbar-toast span {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .snackbar-toast button {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .snackbar-toast button:hover {
+  color: #0f172a !important;
+}
+
+
 
 

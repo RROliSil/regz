@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CampoCustomizado } from '../types/auth';
 import { Plus, Trash2, Loader2, Check, AlertCircle, Type, Hash, ListFilter, Eye, X, CheckSquare } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useSnackbar } from '../context/SnackbarContext';
 
 interface CampoColumnWidths {
   nome: number;
@@ -13,6 +14,7 @@ interface CampoColumnWidths {
 
 export const Campos: React.FC = () => {
   const { usuario, temPermissao } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const podeEditar = temPermissao('campos', 'escrita');
 
   const [campos, setCampos] = useState<CampoCustomizado[]>([]);
@@ -185,6 +187,7 @@ export const Campos: React.FC = () => {
         setErrorMsg(data.error || 'Erro ao criar campo personalizado.');
       } else {
         setSuccessMsg(`Campo "${data.nome}" criado com sucesso!`);
+        showSnackbar(`Campo "${data.nome}" criado com sucesso!`, 'success');
         fetchCampos();
 
         // Limpar formulário correspondente
@@ -222,6 +225,7 @@ export const Campos: React.FC = () => {
       try {
         const res = await fetch(`/api/campos-customizados/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         if (res.ok) {
+          showSnackbar(`Campo "${nome}" removido com sucesso!`, 'success');
           fetchCampos();
         } else {
           alert('Erro ao remover campo');

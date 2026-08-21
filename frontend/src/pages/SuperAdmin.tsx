@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useSnackbar } from '../context/SnackbarContext';
 import { Empresa } from './Administracao';
 import { Licenca } from '../types/auth';
 import {
@@ -12,6 +13,7 @@ import {
 export const SuperAdmin: React.FC = () => {
   const { usuario, logout } = useAuth();
   const { setTheme } = useTheme();
+  const { showSnackbar } = useSnackbar();
 
   // Estados de Empresas
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
@@ -355,7 +357,9 @@ export const SuperAdmin: React.FC = () => {
       });
 
       if (res.ok) {
-        setGlobalSuccess(editingEmpresaId ? 'Empresa atualizada com sucesso!' : 'Nova empresa cadastrada com sucesso!');
+        const msg = editingEmpresaId ? 'Empresa atualizada com sucesso!' : 'Nova empresa cadastrada com sucesso!';
+        setGlobalSuccess(msg);
+        showSnackbar(msg, 'success');
         setModalEmpresaOpen(false);
         fetchEmpresas();
         setTimeout(() => setGlobalSuccess(null), 4000);
@@ -384,6 +388,7 @@ export const SuperAdmin: React.FC = () => {
       const res = await fetch(`/api/empresas/${empresaToDelete.id}`, { method: 'DELETE' });
       if (res.ok) {
         setGlobalSuccess(`Empresa "${empresaToDelete.nome}" removida com sucesso!`);
+        showSnackbar(`Empresa "${empresaToDelete.nome}" removida com sucesso!`, 'success');
         setEmpresaToDelete(null);
         fetchEmpresas();
         setTimeout(() => setGlobalSuccess(null), 4000);
@@ -418,6 +423,7 @@ export const SuperAdmin: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setGlobalSuccess(`Nova Chave Master Gerada: ${data.chave}`);
+        showSnackbar(`Nova Chave Master Gerada: ${data.chave}`, 'success');
         setModalLicencaOpen(false);
         fetchEmpresas();
         if (selectedEmpresaLicencas) {
@@ -451,6 +457,7 @@ export const SuperAdmin: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setGlobalSuccess(`Nova Chave Master Enterprise (365 Dias) Gerada: ${data.chave}`);
+        showSnackbar(`Nova Chave Master Enterprise (365 Dias) Gerada: ${data.chave}`, 'success');
         fetchEmpresas();
         if (selectedEmpresaLicencas) {
           handleOpenEmpresaLicencas(selectedEmpresaLicencas);
@@ -470,12 +477,14 @@ export const SuperAdmin: React.FC = () => {
   const handleCopyKey = (chave: string) => {
     navigator.clipboard.writeText(chave);
     setCopiedKey(chave);
+    showSnackbar('Chave copiada para a área de transferência!', 'info');
     setTimeout(() => setCopiedKey(null), 2500);
   };
 
   const handleOpenModalRenovar = (lic: Licenca) => {
     setSelectedLicencaRenovar(lic);
-    setRenovarOpcao('renovar_30');
+    const isTrial = lic.tipo_licenca === 'Trial' || lic.tipo_licenca === 'Dev / Trial';
+    setRenovarOpcao(isTrial ? 'renovar_30' : 'add_120');
     setModalRenovarOpen(true);
   };
 
@@ -484,19 +493,34 @@ export const SuperAdmin: React.FC = () => {
     setSubmittingRenovar(true);
 
     try {
-      let payload: any = {};
+      let dias = 30;
+      let tipo_licenca: string | undefined = undefined;
+      let redefinir = false;
+
       if (renovarOpcao === 'renovar_30') {
-        payload = { dias: 30 };
+        dias = 30;
+        tipo_licenca = 'Trial';
       } else if (renovarOpcao === 'upgrade_120') {
-        payload = { dias: 120, tipo_licenca: 'Enterprise', redefinir: true };
+        dias = 120;
+        tipo_licenca = 'Enterprise';
       } else if (renovarOpcao === 'upgrade_365') {
-        payload = { dias: 365, tipo_licenca: 'Enterprise', redefinir: true };
+        dias = 365;
+        tipo_licenca = 'Enterprise';
       } else if (renovarOpcao === 'downgrade_trial') {
-        payload = { dias: 30, tipo_licenca: 'Trial', redefinir: true };
+        dias = 30;
+        tipo_licenca = 'Trial';
+        redefinir = true;
       } else if (renovarOpcao === 'add_120') {
-        payload = { dias: 120 };
+        dias = 120;
+        tipo_licenca = 'Enterprise';
       } else if (renovarOpcao === 'add_365') {
-        payload = { dias: 365 };
+        dias = 365;
+        tipo_licenca = 'Enterprise';
+      }
+
+      const payload: any = { dias, redefinir };
+      if (tipo_licenca) {
+        payload.tipo_licenca = tipo_licenca;
       }
 
       const res = await fetch(`/api/licencas/${selectedLicencaRenovar.id}/renovar`, {
@@ -507,6 +531,7 @@ export const SuperAdmin: React.FC = () => {
 
       if (res.ok) {
         setGlobalSuccess('Validade da chave atualizada com sucesso!');
+        showSnackbar('Validade da chave atualizada com sucesso!', 'success');
         setModalRenovarOpen(false);
         fetchEmpresas();
         if (selectedEmpresaLicencas) {
@@ -592,6 +617,7 @@ export const SuperAdmin: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setGlobalSuccess(`Usuário "${data.nome}" cadastrado e vinculado à chave Master com sucesso!`);
+        showSnackbar(`Usuário "${data.nome}" cadastrado e vinculado à chave Master!`, 'success');
         setModalCreateUserOpen(false);
         handleOpenEmpresaUsuarios(selectedEmpresaUsuarios);
         fetchEmpresas();
@@ -613,6 +639,7 @@ export const SuperAdmin: React.FC = () => {
       const res = await fetch(`/api/licencas/${licId}/desvincular`, { method: 'POST' });
       if (res.ok) {
         setGlobalSuccess('Licença desvinculada do usuário com sucesso!');
+        showSnackbar('Licença desvinculada do usuário com sucesso!', 'success');
         if (selectedEmpresaLicencas) {
           handleOpenEmpresaLicencas(selectedEmpresaLicencas);
         }
@@ -639,6 +666,7 @@ export const SuperAdmin: React.FC = () => {
         body: JSON.stringify({ status: novoStatus })
       });
       if (res.ok) {
+        showSnackbar(`Status da licença alterado para ${novoStatus}!`, 'success');
         fetchEmpresas();
         if (selectedEmpresaLicencas) {
           handleOpenEmpresaLicencas(selectedEmpresaLicencas);
@@ -655,11 +683,15 @@ export const SuperAdmin: React.FC = () => {
       const res = await fetch(`/api/licencas/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setGlobalSuccess('Chave de licença excluída com sucesso!');
+        showSnackbar('Chave de licença excluída com sucesso!', 'success');
         fetchEmpresas();
         if (selectedEmpresaLicencas) {
           handleOpenEmpresaLicencas(selectedEmpresaLicencas);
         }
         setTimeout(() => setGlobalSuccess(null), 4000);
+      } else {
+        const errData = await res.json();
+        alert(errData.error || 'Erro ao excluir chave');
       }
     } catch (err) {
       console.error('Erro ao excluir chave:', err);

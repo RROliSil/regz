@@ -37,9 +37,11 @@ const DEFAULT_COLUMN_WIDTHS: ColumnWidths = {
 };
 
 import { useAuth } from '../context/AuthContext';
+import { useSnackbar } from '../context/SnackbarContext';
 
 export const Colaboradores: React.FC = () => {
   const { usuario, temPermissao } = useAuth();
+  const { showSnackbar } = useSnackbar();
   const podeEditar = temPermissao('colaboradores', 'escrita');
   const location = useLocation();
   const navigate = useNavigate();
@@ -577,6 +579,7 @@ export const Colaboradores: React.FC = () => {
             body: JSON.stringify({ ...targetPhotoColaborador, foto_url: base64 })
           });
           if (res.ok) {
+            showSnackbar('Foto do colaborador atualizada com sucesso!', 'success');
             setQuickPhotoModalOpen(false);
             fetchColaboradores();
           }
@@ -597,6 +600,7 @@ export const Colaboradores: React.FC = () => {
           body: JSON.stringify({ ...targetPhotoColaborador, foto_url: null })
         });
         if (res.ok) {
+          showSnackbar('Foto do colaborador removida com sucesso!', 'success');
           setQuickPhotoModalOpen(false);
           fetchColaboradores();
         }
@@ -753,6 +757,8 @@ export const Colaboradores: React.FC = () => {
       if (!res.ok) {
         setFormError(data.error || 'Erro ao salvar colaborador');
       } else {
+        const msg = editingId ? `Colaborador "${data.nome}" atualizado com sucesso!` : `Colaborador "${data.nome}" cadastrado com sucesso!`;
+        showSnackbar(msg, 'success');
         closeMainModal();
         resetForm();
         fetchColaboradores();
@@ -770,6 +776,7 @@ export const Colaboradores: React.FC = () => {
       try {
         const res = await fetch(`/api/colaboradores/${id}/inativar`, { method: 'PUT', headers: getAuthHeaders() });
         if (res.ok) {
+          showSnackbar(`Colaborador "${nome}" inativado com sucesso!`, 'success');
           fetchColaboradores();
         } else {
           alert('Erro ao inativar colaborador');
@@ -786,6 +793,7 @@ export const Colaboradores: React.FC = () => {
       try {
         const res = await fetch(`/api/colaboradores/${id}/reativar`, { method: 'PUT', headers: getAuthHeaders() });
         if (res.ok) {
+          showSnackbar(`Colaborador "${nome}" reativado com sucesso!`, 'success');
           fetchColaboradores();
         } else {
           alert('Erro ao reativar colaborador');
