@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Mail, Loader2, AlertCircle, ShieldCheck } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { Lock, Mail, Loader2, AlertCircle, ShieldCheck, Sun, Moon, Sparkles } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
+  const { theme, cycleTheme } = useTheme();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,22 +29,51 @@ export const Login: React.FC = () => {
     }
   };
 
+  const getThemeIcon = () => {
+    switch (theme) {
+      case 'light': return <Sun size={18} />;
+      case 'dark': return <Moon size={18} />;
+      default: return <Sparkles size={18} />;
+    }
+  };
+
+  const getThemeTitle = () => {
+    switch (theme) {
+      case 'light': return 'Modo Claro Ativo (Clique para alternar)';
+      case 'dark': return 'Modo Escuro Ativo (Clique para alternar)';
+      default: return 'Modo Padrão Regz (Clique para alternar)';
+    }
+  };
+
   return (
-    <div style={{
+    <div className="login-wrapper" style={{
       minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'radial-gradient(circle at top right, #1e1b4b 0%, #0f172a 60%, #020617 100%)',
-      padding: '20px'
+      background: 'var(--bg-gradient)',
+      padding: '20px',
+      position: 'relative'
     }}>
-      <div className="glass-panel" style={{
+      {/* Botão Flutuante de Alternância de Tema no Login */}
+      <div style={{ position: 'fixed', top: '24px', right: '24px', zIndex: 100 }}>
+        <button
+          onClick={cycleTheme}
+          className="theme-toggle-btn login-theme-btn"
+          title={getThemeTitle()}
+          style={{ width: '40px', height: '40px', borderRadius: '12px' }}
+        >
+          {getThemeIcon()}
+        </button>
+      </div>
+
+      <div className="glass-panel login-card" style={{
         width: '100%',
         maxWidth: '420px',
         padding: '36px',
         borderRadius: '24px',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)',
-        border: '1px solid rgba(255, 255, 255, 0.1)'
+        background: 'var(--card-bg)',
+        border: '1px solid var(--card-border)'
       }}>
         {/* Header do Card Login */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
@@ -59,10 +90,10 @@ export const Login: React.FC = () => {
           }}>
             <ShieldCheck size={36} color="#ffffff" />
           </div>
-          <h1 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>
+          <h1 className="login-title" style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
             Regz <span className="text-gradient">Gestão</span>
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '6px' }}>
+          <p className="login-subtitle" style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '6px' }}>
             Acesso Restrito ao Sistema
           </p>
         </div>
@@ -75,7 +106,7 @@ export const Login: React.FC = () => {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div className="form-group">
-            <label style={{ color: '#cbd5e1', fontSize: '0.88rem', fontWeight: 600 }}>E-mail de Acesso</label>
+            <label className="login-label" style={{ color: 'var(--text-main)', fontSize: '0.88rem', fontWeight: 600 }}>E-mail de Acesso</label>
             <div style={{ position: 'relative' }}>
               <input
                 type="email"
@@ -83,15 +114,16 @@ export const Login: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
+                className="login-input"
                 style={{ paddingLeft: '42px' }}
                 required
               />
-              <Mail size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+              <Mail size={18} className="login-input-icon" color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
             </div>
           </div>
 
           <div className="form-group">
-            <label style={{ color: '#cbd5e1', fontSize: '0.88rem', fontWeight: 600 }}>Senha</label>
+            <label className="login-label" style={{ color: 'var(--text-main)', fontSize: '0.88rem', fontWeight: 600 }}>Senha</label>
             <div style={{ position: 'relative' }}>
               <input
                 type="password"
@@ -99,10 +131,11 @@ export const Login: React.FC = () => {
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 disabled={loading}
+                className="login-input"
                 style={{ paddingLeft: '42px' }}
                 required
               />
-              <Lock size={18} color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+              <Lock size={18} className="login-input-icon" color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
             </div>
           </div>
 
@@ -128,15 +161,15 @@ export const Login: React.FC = () => {
           </button>
         </form>
 
-        <div style={{
+        <div className="login-footer" style={{
           marginTop: '28px',
           textAlign: 'center',
           paddingTop: '20px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          borderTop: '1px solid var(--card-border)',
           fontSize: '0.8rem',
           color: 'var(--text-dim)'
         }}>
-          <span>Contas são criadas exclusivamente pelo Administrador.</span>
+          <span className="login-footer-note">Contas são criadas exclusivamente pelo Administrador.</span>
         </div>
       </div>
     </div>
