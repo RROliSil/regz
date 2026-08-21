@@ -58,6 +58,7 @@ const ProtectedLayout: React.FC = () => {
   }
 
   if (isSuperAdmin) {
+    document.documentElement.setAttribute('data-theme', 'padrao');
     if (location.pathname !== '/superadmrgz') {
       return <Navigate to="/superadmrgz" replace />;
     }

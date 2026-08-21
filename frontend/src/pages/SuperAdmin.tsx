@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { Empresa } from './Administracao';
 import { Licenca } from '../types/auth';
 import {
@@ -10,6 +11,7 @@ import {
 
 export const SuperAdmin: React.FC = () => {
   const { usuario, logout } = useAuth();
+  const { setTheme } = useTheme();
 
   // Estados de Empresas
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
@@ -119,6 +121,8 @@ export const SuperAdmin: React.FC = () => {
   };
 
   useEffect(() => {
+    setTheme('padrao');
+    document.documentElement.setAttribute('data-theme', 'padrao');
     fetchEmpresas();
   }, []);
 
