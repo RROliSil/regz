@@ -92,10 +92,14 @@ export const Login: React.FC = () => {
             <video
               src="/videos/RegzICO.mp4"
               autoPlay
-              loop
               muted
               playsInline
               poster="/logo.png"
+              onEnded={(e) => {
+                const v = e.currentTarget;
+                v.pause();
+                if (v.duration) v.currentTime = v.duration;
+              }}
               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
             >
               <img src="/logo.png" alt="Regz Gestão de Pessoas" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
