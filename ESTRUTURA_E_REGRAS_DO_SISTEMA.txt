@@ -229,7 +229,7 @@ I. Isolamento Estrito de Dados Multi-Empresas (Multi-Tenancy por empresa_id):
   - **Filtros Avançados e Rápidos**:
     - Busca inteligente em tempo real por Nome, CPF, Cargo, Cidade, Endereço e valores de campos personalizados.
     - Filtro de Status (Todos, Apenas Ativos, Apenas Inativos), Cargo, UF com encadeamento de Cidades e Período de Cadastro (De / Até).
-    - Ordenação por Nome (A-Z / Z-A), ID e Data de Cadastro, com botão "Limpar Filtros".
+    - Botão "Limpar Filtros" para redefinir rapidamente a busca.
   - **Sincronização Rigorosa com PDF/Impressão e Excel (CSV)**:
     - A tabela na tela, a impressão em PDF A4 e a planilha Excel (CSV) gerada exportam única e exclusivamente as colunas marcadas no construtor.
 - REGRA 166: Padronização Monocromática Dark no Módulo de Relatórios:
@@ -262,6 +262,8 @@ I. Modelos de Relatórios Salvos ("Meus Relatórios"):
   3. *Auditoria Cadastral & Endereços* (Colunas: id, foto, nome, cpf, endereco, cidade_uf, criado_em, status; Filtro: todos)
 - Funcionalidades:
   - Carregamento de configuração completa com 1 clique (colunas ativas, status, cargo, estado, cidade, ordenação).
+  - Ao clicar em "Limpar" na seleção de colunas ou alternar/modificar colunas manualmente, os modelos de "Meus Relatórios & Modelos Salvos" são desmarcados visualmente de forma instantânea.
+  - Ordenação Interativa: O campo estático select "Ordem" foi removido dos filtros. Todos os títulos de colunas da tabela são clicáveis (`<th>`), alternando entre crescente (▲ `ArrowUp`) e decrescente (▼ `ArrowDown`), com suporte a dados cadastrais e campos personalizados.
   - Botão "+ Salvar Configuração Atual como Modelo" que abre modal para definir nome e descrição.
   - Exclusão com confirmação para modelos personalizados do usuário.
 

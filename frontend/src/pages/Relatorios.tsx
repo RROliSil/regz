@@ -19,7 +19,10 @@ import {
   Bookmark,
   Save,
   Star,
-  X
+  X,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown
 } from 'lucide-react';
 
 interface Colaborador {
@@ -80,6 +83,8 @@ export interface RelatorioSalvo {
     cidade?: string;
     search?: string;
     ordenacao?: any;
+    sortColumn?: string;
+    sortDirection?: 'asc' | 'desc';
     dataInicio?: string;
     dataFim?: string;
   };
@@ -157,7 +162,10 @@ export const Relatorios: React.FC = () => {
   const [filtroCidade, setFiltroCidade] = useState('todos');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
-  const [ordenacao, setOrdenacao] = useState<'nome_asc' | 'nome_desc' | 'id_desc' | 'id_asc' | 'data_desc' | 'data_asc'>('nome_asc');
+
+  // Ordenação Interativa por Colunas (sem select estático de Ordem)
+  const [sortColumn, setSortColumn] = useState<string>('nome');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Carregar dados da API
   const carregarDados = async () => {
@@ -225,11 +233,35 @@ export const Relatorios: React.FC = () => {
       if (modelo.filtros.estado) setFiltroEstado(modelo.filtros.estado);
       if (modelo.filtros.cidade) setFiltroCidade(modelo.filtros.cidade);
       if (modelo.filtros.search !== undefined) setSearch(modelo.filtros.search);
-      if (modelo.filtros.ordenacao) setOrdenacao(modelo.filtros.ordenacao);
+      if (modelo.filtros.sortColumn) {
+        setSortColumn(modelo.filtros.sortColumn);
+        setSortDirection(modelo.filtros.sortDirection || 'asc');
+      } else if (modelo.filtros.ordenacao) {
+        if (modelo.filtros.ordenacao.includes('nome')) {
+          setSortColumn('nome');
+          setSortDirection(modelo.filtros.ordenacao.includes('desc') ? 'desc' : 'asc');
+        } else if (modelo.filtros.ordenacao.includes('id')) {
+          setSortColumn('id');
+          setSortDirection(modelo.filtros.ordenacao.includes('desc') ? 'desc' : 'asc');
+        } else if (modelo.filtros.ordenacao.includes('data')) {
+          setSortColumn('criado_em');
+          setSortDirection(modelo.filtros.ordenacao.includes('desc') ? 'desc' : 'asc');
+        }
+      }
       if (modelo.filtros.dataInicio !== undefined) setDataInicio(modelo.filtros.dataInicio);
       if (modelo.filtros.dataFim !== undefined) setDataFim(modelo.filtros.dataFim);
     }
     showSnackbar(`Modelo "${modelo.nome}" carregado com sucesso!`, 'success');
+  };
+
+  // Alternar ordenação ao clicar no cabeçalho de uma coluna
+  const handleToggleSort = (colKey: string) => {
+    if (sortColumn === colKey) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortColumn(colKey);
+      setSortDirection('asc');
+    }
   };
 
   // Salvar Configuração Atual como Novo Modelo
@@ -264,7 +296,8 @@ export const Relatorios: React.FC = () => {
           estado: filtroEstado,
           cidade: filtroCidade,
           search,
-          ordenacao,
+          sortColumn,
+          sortDirection,
           dataInicio,
           dataFim
         }
@@ -332,6 +365,7 @@ export const Relatorios: React.FC = () => {
 
   // Alternar seleção de coluna no Construtor Livre
   const toggleColuna = (colKey: string) => {
+    setModeloAtivoId(null);
     setColunasSelecionadas(prev => {
       if (prev.includes(colKey)) {
         return prev.filter(k => k !== colKey);
@@ -343,6 +377,7 @@ export const Relatorios: React.FC = () => {
 
   // Ações rápidas de seleção de colunas
   const selecionarTodasColunas = () => {
+    setModeloAtivoId(null);
     const todasCadastrais = COLUNAS_CADASTRAIS.map(c => c.key);
     const todasCustom = campos.map(c => `custom_${c.id}`);
     setColunasSelecionadas([...todasCadastrais, ...todasCustom]);
@@ -351,15 +386,18 @@ export const Relatorios: React.FC = () => {
 
   const limparSelecaoColunas = () => {
     setColunasSelecionadas([]);
+    setModeloAtivoId(null);
     showSnackbar('Seleção de colunas limpa!', 'info');
   };
 
   const selecionarPadrao = () => {
+    setModeloAtivoId(null);
     setColunasSelecionadas(['nome', 'cargo', 'cidade_uf', 'status']);
     showSnackbar('Colunas padrão aplicadas!', 'info');
   };
 
   const selecionarNomeECamposCustom = () => {
+    setModeloAtivoId(null);
     const todasCustom = campos.map(c => `custom_${c.id}`);
     setColunasSelecionadas(['nome', ...todasCustom]);
     showSnackbar('Selecionado: Nome + Campos Personalizados!', 'info');
@@ -374,7 +412,8 @@ export const Relatorios: React.FC = () => {
     setFiltroCidade('todos');
     setDataInicio('');
     setDataFim('');
-    setOrdenacao('nome_asc');
+    setSortColumn('nome');
+    setSortDirection('asc');
     showSnackbar('Filtros redefinidos para o padrão!', 'info');
   };
 
@@ -482,17 +521,49 @@ export const Relatorios: React.FC = () => {
       return true;
     });
 
-    // Ordenação
+    // Ordenação dinâmica baseada na coluna e direção clicadas
     return filtrados.sort((a, b) => {
-      if (ordenacao === 'nome_asc') return a.nome.localeCompare(b.nome);
-      if (ordenacao === 'nome_desc') return b.nome.localeCompare(a.nome);
-      if (ordenacao === 'id_desc') return b.id - a.id;
-      if (ordenacao === 'id_asc') return a.id - b.id;
-      if (ordenacao === 'data_desc') return (b.criado_em || '').localeCompare(a.criado_em || '');
-      if (ordenacao === 'data_asc') return (a.criado_em || '').localeCompare(b.criado_em || '');
-      return 0;
+      let res = 0;
+      if (sortColumn === 'id') {
+        res = a.id - b.id;
+      } else if (sortColumn === 'nome') {
+        res = a.nome.localeCompare(b.nome);
+      } else if (sortColumn === 'cpf') {
+        res = (a.cpf || '').localeCompare(b.cpf || '');
+      } else if (sortColumn === 'cargo') {
+        res = (a.cargo || '').localeCompare(b.cargo || '');
+      } else if (sortColumn === 'email') {
+        res = (a.email || '').localeCompare(b.email || '');
+      } else if (sortColumn === 'telefone') {
+        res = (a.telefone || '').localeCompare(b.telefone || '');
+      } else if (sortColumn === 'cbo') {
+        res = (a.cbo_codigo || '').localeCompare(b.cbo_codigo || '');
+      } else if (sortColumn === 'cidade_uf') {
+        const valA = `${a.cidade || ''} - ${a.estado || ''}`;
+        const valB = `${b.cidade || ''} - ${b.estado || ''}`;
+        res = valA.localeCompare(valB);
+      } else if (sortColumn === 'endereco') {
+        const valA = `${a.logradouro || ''} ${a.numero || ''} ${a.bairro || ''}`;
+        const valB = `${b.logradouro || ''} ${b.numero || ''} ${b.bairro || ''}`;
+        res = valA.localeCompare(valB);
+      } else if (sortColumn === 'criado_em') {
+        res = (a.criado_em || '').localeCompare(b.criado_em || '');
+      } else if (sortColumn === 'status') {
+        const valA = a.ativo !== false ? 1 : 0;
+        const valB = b.ativo !== false ? 1 : 0;
+        res = valA - valB;
+      } else if (sortColumn.startsWith('custom_')) {
+        const campoId = parseInt(sortColumn.replace('custom_', ''), 10);
+        const campoObj = campos.find(cp => cp.id === campoId);
+        if (campoObj) {
+          const valA = getCustomFieldValue(a, campoObj);
+          const valB = getCustomFieldValue(b, campoObj);
+          res = valA.localeCompare(valB);
+        }
+      }
+      return sortDirection === 'asc' ? res : -res;
     });
-  }, [colaboradores, filtroStatus, filtroCargo, filtroEstado, filtroCidade, dataInicio, dataFim, search, ordenacao]);
+  }, [colaboradores, filtroStatus, filtroCargo, filtroEstado, filtroCidade, dataInicio, dataFim, search, sortColumn, sortDirection, campos]);
 
   // Agrupamento Geográfico
   const dadosGeo = useMemo(() => {
@@ -1042,33 +1113,17 @@ export const Relatorios: React.FC = () => {
               />
             </div>
 
-            {/* 8. Ordenação & Reset */}
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
-                <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ordem</label>
-                <select
-                  value={ordenacao}
-                  onChange={e => setOrdenacao(e.target.value as any)}
-                  className="custom-select-small"
-                  style={{ width: '100%', height: '38px' }}
-                >
-                  <option value="nome_asc">Nome (A - Z)</option>
-                  <option value="nome_desc">Nome (Z - A)</option>
-                  <option value="id_desc">ID (Mais Recente)</option>
-                  <option value="id_asc">ID (Mais Antigo)</option>
-                  <option value="data_desc">Data (Decrescente)</option>
-                  <option value="data_asc">Data (Crescente)</option>
-                </select>
-              </div>
-
+            {/* 8. Botão de Limpar Filtros */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'transparent', textTransform: 'uppercase', userSelect: 'none' }}>Ação</label>
               <button
                 type="button"
                 onClick={handleResetFiltros}
                 className="btn-secondary"
-                style={{ height: '38px', padding: '0 12px', display: 'flex', alignItems: 'center', gap: '5px', marginTop: 'auto' }}
-                title="Limpar todos os filtros"
+                style={{ height: '38px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                title="Limpar todos os filtros da busca"
               >
-                <RotateCcw size={15} /> Limpar
+                <RotateCcw size={15} /> Limpar Filtros
               </button>
             </div>
           </div>
@@ -1140,11 +1195,34 @@ export const Relatorios: React.FC = () => {
                   <table className="custom-table">
                     <thead>
                       <tr>
-                        {colunasAtivasConstrutor.map(col => (
-                          <th key={col.key}>
-                            {col.label}
-                          </th>
-                        ))}
+                        {colunasAtivasConstrutor.map(col => {
+                          const isSorted = sortColumn === col.key;
+                          return (
+                            <th 
+                              key={col.key}
+                              onClick={() => handleToggleSort(col.key)}
+                              style={{ 
+                                cursor: 'pointer', 
+                                userSelect: 'none',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title={`Clique para ordenar por ${col.label} (${isSorted && sortDirection === 'asc' ? 'Decrescente' : 'Crescente'})`}
+                            >
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                <span>{col.label}</span>
+                                {isSorted ? (
+                                  sortDirection === 'asc' ? (
+                                    <ArrowUp size={14} color="#818cf8" />
+                                  ) : (
+                                    <ArrowDown size={14} color="#818cf8" />
+                                  )
+                                ) : (
+                                  <ArrowUpDown size={13} style={{ opacity: 0.3 }} />
+                                )}
+                              </div>
+                            </th>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody>
