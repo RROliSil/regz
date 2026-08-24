@@ -12,7 +12,6 @@ import {
   Plus,
   Sliders,
   CheckSquare,
-  Square,
   Sparkles,
   MapPin,
   Shield,
@@ -24,6 +23,27 @@ import {
   ArrowDown,
   ArrowUpDown
 } from 'lucide-react';
+
+// Componente vetorial do ícone de Vassoura
+const BroomIcon: React.FC<{ size?: number; className?: string; style?: React.CSSProperties }> = ({ size = 15, className, style }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    style={style}
+  >
+    <path d="m14 4 6 6" />
+    <path d="m18 8-8.5 8.5a2.12 2.12 0 1 1-3-3L15 5" />
+    <path d="m3 21 6-6" />
+    <path d="M2 22s2-4 5-4 5 4 5 4-2 0-5 0-5 0Z" />
+  </svg>
+);
 
 interface Colaborador {
   id: number;
@@ -224,32 +244,61 @@ export const Relatorios: React.FC = () => {
   // Aplicar Modelo Salvo
   const handleAplicarModelo = (modelo: RelatorioSalvo) => {
     setModeloAtivoId(modelo.id);
-    if (Array.isArray(modelo.colunas) && modelo.colunas.length > 0) {
-      setColunasSelecionadas(modelo.colunas);
-    }
-    if (modelo.filtros) {
-      if (modelo.filtros.status) setFiltroStatus(modelo.filtros.status);
-      if (modelo.filtros.cargo) setFiltroCargo(modelo.filtros.cargo);
-      if (modelo.filtros.estado) setFiltroEstado(modelo.filtros.estado);
-      if (modelo.filtros.cidade) setFiltroCidade(modelo.filtros.cidade);
-      if (modelo.filtros.search !== undefined) setSearch(modelo.filtros.search);
-      if (modelo.filtros.sortColumn) {
-        setSortColumn(modelo.filtros.sortColumn);
-        setSortDirection(modelo.filtros.sortDirection || 'asc');
-      } else if (modelo.filtros.ordenacao) {
-        if (modelo.filtros.ordenacao.includes('nome')) {
-          setSortColumn('nome');
-          setSortDirection(modelo.filtros.ordenacao.includes('desc') ? 'desc' : 'asc');
-        } else if (modelo.filtros.ordenacao.includes('id')) {
-          setSortColumn('id');
-          setSortDirection(modelo.filtros.ordenacao.includes('desc') ? 'desc' : 'asc');
-        } else if (modelo.filtros.ordenacao.includes('data')) {
-          setSortColumn('criado_em');
-          setSortDirection(modelo.filtros.ordenacao.includes('desc') ? 'desc' : 'asc');
-        }
+    const mod = modelo.modo || 'construtor';
+    setModo(mod as ModoVisualizacao);
+    
+    if (mod === 'construtor') {
+      if (Array.isArray(modelo.colunas) && modelo.colunas.length > 0) {
+        setColunasSelecionadas(modelo.colunas);
       }
-      if (modelo.filtros.dataInicio !== undefined) setDataInicio(modelo.filtros.dataInicio);
-      if (modelo.filtros.dataFim !== undefined) setDataFim(modelo.filtros.dataFim);
+      if (modelo.filtros) {
+        if (modelo.filtros.status) setFiltroStatus(modelo.filtros.status);
+        if (modelo.filtros.cargo) setFiltroCargo(modelo.filtros.cargo);
+        if (modelo.filtros.estado) setFiltroEstado(modelo.filtros.estado);
+        if (modelo.filtros.cidade) setFiltroCidade(modelo.filtros.cidade);
+        if (modelo.filtros.search !== undefined) setSearch(modelo.filtros.search);
+        if (modelo.filtros.sortColumn) {
+          setSortColumn(modelo.filtros.sortColumn);
+          setSortDirection(modelo.filtros.sortDirection || 'asc');
+        } else if (modelo.filtros.ordenacao) {
+          if (modelo.filtros.ordenacao.includes('nome')) {
+            setSortColumn('nome');
+            setSortDirection(modelo.filtros.ordenacao.includes('desc') ? 'desc' : 'asc');
+          } else if (modelo.filtros.ordenacao.includes('id')) {
+            setSortColumn('id');
+            setSortDirection(modelo.filtros.ordenacao.includes('desc') ? 'desc' : 'asc');
+          } else if (modelo.filtros.ordenacao.includes('data')) {
+            setSortColumn('criado_em');
+            setSortDirection(modelo.filtros.ordenacao.includes('desc') ? 'desc' : 'asc');
+          }
+        }
+        if (modelo.filtros.dataInicio !== undefined) setDataInicio(modelo.filtros.dataInicio);
+        if (modelo.filtros.dataFim !== undefined) setDataFim(modelo.filtros.dataFim);
+      }
+    } else if (mod === 'geo') {
+      if (Array.isArray(modelo.colunas) && modelo.colunas.length > 0) {
+        const newGeoCols: { [key: string]: boolean } = {
+          estado: false, cidade: false, ativos: false, inativos: false, total: false, percentual: false
+        };
+        modelo.colunas.forEach(k => { newGeoCols[k] = true; });
+        setGeoCols(newGeoCols);
+      }
+      if (modelo.filtros) {
+        if (modelo.filtros.estado) setFiltroEstado(modelo.filtros.estado);
+        if (modelo.filtros.cidade) setFiltroCidade(modelo.filtros.cidade);
+        if (modelo.filtros.search !== undefined) setSearch(modelo.filtros.search);
+      }
+    } else if (mod === 'rbac') {
+      if (Array.isArray(modelo.colunas) && modelo.colunas.length > 0) {
+        const newRbacCols: { [key: string]: boolean } = {
+          id: false, nome: false, email: false, perfil: false, tipo: false, status: false
+        };
+        modelo.colunas.forEach(k => { newRbacCols[k] = true; });
+        setRbacCols(newRbacCols);
+      }
+      if (modelo.filtros && modelo.filtros.search !== undefined) {
+        setSearch(modelo.filtros.search);
+      }
     }
     showSnackbar(`Modelo "${modelo.nome}" carregado com sucesso!`, 'success');
   };
@@ -272,9 +321,40 @@ export const Relatorios: React.FC = () => {
       return;
     }
 
-    if (colunasSelecionadas.length === 0) {
-      showSnackbar('Selecione ao menos 1 coluna para salvar o modelo.', 'error');
-      return;
+    let colunasSalvas: string[] = [];
+    let filtrosSalvos: any = {};
+
+    if (modo === 'construtor') {
+      if (colunasSelecionadas.length === 0) {
+        showSnackbar('Selecione ao menos 1 coluna para salvar o modelo.', 'error');
+        return;
+      }
+      colunasSalvas = colunasSelecionadas;
+      filtrosSalvos = {
+        status: filtroStatus,
+        cargo: filtroCargo,
+        estado: filtroEstado,
+        cidade: filtroCidade,
+        search,
+        sortColumn,
+        sortDirection,
+        dataInicio,
+        dataFim
+      };
+    } else if (modo === 'geo') {
+      colunasSalvas = Object.keys(geoCols).filter(k => geoCols[k]);
+      if (colunasSalvas.length === 0) {
+        showSnackbar('Selecione ao menos 1 coluna para salvar o modelo.', 'error');
+        return;
+      }
+      filtrosSalvos = { estado: filtroEstado, cidade: filtroCidade, search };
+    } else if (modo === 'rbac') {
+      colunasSalvas = Object.keys(rbacCols).filter(k => rbacCols[k]);
+      if (colunasSalvas.length === 0) {
+        showSnackbar('Selecione ao menos 1 coluna para salvar o modelo.', 'error');
+        return;
+      }
+      filtrosSalvos = { search };
     }
 
     setSalvandoModelo(true);
@@ -287,20 +367,10 @@ export const Relatorios: React.FC = () => {
       const payload = {
         nome: nomeNovoModelo.trim(),
         descricao: descNovoModelo.trim() || null,
-        icone: 'bookmark',
+        icone: modo === 'geo' ? 'map-pin' : modo === 'rbac' ? 'shield' : 'bookmark',
         modo,
-        colunas: colunasSelecionadas,
-        filtros: {
-          status: filtroStatus,
-          cargo: filtroCargo,
-          estado: filtroEstado,
-          cidade: filtroCidade,
-          search,
-          sortColumn,
-          sortDirection,
-          dataInicio,
-          dataFim
-        }
+        colunas: colunasSalvas,
+        filtros: filtrosSalvos
       };
 
       const res = await fetch('/api/relatorios-salvos', {
@@ -394,13 +464,6 @@ export const Relatorios: React.FC = () => {
     setModeloAtivoId(null);
     setColunasSelecionadas(['nome', 'cargo', 'cidade_uf', 'status']);
     showSnackbar('Colunas padrão aplicadas!', 'info');
-  };
-
-  const selecionarNomeECamposCustom = () => {
-    setModeloAtivoId(null);
-    const todasCustom = campos.map(c => `custom_${c.id}`);
-    setColunasSelecionadas(['nome', ...todasCustom]);
-    showSnackbar('Selecionado: Nome + Campos Personalizados!', 'info');
   };
 
   // Resetar todos os filtros
@@ -769,67 +832,72 @@ export const Relatorios: React.FC = () => {
         <div className="glass-panel no-print panel-builder-container" style={{ padding: '22px 24px', borderRadius: '18px', marginBottom: '24px' }}>
           
           {/* Seção de Modelos Salvos ("Meus Relatórios") */}
-          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--card-border)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                <Star size={16} color="#fbbf24" fill="#fbbf24" /> Meus Relatórios & Modelos Salvos ({relatoriosSalvos.length})
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setNomeNovoModelo('');
-                  setDescNovoModelo('');
-                  setModalSalvarAberto(true);
-                }}
-                className="btn-secondary"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', borderColor: 'rgba(99, 102, 241, 0.3)' }}
-              >
-                <Save size={13} /> Salvar Configuração Atual como Modelo
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {relatoriosSalvos.map(mod => {
-                const isActive = modeloAtivoId === mod.id;
-                return (
-                  <div
-                    key={mod.id}
-                    onClick={() => handleAplicarModelo(mod)}
-                    className={`btn-column-chip ${isActive ? 'active' : ''}`}
-                    style={{
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 14px',
-                      borderRadius: '10px',
-                      background: isActive ? 'rgba(99, 102, 241, 0.25)' : 'var(--card-bg)',
-                      border: isActive ? '1.5px solid #6366f1' : '1px solid var(--card-border)',
-                      position: 'relative'
-                    }}
-                    title={mod.descricao || mod.nome}
-                  >
-                    <Bookmark size={13} color={isActive ? "#818cf8" : "var(--text-muted)"} />
-                    <span style={{ fontWeight: isActive ? 700 : 500 }}>{mod.nome}</span>
-                    {mod.is_padrao ? (
-                      <span style={{ fontSize: '0.65rem', padding: '2px 5px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                        Padrão
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={(e) => handleExcluirModelo(mod.id, mod.nome, e)}
-                        style={{ background: 'transparent', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', alignItems: 'center' }}
-                        title="Excluir este modelo salvo"
-                      >
-                        <X size={13} />
-                      </button>
-                    )}
+          {(() => {
+            const modelosConstrutor = relatoriosSalvos.filter(m => (m.modo || 'construtor') === 'construtor');
+            return (
+              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--card-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <Star size={16} color="#fbbf24" fill="#fbbf24" /> Meus Relatórios & Modelos Salvos ({modelosConstrutor.length})
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNomeNovoModelo('');
+                      setDescNovoModelo('');
+                      setModalSalvarAberto(true);
+                    }}
+                    className="btn-secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', borderColor: 'rgba(99, 102, 241, 0.3)' }}
+                  >
+                    <Save size={13} /> Salvar Configuração Atual como Modelo
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {modelosConstrutor.map(mod => {
+                    const isActive = modeloAtivoId === mod.id;
+                    return (
+                      <div
+                        key={mod.id}
+                        onClick={() => handleAplicarModelo(mod)}
+                        className={`btn-column-chip ${isActive ? 'active' : ''}`}
+                        style={{
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 14px',
+                          borderRadius: '10px',
+                          background: isActive ? 'rgba(99, 102, 241, 0.25)' : 'var(--card-bg)',
+                          border: isActive ? '1.5px solid #6366f1' : '1px solid var(--card-border)',
+                          position: 'relative'
+                        }}
+                        title={mod.descricao || mod.nome}
+                      >
+                        <Bookmark size={13} color={isActive ? "#818cf8" : "var(--text-muted)"} />
+                        <span style={{ fontWeight: isActive ? 700 : 500 }}>{mod.nome}</span>
+                        {mod.is_padrao ? (
+                          <span style={{ fontSize: '0.65rem', padding: '2px 5px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                            Padrão
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => handleExcluirModelo(mod.id, mod.nome, e)}
+                            style={{ background: 'transparent', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', alignItems: 'center' }}
+                            title="Excluir este modelo salvo"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Cabeçalho do Construtor */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
@@ -863,21 +931,13 @@ export const Relatorios: React.FC = () => {
               >
                 <RotateCcw size={13} color="#818cf8" /> Padrão
               </button>
-              {campos.length > 0 && (
-                <button
-                  type="button"
-                  onClick={selecionarNomeECamposCustom}
-                  className="btn-secondary btn-builder-action btn-builder-custom-action"
-                >
-                  <Sparkles size={13} /> Nome + Campos Personalizados
-                </button>
-              )}
               <button
                 type="button"
                 onClick={limparSelecaoColunas}
                 className="btn-secondary btn-builder-action btn-builder-clear"
+                title="Limpar seleção de colunas e redefinir filtros"
               >
-                <Square size={13} /> Limpar
+                <BroomIcon size={14} /> Limpar Filtros
               </button>
             </div>
           </div>
@@ -948,7 +1008,75 @@ export const Relatorios: React.FC = () => {
 
       {/* PAINEL DE SELEÇÃO DE COLUNAS DO MODO GEOGRÁFICO */}
       {modo === 'geo' && (
-        <div className="glass-panel no-print" style={{ padding: '16px 20px', borderRadius: '16px', marginBottom: '24px' }}>
+        <div className="glass-panel no-print panel-builder-container" style={{ padding: '22px 24px', borderRadius: '18px', marginBottom: '24px' }}>
+          {/* Seção de Modelos Salvos Geográficos */}
+          {(() => {
+            const modelosGeo = relatoriosSalvos.filter(m => m.modo === 'geo');
+            return (
+              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--card-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <Star size={16} color="#fbbf24" fill="#fbbf24" /> Meus Relatórios & Modelos Salvos ({modelosGeo.length})
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNomeNovoModelo('');
+                      setDescNovoModelo('');
+                      setModalSalvarAberto(true);
+                    }}
+                    className="btn-secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', borderColor: 'rgba(99, 102, 241, 0.3)' }}
+                  >
+                    <Save size={13} /> Salvar Configuração Atual como Modelo
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {modelosGeo.map(mod => {
+                    const isActive = modeloAtivoId === mod.id;
+                    return (
+                      <div
+                        key={mod.id}
+                        onClick={() => handleAplicarModelo(mod)}
+                        className={`btn-column-chip ${isActive ? 'active' : ''}`}
+                        style={{
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 14px',
+                          borderRadius: '10px',
+                          background: isActive ? 'rgba(99, 102, 241, 0.25)' : 'var(--card-bg)',
+                          border: isActive ? '1.5px solid #6366f1' : '1px solid var(--card-border)',
+                          position: 'relative'
+                        }}
+                        title={mod.descricao || mod.nome}
+                      >
+                        <Bookmark size={13} color={isActive ? "#818cf8" : "var(--text-muted)"} />
+                        <span style={{ fontWeight: isActive ? 700 : 500 }}>{mod.nome}</span>
+                        {mod.is_padrao ? (
+                          <span style={{ fontSize: '0.65rem', padding: '2px 5px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                            Padrão
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => handleExcluirModelo(mod.id, mod.nome, e)}
+                            style={{ background: 'transparent', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', alignItems: 'center' }}
+                            title="Excluir este modelo salvo"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px' }}>
             Colunas Visíveis no Relatório Geográfico
           </div>
@@ -964,7 +1092,10 @@ export const Relatorios: React.FC = () => {
               <button
                 key={col.key}
                 type="button"
-                onClick={() => setGeoCols(prev => ({ ...prev, [col.key]: !prev[col.key] }))}
+                onClick={() => {
+                  setModeloAtivoId(null);
+                  setGeoCols(prev => ({ ...prev, [col.key]: !prev[col.key] }));
+                }}
                 className={`btn-column-chip ${geoCols[col.key] ? 'active' : ''}`}
               >
                 {geoCols[col.key] ? <Check size={13} className="chip-check-icon" /> : <Plus size={13} className="chip-plus-icon" />}
@@ -977,7 +1108,75 @@ export const Relatorios: React.FC = () => {
 
       {/* PAINEL DE SELEÇÃO DE COLUNAS DO MODO RBAC */}
       {modo === 'rbac' && (
-        <div className="glass-panel no-print" style={{ padding: '16px 20px', borderRadius: '16px', marginBottom: '24px' }}>
+        <div className="glass-panel no-print panel-builder-container" style={{ padding: '22px 24px', borderRadius: '18px', marginBottom: '24px' }}>
+          {/* Seção de Modelos Salvos RBAC */}
+          {(() => {
+            const modelosRbac = relatoriosSalvos.filter(m => m.modo === 'rbac');
+            return (
+              <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--card-border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <Star size={16} color="#fbbf24" fill="#fbbf24" /> Meus Relatórios & Modelos Salvos ({modelosRbac.length})
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNomeNovoModelo('');
+                      setDescNovoModelo('');
+                      setModalSalvarAberto(true);
+                    }}
+                    className="btn-secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', borderColor: 'rgba(99, 102, 241, 0.3)' }}
+                  >
+                    <Save size={13} /> Salvar Configuração Atual como Modelo
+                  </button>
+                </div>
+
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {modelosRbac.map(mod => {
+                    const isActive = modeloAtivoId === mod.id;
+                    return (
+                      <div
+                        key={mod.id}
+                        onClick={() => handleAplicarModelo(mod)}
+                        className={`btn-column-chip ${isActive ? 'active' : ''}`}
+                        style={{
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 14px',
+                          borderRadius: '10px',
+                          background: isActive ? 'rgba(99, 102, 241, 0.25)' : 'var(--card-bg)',
+                          border: isActive ? '1.5px solid #6366f1' : '1px solid var(--card-border)',
+                          position: 'relative'
+                        }}
+                        title={mod.descricao || mod.nome}
+                      >
+                        <Bookmark size={13} color={isActive ? "#818cf8" : "var(--text-muted)"} />
+                        <span style={{ fontWeight: isActive ? 700 : 500 }}>{mod.nome}</span>
+                        {mod.is_padrao ? (
+                          <span style={{ fontSize: '0.65rem', padding: '2px 5px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                            Padrão
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => handleExcluirModelo(mod.id, mod.nome, e)}
+                            style={{ background: 'transparent', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', alignItems: 'center' }}
+                            title="Excluir este modelo salvo"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           <div style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px' }}>
             Colunas Visíveis no Relatório de Usuários (RBAC)
           </div>
@@ -993,7 +1192,10 @@ export const Relatorios: React.FC = () => {
               <button
                 key={col.key}
                 type="button"
-                onClick={() => setRbacCols(prev => ({ ...prev, [col.key]: !prev[col.key] }))}
+                onClick={() => {
+                  setModeloAtivoId(null);
+                  setRbacCols(prev => ({ ...prev, [col.key]: !prev[col.key] }));
+                }}
                 className={`btn-column-chip ${rbacCols[col.key] ? 'active' : ''}`}
               >
                 {rbacCols[col.key] ? <Check size={13} className="chip-check-icon" /> : <Plus size={13} className="chip-plus-icon" />}
@@ -1123,7 +1325,7 @@ export const Relatorios: React.FC = () => {
                 style={{ height: '38px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 title="Limpar todos os filtros da busca"
               >
-                <RotateCcw size={15} /> Limpar Filtros
+                <BroomIcon size={15} /> Limpar Filtros
               </button>
             </div>
           </div>
@@ -1492,9 +1694,25 @@ export const Relatorios: React.FC = () => {
 
                 {/* Resumo do que será salvo */}
                 <div style={{ padding: '12px', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.2)', fontSize: '0.8rem' }}>
-                  <div style={{ color: '#818cf8', fontWeight: 700, marginBottom: '4px' }}>⚙️ Configuração a ser salva:</div>
-                  <div>• <strong>{colunasSelecionadas.length} colunas</strong> selecionadas</div>
-                  <div>• Filtros: Status ({filtroStatus}), Cargo ({filtroCargo}), UF ({filtroEstado})</div>
+                  <div style={{ color: '#818cf8', fontWeight: 700, marginBottom: '4px' }}>⚙️ Configuração a ser salva ({modo === 'construtor' ? 'Construtor de Relatórios' : modo === 'geo' ? 'Distribuição Geográfica' : 'Usuários RBAC'}):</div>
+                  {modo === 'construtor' && (
+                    <>
+                      <div>• <strong>{colunasSelecionadas.length} colunas</strong> selecionadas</div>
+                      <div>• Filtros: Status ({filtroStatus}), Cargo ({filtroCargo}), UF ({filtroEstado})</div>
+                    </>
+                  )}
+                  {modo === 'geo' && (
+                    <>
+                      <div>• <strong>{Object.values(geoCols).filter(Boolean).length} colunas geográficas</strong> ativas</div>
+                      <div>• Filtros: UF ({filtroEstado}), Cidade ({filtroCidade})</div>
+                    </>
+                  )}
+                  {modo === 'rbac' && (
+                    <>
+                      <div>• <strong>{Object.values(rbacCols).filter(Boolean).length} colunas de usuários</strong> ativas</div>
+                      <div>• Filtros: Busca ({search || 'nenhuma'})</div>
+                    </>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>

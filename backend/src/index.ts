@@ -471,7 +471,11 @@ const initDb = async () => {
       );
     `);
 
-    // Sementes de Relatórios Salvos Padrão
+    // Sementes e Atualizações de Relatórios Salvos Padrão
+    await pool.query(`DELETE FROM relatorios_salvos WHERE nome = 'Auditoria Cadastral' AND is_padrao = true;`);
+    await pool.query(`UPDATE relatorios_salvos SET colunas = '["nome","cpf","cargo","cidade_uf","status"]'::jsonb WHERE nome = 'Quadro Geral de Ativos' AND is_padrao = true;`);
+    await pool.query(`UPDATE relatorios_salvos SET colunas = '["nome","email","telefone"]'::jsonb WHERE nome = 'Relatório de Contatos & E-mails' AND is_padrao = true;`);
+
     const countRelatorios = await pool.query('SELECT COUNT(*) FROM relatorios_salvos');
     if (parseInt(countRelatorios.rows[0].count, 10) === 0) {
       const modelosPadrao = [
@@ -479,33 +483,60 @@ const initDb = async () => {
           nome: 'Quadro Geral de Ativos',
           descricao: 'Lista completa de colaboradores em atividade com cargo e município',
           icone: 'users',
-          colunas: ['foto', 'nome', 'cpf', 'cargo', 'cidade_uf', 'status'],
+          modo: 'construtor',
+          colunas: ['nome', 'cpf', 'cargo', 'cidade_uf', 'status'],
           filtros: { status: 'ativos', cargo: 'todos', estado: 'todos', cidade: 'todos' }
         },
         {
           nome: 'Relatório de Contatos & E-mails',
           descricao: 'Contatos diretos dos colaboradores para envio de comunicados',
           icone: 'mail',
-          colunas: ['nome', 'email', 'telefone', 'cargo', 'cidade_uf'],
+          modo: 'construtor',
+          colunas: ['nome', 'email', 'telefone'],
           filtros: { status: 'todos', cargo: 'todos', estado: 'todos', cidade: 'todos' }
         },
         {
-          nome: 'Auditoria Cadastral',
-          descricao: 'Relatório para conferência de documentos e endereços residenciais',
+          nome: 'Visão Geral por Estado e Cidade',
+          descricao: 'Distribuição de ativos e total de colaboradores por município',
+          icone: 'map-pin',
+          modo: 'geo',
+          colunas: ['estado', 'cidade', 'ativos', 'inativos', 'total', 'percentual'],
+          filtros: { estado: 'todos', cidade: 'todos' }
+        },
+        {
+          nome: 'Quadro Geral de Acessos & Perfis',
+          descricao: 'Relação de todos os usuários com seus respectivos perfis e status',
           icone: 'shield',
-          colunas: ['id', 'nome', 'cpf', 'endereco', 'cidade_uf', 'criado_em', 'status'],
-          filtros: { status: 'todos', cargo: 'todos', estado: 'todos', cidade: 'todos' }
+          modo: 'rbac',
+          colunas: ['id', 'nome', 'email', 'perfil', 'tipo', 'status'],
+          filtros: {}
         }
       ];
 
       for (const m of modelosPadrao) {
         await pool.query(
-          `INSERT INTO relatorios_salvos (empresa_id, nome, descricao, icone, colunas, filtros, is_padrao)
-           VALUES (1, $1, $2, $3, $4, $5, true)`,
-          [m.nome, m.descricao, m.icone, JSON.stringify(m.colunas), JSON.stringify(m.filtros)]
+          `INSERT INTO relatorios_salvos (empresa_id, nome, descricao, icone, modo, colunas, filtros, is_padrao)
+           VALUES (1, $1, $2, $3, $4, $5, $6, true)`,
+          [m.nome, m.descricao, m.icone, m.modo, JSON.stringify(m.colunas), JSON.stringify(m.filtros)]
         );
       }
       console.log('✅ Modelos de relatórios padrão inicializados!');
+    }
+
+    // Inserir modelos padrão de Geo e RBAC se ainda não existirem
+    const countGeo = await pool.query("SELECT COUNT(*) FROM relatorios_salvos WHERE modo = 'geo' AND is_padrao = true");
+    if (parseInt(countGeo.rows[0].count, 10) === 0) {
+      await pool.query(
+        `INSERT INTO relatorios_salvos (empresa_id, nome, descricao, icone, modo, colunas, filtros, is_padrao)
+         VALUES (1, 'Visão Geral por Estado e Cidade', 'Distribuição de ativos e total de colaboradores por município', 'map-pin', 'geo', '["estado","cidade","ativos","inativos","total","percentual"]'::jsonb, '{"estado":"todos","cidade":"todos"}'::jsonb, true)`
+      );
+    }
+    const countRbac = await pool.query("SELECT COUNT(*) FROM relatorios_salvos WHERE modo = 'rbac' AND is_padrao = true");
+    if (parseInt(countRbac.rows[0].count, 10) === 0) {
+      await pool.query(
+        `INSERT INTO relatorios_salvos (empresa_id, nome, descricao, icone, modo, colunas, filtros, is_padrao)
+         VALUES (1, 'Quadro Geral de Acessos & Perfis', 'Relação de todos os usuários com seus respectivos perfis e status', 'shield', 'rbac', '["id","nome","email","perfil","tipo","status"]'::jsonb, '{}'::jsonb, true)`
+      );
     }
 
     // 8. Tabela de Logs de Auditoria de Ações de Usuários
