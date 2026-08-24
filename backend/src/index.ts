@@ -453,6 +453,80 @@ const initDb = async () => {
       console.log('✅ Campos customizados padrão (Setor, Nome da Mãe, Pai, etc.) inicializados!');
     }
 
+    // 7. Tabela de Modelos Salvos de Relatórios ("Meus Relatórios")
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS relatorios_salvos (
+        id SERIAL PRIMARY KEY,
+        empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE,
+        usuario_id INT REFERENCES usuarios(id) ON DELETE SET NULL,
+        nome VARCHAR(255) NOT NULL,
+        descricao TEXT,
+        icone VARCHAR(50) DEFAULT 'bookmark',
+        modo VARCHAR(50) DEFAULT 'construtor',
+        colunas JSONB NOT NULL DEFAULT '[]'::jsonb,
+        filtros JSONB NOT NULL DEFAULT '{}'::jsonb,
+        is_padrao BOOLEAN DEFAULT false,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Sementes de Relatórios Salvos Padrão
+    const countRelatorios = await pool.query('SELECT COUNT(*) FROM relatorios_salvos');
+    if (parseInt(countRelatorios.rows[0].count, 10) === 0) {
+      const modelosPadrao = [
+        {
+          nome: 'Quadro Geral de Ativos',
+          descricao: 'Lista completa de colaboradores em atividade com cargo e município',
+          icone: 'users',
+          colunas: ['foto', 'nome', 'cpf', 'cargo', 'cidade_uf', 'status'],
+          filtros: { status: 'ativos', cargo: 'todos', estado: 'todos', cidade: 'todos' }
+        },
+        {
+          nome: 'Relatório de Contatos & E-mails',
+          descricao: 'Contatos diretos dos colaboradores para envio de comunicados',
+          icone: 'mail',
+          colunas: ['nome', 'email', 'telefone', 'cargo', 'cidade_uf'],
+          filtros: { status: 'todos', cargo: 'todos', estado: 'todos', cidade: 'todos' }
+        },
+        {
+          nome: 'Auditoria Cadastral',
+          descricao: 'Relatório para conferência de documentos e endereços residenciais',
+          icone: 'shield',
+          colunas: ['id', 'nome', 'cpf', 'endereco', 'cidade_uf', 'criado_em', 'status'],
+          filtros: { status: 'todos', cargo: 'todos', estado: 'todos', cidade: 'todos' }
+        }
+      ];
+
+      for (const m of modelosPadrao) {
+        await pool.query(
+          `INSERT INTO relatorios_salvos (empresa_id, nome, descricao, icone, colunas, filtros, is_padrao)
+           VALUES (1, $1, $2, $3, $4, $5, true)`,
+          [m.nome, m.descricao, m.icone, JSON.stringify(m.colunas), JSON.stringify(m.filtros)]
+        );
+      }
+      console.log('✅ Modelos de relatórios padrão inicializados!');
+    }
+
+    // 8. Tabela de Logs de Auditoria de Ações de Usuários
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS logs_auditoria (
+        id SERIAL PRIMARY KEY,
+        empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE,
+        usuario_id INT REFERENCES usuarios(id) ON DELETE SET NULL,
+        usuario_nome VARCHAR(255) NOT NULL,
+        usuario_email VARCHAR(255) NOT NULL,
+        acao VARCHAR(100) NOT NULL,
+        entidade VARCHAR(100) NOT NULL,
+        registro_id VARCHAR(100),
+        detalhes JSONB DEFAULT '{}'::jsonb,
+        ip VARCHAR(100),
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_logs_auditoria_empresa ON logs_auditoria(empresa_id);
+      CREATE INDEX IF NOT EXISTS idx_logs_auditoria_data ON logs_auditoria(criado_em DESC);
+    `);
+
     console.log('✅ Tabelas e migrations do PostgreSQL inicializadas com sucesso!');
   } catch (error) {
     console.error('⚠️ Erro ao inicializar o banco de dados:', error);
@@ -628,6 +702,68 @@ const getEmpresaIdFromReq = (req: Request): number | null => {
     } catch (e) {}
   }
   return null;
+};
+
+// Helper para obter dados do usuário autenticado a partir do token JWT
+const getAuthUserFromReq = async (req: Request): Promise<{ id: number; nome: string; email: string; empresa_id: number } | null> => {
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.split(' ')[1];
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      if (decoded && decoded.id) {
+        const u = await pool.query('SELECT id, nome, email, empresa_id FROM usuarios WHERE id = $1', [decoded.id]);
+        if (u.rows.length > 0) {
+          return u.rows[0];
+        }
+      }
+    } catch (e) {}
+  }
+  return null;
+};
+
+// Helper global para registrar logs de auditoria de ações de usuários
+const registrarAuditoria = async (params: {
+  empresa_id?: number | null;
+  usuario_id?: number | null;
+  usuario_nome?: string;
+  usuario_email?: string;
+  acao: string;
+  entidade: string;
+  registro_id?: string | number | null;
+  detalhes?: any;
+  ip?: string;
+}) => {
+  try {
+    const {
+      empresa_id = 1,
+      usuario_id = null,
+      usuario_nome = 'Sistema',
+      usuario_email = 'sistema@regz.app',
+      acao,
+      entidade,
+      registro_id = null,
+      detalhes = {},
+      ip = '127.0.0.1'
+    } = params;
+
+    await pool.query(`
+      INSERT INTO logs_auditoria (empresa_id, usuario_id, usuario_nome, usuario_email, acao, entidade, registro_id, detalhes, ip)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `, [
+      empresa_id || 1,
+      usuario_id,
+      usuario_nome,
+      usuario_email,
+      acao,
+      entidade,
+      registro_id ? String(registro_id) : null,
+      typeof detalhes === 'object' ? JSON.stringify(detalhes) : JSON.stringify({ mensagem: detalhes }),
+      ip
+    ]);
+  } catch (err: any) {
+    console.error('⚠️ Erro ao registrar log de auditoria:', err.message);
+  }
 };
 
 // Gerenciador de conexões dinâmicas multi-tenant (Empresas 1 e 2 no Banco Central; Empresa 3+ em Banco Próprio)
@@ -846,6 +982,19 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
       JWT_SECRET,
       { expiresIn: '7d' }
     );
+
+    // Auditoria de Login
+    await registrarAuditoria({
+      empresa_id: usuario.empresa_id || 1,
+      usuario_id: usuario.id,
+      usuario_nome: usuario.nome,
+      usuario_email: usuario.email,
+      acao: 'LOGIN',
+      entidade: 'auth',
+      registro_id: usuario.id,
+      detalhes: { mensagem: 'Login realizado com sucesso', perfil: usuario.perfil_nome },
+      ip: clientIp
+    });
 
     res.json({
       token,
@@ -1993,7 +2142,24 @@ app.post('/api/campos-customizados', checkPermission('campos'), async (req: Requ
       [nomeTrimmed, tipo || 'texto', opcoes || null, !!obrigatorio, minVal, maxVal, empId]
     );
 
-    res.status(201).json(result.rows[0]);
+    const novoCampo = result.rows[0];
+
+    // Auditoria
+    const authUser = await getAuthUserFromReq(req);
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+    await registrarAuditoria({
+      empresa_id: empId,
+      usuario_id: authUser?.id,
+      usuario_nome: authUser?.nome || 'Usuário',
+      usuario_email: authUser?.email || '-',
+      acao: 'CRIAR_CAMPO',
+      entidade: 'campos_customizados',
+      registro_id: novoCampo.id,
+      detalhes: { nome: novoCampo.nome, tipo: novoCampo.tipo, obrigatorio: novoCampo.obrigatorio },
+      ip: clientIp
+    });
+
+    res.status(201).json(novoCampo);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao cadastrar campo customizado' });
   }
@@ -2005,10 +2171,27 @@ app.delete('/api/campos-customizados/:id', checkPermission('campos'), async (req
   const empId = getEmpresaIdFromReq(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
+    const prevField = await targetPool.query('SELECT nome FROM campos_customizados WHERE id = $1', [id]);
     const result = await targetPool.query('DELETE FROM campos_customizados WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Campo customizado não encontrado' });
     }
+
+    // Auditoria
+    const authUser = await getAuthUserFromReq(req);
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+    await registrarAuditoria({
+      empresa_id: empId,
+      usuario_id: authUser?.id,
+      usuario_nome: authUser?.nome || 'Usuário',
+      usuario_email: authUser?.email || '-',
+      acao: 'EXCLUIR_CAMPO',
+      entidade: 'campos_customizados',
+      registro_id: id,
+      detalhes: { nome: prevField.rows[0]?.nome },
+      ip: clientIp
+    });
+
     res.json({ success: true, message: 'Campo removido com sucesso' });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao remover campo customizado' });
@@ -2338,6 +2521,21 @@ app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Req
       }
     }
 
+    // Auditoria
+    const authUser = await getAuthUserFromReq(req);
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+    await registrarAuditoria({
+      empresa_id: empId,
+      usuario_id: authUser?.id,
+      usuario_nome: authUser?.nome || 'Usuário',
+      usuario_email: authUser?.email || '-',
+      acao: 'CRIAR',
+      entidade: 'colaboradores',
+      registro_id: novoColaborador.id,
+      detalhes: { nome: novoColaborador.nome, cpf: novoColaborador.cpf, cargo: novoColaborador.cargo, cidade: novoColaborador.cidade },
+      ip: clientIp
+    });
+
     res.status(201).json(novoColaborador);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao cadastrar colaborador' });
@@ -2402,7 +2600,24 @@ app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: 
       }
     }
 
-    res.json(result.rows[0]);
+    const colabAtualizado = result.rows[0];
+
+    // Auditoria
+    const authUser = await getAuthUserFromReq(req);
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+    await registrarAuditoria({
+      empresa_id: empId,
+      usuario_id: authUser?.id,
+      usuario_nome: authUser?.nome || 'Usuário',
+      usuario_email: authUser?.email || '-',
+      acao: 'EDITAR',
+      entidade: 'colaboradores',
+      registro_id: colabAtualizado.id,
+      detalhes: { nome: colabAtualizado.nome, cpf: colabAtualizado.cpf, cargo: colabAtualizado.cargo },
+      ip: clientIp
+    });
+
+    res.json(colabAtualizado);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao atualizar colaborador' });
   }
@@ -2418,7 +2633,25 @@ app.put('/api/colaboradores/:id/inativar', checkPermission('colaboradores'), asy
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
-    res.json({ success: true, message: 'Colaborador inativado com sucesso', colaborador: result.rows[0] });
+
+    const colabInativado = result.rows[0];
+
+    // Auditoria
+    const authUser = await getAuthUserFromReq(req);
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+    await registrarAuditoria({
+      empresa_id: empId,
+      usuario_id: authUser?.id,
+      usuario_nome: authUser?.nome || 'Usuário',
+      usuario_email: authUser?.email || '-',
+      acao: 'INATIVAR',
+      entidade: 'colaboradores',
+      registro_id: colabInativado.id,
+      detalhes: { nome: colabInativado.nome, cpf: colabInativado.cpf },
+      ip: clientIp
+    });
+
+    res.json({ success: true, message: 'Colaborador inativado com sucesso', colaborador: colabInativado });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao inativar colaborador' });
   }
@@ -2434,7 +2667,25 @@ app.put('/api/colaboradores/:id/reativar', checkPermission('colaboradores'), asy
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
-    res.json({ success: true, message: 'Colaborador reativado com sucesso', colaborador: result.rows[0] });
+
+    const colabReativado = result.rows[0];
+
+    // Auditoria
+    const authUser = await getAuthUserFromReq(req);
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+    await registrarAuditoria({
+      empresa_id: empId,
+      usuario_id: authUser?.id,
+      usuario_nome: authUser?.nome || 'Usuário',
+      usuario_email: authUser?.email || '-',
+      acao: 'REATIVAR',
+      entidade: 'colaboradores',
+      registro_id: colabReativado.id,
+      detalhes: { nome: colabReativado.nome, cpf: colabReativado.cpf },
+      ip: clientIp
+    });
+
+    res.json({ success: true, message: 'Colaborador reativado com sucesso', colaborador: colabReativado });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao reativar colaborador' });
   }
@@ -2446,13 +2697,207 @@ app.delete('/api/colaboradores/:id', checkPermission('colaboradores'), async (re
   const empId = getEmpresaIdFromReq(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
+    const prevData = await targetPool.query('SELECT nome, cpf FROM colaboradores WHERE id = $1', [id]);
     const result = await targetPool.query('DELETE FROM colaboradores WHERE id = $1 RETURNING id', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
+
+    // Auditoria
+    const authUser = await getAuthUserFromReq(req);
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+    await registrarAuditoria({
+      empresa_id: empId,
+      usuario_id: authUser?.id,
+      usuario_nome: authUser?.nome || 'Usuário',
+      usuario_email: authUser?.email || '-',
+      acao: 'EXCLUIR',
+      entidade: 'colaboradores',
+      registro_id: id,
+      detalhes: { nome: prevData.rows[0]?.nome, cpf: prevData.rows[0]?.cpf },
+      ip: clientIp
+    });
+
     res.json({ success: true, message: 'Colaborador removido permanentemente' });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao remover colaborador' });
+  }
+});
+
+// ==========================================
+// ROTAS DE MODELOS DE RELATÓRIOS SALVOS
+// ==========================================
+
+// Listar relatórios salvos da empresa e modelos padrão
+app.get('/api/relatorios-salvos', async (req: Request, res: Response) => {
+  const empId = getEmpresaIdFromReq(req) || 1;
+  const authUser = await getAuthUserFromReq(req);
+
+  try {
+    const query = `
+      SELECT * FROM relatorios_salvos
+      WHERE is_padrao = true 
+         OR empresa_id = $1 
+         OR (usuario_id = $2 AND $2 IS NOT NULL)
+      ORDER BY is_padrao DESC, id ASC
+    `;
+    const result = await pool.query(query, [empId, authUser?.id || null]);
+    res.json(result.rows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar modelos de relatórios' });
+  }
+});
+
+// Salvar um novo modelo de relatório
+app.post('/api/relatorios-salvos', async (req: Request, res: Response) => {
+  const { nome, descricao, icone, modo, colunas, filtros } = req.body;
+  const empId = getEmpresaIdFromReq(req) || 1;
+  const authUser = await getAuthUserFromReq(req);
+
+  if (!nome || !nome.trim()) {
+    return res.status(400).json({ error: 'O nome do modelo de relatório é obrigatório' });
+  }
+
+  try {
+    const query = `
+      INSERT INTO relatorios_salvos (empresa_id, usuario_id, nome, descricao, icone, modo, colunas, filtros, is_padrao)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)
+      RETURNING *
+    `;
+    const result = await pool.query(query, [
+      empId,
+      authUser?.id || null,
+      nome.trim(),
+      descricao ? descricao.trim() : null,
+      icone || 'bookmark',
+      modo || 'construtor',
+      JSON.stringify(colunas || []),
+      JSON.stringify(filtros || {})
+    ]);
+
+    // Auditoria
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+    await registrarAuditoria({
+      empresa_id: empId,
+      usuario_id: authUser?.id,
+      usuario_nome: authUser?.nome || 'Usuário',
+      usuario_email: authUser?.email || '-',
+      acao: 'CRIAR_RELATORIO_SALVO',
+      entidade: 'relatorios_salvos',
+      registro_id: result.rows[0].id,
+      detalhes: { nome: result.rows[0].nome, total_colunas: Array.isArray(colunas) ? colunas.length : 0 },
+      ip: clientIp
+    });
+
+    res.status(201).json(result.rows[0]);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao salvar modelo de relatório' });
+  }
+});
+
+// Excluir um modelo de relatório salvo
+app.delete('/api/relatorios-salvos/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const empId = getEmpresaIdFromReq(req) || 1;
+  const authUser = await getAuthUserFromReq(req);
+
+  try {
+    const checkQuery = await pool.query('SELECT is_padrao, nome FROM relatorios_salvos WHERE id = $1', [id]);
+    if (checkQuery.rows.length === 0) {
+      return res.status(404).json({ error: 'Modelo de relatório não encontrado' });
+    }
+    if (checkQuery.rows[0].is_padrao && !authUser?.email?.includes('admin')) {
+      return res.status(400).json({ error: 'Modelos padrão de fábrica não podem ser excluídos' });
+    }
+
+    await pool.query('DELETE FROM relatorios_salvos WHERE id = $1', [id]);
+
+    // Auditoria
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+    await registrarAuditoria({
+      empresa_id: empId,
+      usuario_id: authUser?.id,
+      usuario_nome: authUser?.nome || 'Usuário',
+      usuario_email: authUser?.email || '-',
+      acao: 'EXCLUIR_RELATORIO_SALVO',
+      entidade: 'relatorios_salvos',
+      registro_id: id,
+      detalhes: { nome: checkQuery.rows[0].nome },
+      ip: clientIp
+    });
+
+    res.json({ success: true, message: 'Modelo de relatório excluído com sucesso' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao excluir modelo de relatório' });
+  }
+});
+
+// ==========================================
+// ROTAS DE LOGS DE AUDITORIA DE USUÁRIOS
+// ==========================================
+
+// Listar logs de auditoria com paginação e filtros
+app.get('/api/auditoria', async (req: Request, res: Response) => {
+  const empId = getEmpresaIdFromReq(req);
+  const isSuperAdminQuery = req.headers['x-is-super-admin'] === 'true';
+  const { q, acao, entidade, data_inicio, data_fim, limit = '100', offset = '0' } = req.query;
+
+  try {
+    let query = `
+      SELECT id, empresa_id, usuario_id, usuario_nome, usuario_email, acao, entidade, registro_id, detalhes, ip, criado_em
+      FROM logs_auditoria
+    `;
+    const whereClauses: string[] = [];
+    const params: any[] = [];
+
+    if (empId && !isSuperAdminQuery) {
+      params.push(empId);
+      whereClauses.push(`empresa_id = $${params.length}`);
+    }
+
+    if (acao && acao !== 'todos') {
+      params.push(acao);
+      whereClauses.push(`acao = $${params.length}`);
+    }
+
+    if (entidade && entidade !== 'todos') {
+      params.push(entidade);
+      whereClauses.push(`entidade = $${params.length}`);
+    }
+
+    if (data_inicio) {
+      params.push(`${data_inicio} 00:00:00`);
+      whereClauses.push(`criado_em >= $${params.length}`);
+    }
+
+    if (data_fim) {
+      params.push(`${data_fim} 23:59:59`);
+      whereClauses.push(`criado_em <= $${params.length}`);
+    }
+
+    if (q && String(q).trim()) {
+      params.push(`%${String(q).trim().toLowerCase()}%`);
+      whereClauses.push(`(
+        LOWER(usuario_nome) LIKE $${params.length} OR 
+        LOWER(usuario_email) LIKE $${params.length} OR 
+        LOWER(acao) LIKE $${params.length} OR 
+        LOWER(entidade) LIKE $${params.length} OR
+        LOWER(detalhes::text) LIKE $${params.length}
+      )`);
+    }
+
+    if (whereClauses.length > 0) {
+      query += ` WHERE ` + whereClauses.join(' AND ');
+    }
+
+    query += ` ORDER BY criado_em DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(parseInt(String(limit), 10) || 100);
+    params.push(parseInt(String(offset), 10) || 0);
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao buscar logs de auditoria' });
   }
 });
 

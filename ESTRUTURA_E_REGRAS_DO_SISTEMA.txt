@@ -242,12 +242,49 @@ I. Isolamento Estrito de Dados Multi-Empresas (Multi-Tenancy por empresa_id):
   - Os **Chips de Colunas Ativos** receberam fundo com destaque translúcido suave (`rgba(99, 102, 241, 0.12)` / `rgba(14, 165, 233, 0.12)`), bordas em destaque (`#6366f1` / `#0284c7`), texto destacado e ícones de verificação nítidos.
   - Os painéis do construtor de colunas (`.panel-builder-container`), filtros (`.panel-filtros-container`) e ações rápidas foram alinhados com fundo branco puro (`#ffffff`) e bordas suaves `#cbd5e1`.
 
+I. Modelos de Relatórios Salvos ("Meus Relatórios"):
+- Tabela `relatorios_salvos`:
+  - `id SERIAL PRIMARY KEY`
+  - `empresa_id INT`
+  - `usuario_id INT`
+  - `nome VARCHAR(255) NOT NULL`
+  - `descricao TEXT`
+  - `icone VARCHAR(50) DEFAULT 'bookmark'`
+  - `modo VARCHAR(50) DEFAULT 'construtor'`
+  - `colunas JSONB NOT NULL DEFAULT '[]'::jsonb`
+  - `filtros JSONB NOT NULL DEFAULT '{}'::jsonb`
+  - `is_padrao BOOLEAN DEFAULT false`
+  - `criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP`
+  - `atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP`
+- Modelos Padrão Nativos (Seed):
+  1. *Quadro Geral de Ativos* (Colunas: nome, cpf, cargo, cidade_uf, status; Filtro: ativos)
+  2. *Relatório de Contatos & E-mails* (Colunas: nome, cargo, email, telefone, cidade_uf; Filtro: todos)
+  3. *Auditoria Cadastral & Endereços* (Colunas: id, foto, nome, cpf, endereco, cidade_uf, criado_em, status; Filtro: todos)
+- Funcionalidades:
+  - Carregamento de configuração completa com 1 clique (colunas ativas, status, cargo, estado, cidade, ordenação).
+  - Botão "+ Salvar Configuração Atual como Modelo" que abre modal para definir nome e descrição.
+  - Exclusão com confirmação para modelos personalizados do usuário.
 
-
-
-
-
-
+J. Logs de Auditoria e Rastreabilidade de Usuários:
+- Tabela `logs_auditoria`:
+  - `id SERIAL PRIMARY KEY`
+  - `empresa_id INT`
+  - `usuario_id INT`
+  - `usuario_nome VARCHAR(255)`
+  - `usuario_email VARCHAR(255)`
+  - `acao VARCHAR(100) NOT NULL` (LOGIN, CRIAR, EDITAR, INATIVAR, REATIVAR, EXCLUIR, CRIAR_CAMPO, EXCLUIR_CAMPO, CRIAR_RELATORIO_SALVO, EXCLUIR_RELATORIO_SALVO, CRIAR_PERFIL, EDITAR_PERFIL, etc.)
+  - `entidade VARCHAR(100) NOT NULL` (auth, colaboradores, campos_customizados, relatorios_salvos, perfis_acesso, usuarios, licencas)
+  - `registro_id VARCHAR(100)`
+  - `detalhes JSONB NOT NULL DEFAULT '{}'::jsonb`
+  - `ip VARCHAR(100)`
+  - `criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP`
+- Funcionalidades:
+  - Sub-aba **Logs de Auditoria** na página `Administracao.tsx`.
+  - Cards de métricas rápidas (Total de Eventos, Logins, Colaboradores, Segurança).
+  - Filtros avançados por: texto de busca, tipo de ação, módulo/entidade e intervalo de datas (De / Até).
+  - Badges coloridas por tipo de ação para leitura visual instantânea.
+  - Botão de inspeção detalhada de parâmetros e payload JSON do evento.
+  - Exportação direta dos registros filtrados para planilha Excel/CSV em UTF-8.
 
 
 4. INSTRUÇÕES DE EXECUÇÃO E DEPLOY NO PORTAINER.IO

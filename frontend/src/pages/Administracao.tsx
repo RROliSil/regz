@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Usuario, PerfilAcesso, Licenca } from '../types/auth';
-import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX, Home, Sliders, ShieldCheck, FileBarChart, Settings, Briefcase, X, Key, Copy, RefreshCw, Calendar, Award, CheckCircle2, XCircle, AlertTriangle, Eye, EyeOff, Building2, MapPin, Palette, Upload } from 'lucide-react';
+import { Users, Shield, Plus, Trash2, Edit, Check, AlertCircle, Loader2, UserCheck, UserX, Home, Sliders, ShieldCheck, FileBarChart, Settings, Briefcase, X, Key, Copy, RefreshCw, Calendar, Award, CheckCircle2, XCircle, AlertTriangle, Eye, EyeOff, Building2, MapPin, Palette, Upload, History, FileSpreadsheet, Filter, Search, Info } from 'lucide-react';
 
 interface UserColumnWidths {
   nome: number;
@@ -40,6 +40,20 @@ export interface Empresa {
   total_usuarios?: number;
   licencas_ativas?: number;
   total_licencas?: number;
+  criado_em: string;
+}
+
+export interface LogAuditoria {
+  id: number;
+  empresa_id: number;
+  usuario_id?: number | null;
+  usuario_nome: string;
+  usuario_email: string;
+  acao: string;
+  entidade: string;
+  registro_id?: string | null;
+  detalhes: any;
+  ip?: string;
   criado_em: string;
 }
 
@@ -93,7 +107,17 @@ export const Administracao: React.FC = () => {
   const isSuperAdmin = !!(usuario?.is_super_admin || (usuario?.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario?.nome === 'Administrador Regz');
   const isUserAdminTag = !!usuario?.perfil?.is_admin;
 
-  const [subTab, setSubTab] = useState<'usuarios' | 'perfis' | 'licencas' | 'empresas'>('usuarios');
+  const [subTab, setSubTab] = useState<'usuarios' | 'perfis' | 'licencas' | 'empresas' | 'auditoria'>('usuarios');
+
+  // Estados de Logs de Auditoria
+  const [logsAuditoria, setLogsAuditoria] = useState<LogAuditoria[]>([]);
+  const [loadingAuditoria, setLoadingAuditoria] = useState(false);
+  const [filtroAuditoriaAcao, setFiltroAuditoriaAcao] = useState('todos');
+  const [filtroAuditoriaEntidade, setFiltroAuditoriaEntidade] = useState('todos');
+  const [searchAuditoria, setSearchAuditoria] = useState('');
+  const [dataInicioAuditoria, setDataInicioAuditoria] = useState('');
+  const [dataFimAuditoria, setDataFimAuditoria] = useState('');
+  const [logModalDetalhe, setLogModalDetalhe] = useState<LogAuditoria | null>(null);
 
   useEffect(() => {
     if ((subTab === 'licencas' || subTab === 'empresas') && !isSuperAdmin) {
@@ -466,12 +490,100 @@ export const Administracao: React.FC = () => {
     }
   };
 
+  const fetchAuditoria = async () => {
+    setLoadingAuditoria(true);
+    try {
+      const params = new URLSearchParams();
+      if (filtroAuditoriaAcao !== 'todos') params.append('acao', filtroAuditoriaAcao);
+      if (filtroAuditoriaEntidade !== 'todos') params.append('entidade', filtroAuditoriaEntidade);
+      if (searchAuditoria.trim()) params.append('q', searchAuditoria.trim());
+      if (dataInicioAuditoria) params.append('data_inicio', dataInicioAuditoria);
+      if (dataFimAuditoria) params.append('data_fim', dataFimAuditoria);
+      params.append('limit', '150');
+
+      const res = await fetch(`/api/auditoria?${params.toString()}`, {
+        headers: getAuthHeaders()
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLogsAuditoria(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar logs de auditoria:', err);
+    } finally {
+      setLoadingAuditoria(false);
+    }
+  };
+
+  const exportarAuditoriaCSV = () => {
+    if (logsAuditoria.length === 0) {
+      showSnackbar('Nenhum log de auditoria para exportar.', 'info');
+      return;
+    }
+    const headers = ['ID', 'Data/Hora', 'Usuário', 'E-mail', 'Ação', 'Entidade', 'Registro ID', 'IP', 'Detalhes'];
+    const rows = logsAuditoria.map(l => [
+      l.id,
+      new Date(l.criado_em).toLocaleString('pt-BR'),
+      `"${(l.usuario_nome || '').replace(/"/g, '""')}"`,
+      `"${(l.usuario_email || '').replace(/"/g, '""')}"`,
+      l.acao,
+      l.entidade,
+      l.registro_id || '-',
+      l.ip || '-',
+      `"${(typeof l.detalhes === 'object' ? JSON.stringify(l.detalhes) : String(l.detalhes || '')).replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `logs_auditoria_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showSnackbar('Logs de auditoria exportados com sucesso!', 'success');
+  };
+
+  const renderAuditoriaAcaoBadge = (acao: string) => {
+    switch (acao) {
+      case 'LOGIN':
+        return <span style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', border: '1px solid rgba(99, 102, 241, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, fontSize: '0.75rem' }}>LOGIN</span>;
+      case 'CRIAR':
+      case 'CRIAR_CAMPO':
+      case 'CRIAR_PERFIL':
+      case 'CRIAR_RELATORIO_SALVO':
+        return <span style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, fontSize: '0.75rem' }}>{acao}</span>;
+      case 'EDITAR':
+      case 'EDITAR_PERFIL':
+        return <span style={{ background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', border: '1px solid rgba(251, 191, 36, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, fontSize: '0.75rem' }}>{acao}</span>;
+      case 'INATIVAR':
+        return <span style={{ background: 'rgba(249, 115, 22, 0.15)', color: '#f97316', border: '1px solid rgba(249, 115, 22, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, fontSize: '0.75rem' }}>INATIVAR</span>;
+      case 'REATIVAR':
+        return <span style={{ background: 'rgba(20, 184, 166, 0.15)', color: '#14b8a6', border: '1px solid rgba(20, 184, 166, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, fontSize: '0.75rem' }}>REATIVAR</span>;
+      case 'EXCLUIR':
+      case 'EXCLUIR_CAMPO':
+      case 'EXCLUIR_PERFIL':
+      case 'EXCLUIR_RELATORIO_SALVO':
+        return <span style={{ background: 'rgba(251, 113, 133, 0.15)', color: '#fb7185', border: '1px solid rgba(251, 113, 133, 0.3)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, fontSize: '0.75rem' }}>{acao}</span>;
+      default:
+        return <span style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-muted)', border: '1px solid var(--card-border)', padding: '3px 8px', borderRadius: '6px', fontWeight: 700, fontSize: '0.75rem' }}>{acao}</span>;
+    }
+  };
+
   useEffect(() => {
     fetchUsuarios();
     fetchPerfis();
     fetchLicencas();
     fetchEmpresas();
+    fetchAuditoria();
   }, []);
+
+  useEffect(() => {
+    if (subTab === 'auditoria') {
+      fetchAuditoria();
+    }
+  }, [subTab, filtroAuditoriaAcao, filtroAuditoriaEntidade, dataInicioAuditoria, dataFimAuditoria]);
 
   const handleCopyKey = (chave: string) => {
     navigator.clipboard.writeText(chave);
@@ -996,6 +1108,13 @@ export const Administracao: React.FC = () => {
           style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
         >
           <Shield size={18} /> Perfis de Acesso & Permissões ({perfis.length})
+        </button>
+        <button
+          onClick={() => setSubTab('auditoria')}
+          className={subTab === 'auditoria' ? 'btn-primary' : 'btn-secondary admin-subtab-btn'}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+        >
+          <History size={18} color={subTab === 'auditoria' ? '#ffffff' : '#34d399'} /> Logs de Auditoria ({logsAuditoria.length})
         </button>
         {isSuperAdmin && (
           <>
@@ -1764,6 +1883,367 @@ export const Administracao: React.FC = () => {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* ABA DE LOGS DE AUDITORIA DE USUÁRIOS */}
+      {/* ======================================================== */}
+      {subTab === 'auditoria' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* Métricas Rápidas de Auditoria */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            <div className="glass-panel" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px', borderRadius: '16px' }}>
+              <div style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', padding: '12px', borderRadius: '12px' }}>
+                <History size={22} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Total de Eventos</span>
+                <h3 style={{ margin: '2px 0 0 0', fontSize: '1.5rem', fontWeight: 800 }}>{logsAuditoria.length}</h3>
+              </div>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px', borderRadius: '16px' }}>
+              <div style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '12px', borderRadius: '12px' }}>
+                <Users size={22} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Logins / Acessos</span>
+                <h3 style={{ margin: '2px 0 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#38bdf8' }}>
+                  {logsAuditoria.filter(l => l.acao === 'LOGIN').length}
+                </h3>
+              </div>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px', borderRadius: '16px' }}>
+              <div style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', padding: '12px', borderRadius: '12px' }}>
+                <CheckCircle2 size={22} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Colaboradores</span>
+                <h3 style={{ margin: '2px 0 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#34d399' }}>
+                  {logsAuditoria.filter(l => l.entidade === 'colaboradores').length}
+                </h3>
+              </div>
+            </div>
+
+            <div className="glass-panel" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px', borderRadius: '16px' }}>
+              <div style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', padding: '12px', borderRadius: '12px' }}>
+                <ShieldCheck size={22} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Segurança & Perfis</span>
+                <h3 style={{ margin: '2px 0 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#a855f7' }}>
+                  {logsAuditoria.filter(l => l.entidade === 'perfis_acesso' || l.entidade === 'usuarios').length}
+                </h3>
+              </div>
+            </div>
+          </div>
+
+          {/* Painel Principal de Filtros e Tabela de Auditoria */}
+          <div className="glass-panel" style={{ padding: '0', overflow: 'hidden', borderRadius: '18px' }}>
+            
+            {/* Barra de Filtros */}
+            <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--card-border)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <History size={20} color="#34d399" />
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>Histórico & Rastreabilidade de Operações</h3>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    onClick={exportarAuditoriaCSV}
+                    className="btn-secondary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', padding: '7px 14px' }}
+                    title="Exportar registros filtrados para planilha Excel/CSV"
+                  >
+                    <FileSpreadsheet size={15} color="#34d399" /> Exportar CSV
+                  </button>
+                  <button
+                    onClick={fetchAuditoria}
+                    className="btn-secondary"
+                    style={{ padding: '7px 12px', display: 'flex', alignItems: 'center' }}
+                    title="Atualizar Logs"
+                  >
+                    <RefreshCw size={15} className={loadingAuditoria ? 'spin' : ''} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Controles de Filtro */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: '1 1 200px', minWidth: '180px' }}>
+                  <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                  <input
+                    type="text"
+                    placeholder="Buscar por usuário, e-mail, ação ou detalhe..."
+                    value={searchAuditoria}
+                    onChange={e => setSearchAuditoria(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') fetchAuditoria(); }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px 8px 32px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--card-border)',
+                      background: 'rgba(0, 0, 0, 0.2)',
+                      color: 'var(--text-main)',
+                      fontSize: '0.85rem',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Filter size={14} color="var(--text-muted)" />
+                  <select
+                    value={filtroAuditoriaAcao}
+                    onChange={e => setFiltroAuditoriaAcao(e.target.value)}
+                    className="custom-select"
+                    style={{ padding: '7px 12px', fontSize: '0.82rem', borderRadius: '8px' }}
+                  >
+                    <option value="todos">Todas as Ações</option>
+                    <option value="LOGIN">LOGIN</option>
+                    <option value="CRIAR">CRIAR</option>
+                    <option value="EDITAR">EDITAR</option>
+                    <option value="INATIVAR">INATIVAR</option>
+                    <option value="REATIVAR">REATIVAR</option>
+                    <option value="EXCLUIR">EXCLUIR</option>
+                    <option value="CRIAR_CAMPO">CRIAR CAMPO</option>
+                    <option value="EXCLUIR_CAMPO">EXCLUIR CAMPO</option>
+                    <option value="CRIAR_RELATORIO_SALVO">CRIAR MODELO RELATÓRIO</option>
+                    <option value="EXCLUIR_RELATORIO_SALVO">EXCLUIR MODELO RELATÓRIO</option>
+                  </select>
+                </div>
+
+                <select
+                  value={filtroAuditoriaEntidade}
+                  onChange={e => setFiltroAuditoriaEntidade(e.target.value)}
+                  className="custom-select"
+                  style={{ padding: '7px 12px', fontSize: '0.82rem', borderRadius: '8px' }}
+                >
+                  <option value="todos">Todos os Módulos</option>
+                  <option value="auth">Autenticação (Auth)</option>
+                  <option value="colaboradores">Colaboradores</option>
+                  <option value="campos_customizados">Campos Customizados</option>
+                  <option value="relatorios_salvos">Relatórios Salvos</option>
+                  <option value="perfis_acesso">Perfis de Acesso</option>
+                  <option value="usuarios">Usuários</option>
+                </select>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>De:</span>
+                  <input
+                    type="date"
+                    value={dataInicioAuditoria}
+                    onChange={e => setDataInicioAuditoria(e.target.value)}
+                    style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'rgba(0, 0, 0, 0.2)', color: 'var(--text-main)', fontSize: '0.82rem' }}
+                  />
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Até:</span>
+                  <input
+                    type="date"
+                    value={dataFimAuditoria}
+                    onChange={e => setDataFimAuditoria(e.target.value)}
+                    style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid var(--card-border)', background: 'rgba(0, 0, 0, 0.2)', color: 'var(--text-main)', fontSize: '0.82rem' }}
+                  />
+                </div>
+
+                <button
+                  onClick={fetchAuditoria}
+                  className="btn-primary"
+                  style={{ padding: '7px 14px', fontSize: '0.82rem', borderRadius: '8px' }}
+                >
+                  Filtrar
+                </button>
+              </div>
+            </div>
+
+            {/* Tabela de Logs */}
+            <div className="table-flex-wrapper" style={{ overflowX: 'auto', width: '100%' }}>
+              <table className="custom-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={{ width: '150px' }}>Data / Hora</th>
+                    <th style={{ width: '220px' }}>Usuário Responsável</th>
+                    <th style={{ width: '130px' }}>Ação</th>
+                    <th style={{ width: '160px' }}>Módulo / Entidade</th>
+                    <th style={{ width: '100px' }}>ID Registro</th>
+                    <th style={{ width: '120px' }}>IP</th>
+                    <th>Resumo da Operação</th>
+                    <th style={{ textAlign: 'center', width: '90px' }}>Detalhes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loadingAuditoria ? (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>
+                        <Loader2 className="spin" size={24} color="#34d399" style={{ margin: '0 auto' }} />
+                        <span style={{ display: 'block', marginTop: '8px', color: 'var(--text-dim)' }}>Carregando trilha de auditoria...</span>
+                      </td>
+                    </tr>
+                  ) : logsAuditoria.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
+                        Nenhum log de auditoria encontrado para os filtros selecionados.
+                      </td>
+                    </tr>
+                  ) : (
+                    logsAuditoria.map(log => {
+                      const dateFormatted = new Date(log.criado_em).toLocaleString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                      });
+
+                      const detalhesStr = typeof log.detalhes === 'object' ? JSON.stringify(log.detalhes) : String(log.detalhes || '');
+
+                      return (
+                        <tr key={log.id}>
+                          <td style={{ fontSize: '0.82rem', fontFamily: 'monospace', color: 'var(--text-dim)' }}>
+                            {dateFormatted}
+                          </td>
+
+                          <td>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>{log.usuario_nome}</span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{log.usuario_email}</span>
+                            </div>
+                          </td>
+
+                          <td>
+                            {renderAuditoriaAcaoBadge(log.acao)}
+                          </td>
+
+                          <td>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-main)', textTransform: 'capitalize' }}>
+                              {log.entidade.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+
+                          <td style={{ fontSize: '0.82rem', fontFamily: 'monospace', color: 'var(--text-dim)' }}>
+                            {log.registro_id ? `#${log.registro_id}` : '-'}
+                          </td>
+
+                          <td style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: 'var(--text-dim)' }}>
+                            {log.ip || '-'}
+                          </td>
+
+                          <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', maxWidth: '320px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={detalhesStr}>
+                            {detalhesStr}
+                          </td>
+
+                          <td style={{ textAlign: 'center' }}>
+                            <button
+                              onClick={() => setLogModalDetalhe(log)}
+                              className="btn-action map"
+                              style={{ display: 'inline-flex', padding: '6px', borderRadius: '6px' }}
+                              title="Inspecionar parâmetros completos deste evento"
+                            >
+                              <Info size={15} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE DETALHES COMPLETOS DE LOG DE AUDITORIA */}
+      {logModalDetalhe && (
+        <div className="modal-backdrop" onClick={() => setLogModalDetalhe(null)}>
+          <div 
+            className="modal-content glass-panel" 
+            style={{ maxWidth: '560px', width: '92%', padding: '24px', borderRadius: '20px' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid var(--card-border)', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(52, 211, 153, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399' }}>
+                  <Info size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Detalhes do Evento #{logModalDetalhe.id}</h3>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Registro de trilha de auditoria</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLogModalDetalhe(null)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.88rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '10px 12px', borderRadius: '10px' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>AÇÃO</span>
+                  <div style={{ marginTop: '4px' }}>{renderAuditoriaAcaoBadge(logModalDetalhe.acao)}</div>
+                </div>
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '10px 12px', borderRadius: '10px' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>MÓDULO / ENTIDADE</span>
+                  <div style={{ marginTop: '4px', fontWeight: 700, color: 'var(--text-main)' }}>{logModalDetalhe.entidade}</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '10px 12px', borderRadius: '10px' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>RESPONSÁVEL</span>
+                  <div style={{ marginTop: '4px', fontWeight: 700 }}>{logModalDetalhe.usuario_nome}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>{logModalDetalhe.usuario_email}</div>
+                </div>
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '10px 12px', borderRadius: '10px' }}>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700 }}>DATA / HORA</span>
+                  <div style={{ marginTop: '4px', fontWeight: 600, fontFamily: 'monospace' }}>
+                    {new Date(logModalDetalhe.criado_em).toLocaleString('pt-BR')}
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>IP: {logModalDetalhe.ip || '-'}</div>
+                </div>
+              </div>
+
+              <div>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '6px', display: 'block' }}>
+                  PARÂMETROS & DADOS REGISTRADOS (JSON)
+                </span>
+                <pre style={{
+                  background: 'rgba(0, 0, 0, 0.4)',
+                  padding: '14px',
+                  borderRadius: '10px',
+                  border: '1px solid var(--card-border)',
+                  fontSize: '0.82rem',
+                  fontFamily: 'monospace',
+                  color: '#34d399',
+                  maxHeight: '200px',
+                  overflowY: 'auto',
+                  margin: 0,
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-all'
+                }}>
+                  {JSON.stringify(logModalDetalhe.detalhes, null, 2)}
+                </pre>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setLogModalDetalhe(null)}
+                  className="btn-primary"
+                  style={{ padding: '8px 20px', fontSize: '0.88rem' }}
+                >
+                  Fechar
+                </button>
+              </div>
             </div>
           </div>
         </div>

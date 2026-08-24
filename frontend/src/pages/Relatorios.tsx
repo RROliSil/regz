@@ -15,7 +15,11 @@ import {
   Square,
   Sparkles,
   MapPin,
-  Shield
+  Shield,
+  Bookmark,
+  Save,
+  Star,
+  X
 } from 'lucide-react';
 
 interface Colaborador {
@@ -62,6 +66,26 @@ interface Usuario {
   perfil?: PerfilAcesso;
 }
 
+export interface RelatorioSalvo {
+  id: number;
+  nome: string;
+  descricao?: string | null;
+  icone?: string;
+  modo?: string;
+  colunas: string[];
+  filtros: {
+    status?: 'todos' | 'ativos' | 'inativos';
+    cargo?: string;
+    estado?: string;
+    cidade?: string;
+    search?: string;
+    ordenacao?: any;
+    dataInicio?: string;
+    dataFim?: string;
+  };
+  is_padrao?: boolean;
+}
+
 type ModoVisualizacao = 'construtor' | 'geo' | 'rbac';
 
 // Definição das colunas cadastrais disponíveis
@@ -88,6 +112,12 @@ export const Relatorios: React.FC = () => {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [campos, setCampos] = useState<CampoCustomizado[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [relatoriosSalvos, setRelatoriosSalvos] = useState<RelatorioSalvo[]>([]);
+  const [modeloAtivoId, setModeloAtivoId] = useState<number | null>(null);
+  const [modalSalvarAberto, setModalSalvarAberto] = useState(false);
+  const [nomeNovoModelo, setNomeNovoModelo] = useState('');
+  const [descNovoModelo, setDescNovoModelo] = useState('');
+  const [salvandoModelo, setSalvandoModelo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isSpinning, setIsSpinning] = useState(false);
 
@@ -135,10 +165,11 @@ export const Relatorios: React.FC = () => {
     try {
       const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const [colabRes, camposRes, userRes] = await Promise.all([
+      const [colabRes, camposRes, userRes, relatoriosRes] = await Promise.all([
         fetch('/api/colaboradores', { headers }),
         fetch('/api/campos-customizados', { headers }),
-        fetch('/api/usuarios', { headers })
+        fetch('/api/usuarios', { headers }),
+        fetch('/api/relatorios-salvos', { headers })
       ]);
 
       if (colabRes.ok) {
@@ -154,10 +185,136 @@ export const Relatorios: React.FC = () => {
         const data = await userRes.json();
         setUsuarios(Array.isArray(data) ? data : []);
       }
+      if (relatoriosRes.ok) {
+        const data = await relatoriosRes.json();
+        setRelatoriosSalvos(Array.isArray(data) ? data : []);
+      }
     } catch (err) {
       console.error('Erro ao carregar dados para relatórios:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const carregarModelosSalvos = async () => {
+    try {
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch('/api/relatorios-salvos', { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setRelatoriosSalvos(Array.isArray(data) ? data : []);
+      }
+    } catch (err) {
+      console.error('Erro ao carregar modelos salvos:', err);
+    }
+  };
+
+  useEffect(() => {
+    carregarDados();
+  }, [token]);
+
+  // Aplicar Modelo Salvo
+  const handleAplicarModelo = (modelo: RelatorioSalvo) => {
+    setModeloAtivoId(modelo.id);
+    if (Array.isArray(modelo.colunas) && modelo.colunas.length > 0) {
+      setColunasSelecionadas(modelo.colunas);
+    }
+    if (modelo.filtros) {
+      if (modelo.filtros.status) setFiltroStatus(modelo.filtros.status);
+      if (modelo.filtros.cargo) setFiltroCargo(modelo.filtros.cargo);
+      if (modelo.filtros.estado) setFiltroEstado(modelo.filtros.estado);
+      if (modelo.filtros.cidade) setFiltroCidade(modelo.filtros.cidade);
+      if (modelo.filtros.search !== undefined) setSearch(modelo.filtros.search);
+      if (modelo.filtros.ordenacao) setOrdenacao(modelo.filtros.ordenacao);
+      if (modelo.filtros.dataInicio !== undefined) setDataInicio(modelo.filtros.dataInicio);
+      if (modelo.filtros.dataFim !== undefined) setDataFim(modelo.filtros.dataFim);
+    }
+    showSnackbar(`Modelo "${modelo.nome}" carregado com sucesso!`, 'success');
+  };
+
+  // Salvar Configuração Atual como Novo Modelo
+  const handleSalvarNovoModelo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nomeNovoModelo.trim()) {
+      showSnackbar('Por favor, informe o nome do modelo de relatório.', 'error');
+      return;
+    }
+
+    if (colunasSelecionadas.length === 0) {
+      showSnackbar('Selecione ao menos 1 coluna para salvar o modelo.', 'error');
+      return;
+    }
+
+    setSalvandoModelo(true);
+    try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+      };
+
+      const payload = {
+        nome: nomeNovoModelo.trim(),
+        descricao: descNovoModelo.trim() || null,
+        icone: 'bookmark',
+        modo,
+        colunas: colunasSelecionadas,
+        filtros: {
+          status: filtroStatus,
+          cargo: filtroCargo,
+          estado: filtroEstado,
+          cidade: filtroCidade,
+          search,
+          ordenacao,
+          dataInicio,
+          dataFim
+        }
+      };
+
+      const res = await fetch('/api/relatorios-salvos', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        setModalSalvarAberto(false);
+        setNomeNovoModelo('');
+        setDescNovoModelo('');
+        showSnackbar(`Modelo "${payload.nome}" salvo com sucesso!`, 'success');
+        await carregarModelosSalvos();
+      } else {
+        const errData = await res.json();
+        showSnackbar(errData.error || 'Erro ao salvar modelo de relatório.', 'error');
+      }
+    } catch (err: any) {
+      showSnackbar(err.message || 'Erro de conexão ao salvar modelo.', 'error');
+    } finally {
+      setSalvandoModelo(false);
+    }
+  };
+
+  // Excluir Modelo Salvo
+  const handleExcluirModelo = async (modeloId: number, modeloNome: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!window.confirm(`Deseja realmente excluir o modelo "${modeloNome}"?`)) return;
+
+    try {
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await fetch(`/api/relatorios-salvos/${modeloId}`, {
+        method: 'DELETE',
+        headers
+      });
+
+      if (res.ok) {
+        if (modeloAtivoId === modeloId) setModeloAtivoId(null);
+        showSnackbar(`Modelo "${modeloNome}" excluído com sucesso!`, 'info');
+        await carregarModelosSalvos();
+      } else {
+        const errData = await res.json();
+        showSnackbar(errData.error || 'Erro ao excluir modelo.', 'error');
+      }
+    } catch (err: any) {
+      showSnackbar(err.message || 'Erro ao excluir modelo.', 'error');
     }
   };
 
@@ -539,6 +696,70 @@ export const Relatorios: React.FC = () => {
       {/* PAINEL VISUAL ABERTO: CONSTRUTOR DE COLUNAS (SEM DROPDOWN) */}
       {modo === 'construtor' && (
         <div className="glass-panel no-print panel-builder-container" style={{ padding: '22px 24px', borderRadius: '18px', marginBottom: '24px' }}>
+          
+          {/* Seção de Modelos Salvos ("Meus Relatórios") */}
+          <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--card-border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-main)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                <Star size={16} color="#fbbf24" fill="#fbbf24" /> Meus Relatórios & Modelos Salvos ({relatoriosSalvos.length})
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setNomeNovoModelo('');
+                  setDescNovoModelo('');
+                  setModalSalvarAberto(true);
+                }}
+                className="btn-secondary"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '0.78rem', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', borderColor: 'rgba(99, 102, 241, 0.3)' }}
+              >
+                <Save size={13} /> Salvar Configuração Atual como Modelo
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {relatoriosSalvos.map(mod => {
+                const isActive = modeloAtivoId === mod.id;
+                return (
+                  <div
+                    key={mod.id}
+                    onClick={() => handleAplicarModelo(mod)}
+                    className={`btn-column-chip ${isActive ? 'active' : ''}`}
+                    style={{
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '8px 14px',
+                      borderRadius: '10px',
+                      background: isActive ? 'rgba(99, 102, 241, 0.25)' : 'var(--card-bg)',
+                      border: isActive ? '1.5px solid #6366f1' : '1px solid var(--card-border)',
+                      position: 'relative'
+                    }}
+                    title={mod.descricao || mod.nome}
+                  >
+                    <Bookmark size={13} color={isActive ? "#818cf8" : "var(--text-muted)"} />
+                    <span style={{ fontWeight: isActive ? 700 : 500 }}>{mod.nome}</span>
+                    {mod.is_padrao ? (
+                      <span style={{ fontSize: '0.65rem', padding: '2px 5px', borderRadius: '4px', background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                        Padrão
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => handleExcluirModelo(mod.id, mod.nome, e)}
+                        style={{ background: 'transparent', border: 'none', padding: '2px', cursor: 'pointer', color: 'var(--text-dim)', display: 'flex', alignItems: 'center' }}
+                        title="Excluir este modelo salvo"
+                      >
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Cabeçalho do Construtor */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1115,6 +1336,112 @@ export const Relatorios: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* MODAL PARA SALVAR NOVO MODELO DE RELATÓRIO */}
+      {modalSalvarAberto && (
+        <div className="modal-overlay" onClick={() => setModalSalvarAberto(false)}>
+          <div 
+            className="modal-content glass-panel" 
+            style={{ maxWidth: '480px', width: '90%', padding: '24px', borderRadius: '20px' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(99, 102, 241, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8' }}>
+                  <Star size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800 }}>Salvar Modelo de Relatório</h3>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Grave suas colunas e filtros para usar com 1 clique</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalSalvarAberto(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-dim)' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvarNovoModelo}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                    Nome do Modelo *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ex: Aniversariantes do Mês, Financeiro PIX..."
+                    value={nomeNovoModelo}
+                    onChange={e => setNomeNovoModelo(e.target.value)}
+                    required
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: '1px solid var(--card-border)',
+                      background: 'rgba(0, 0, 0, 0.2)',
+                      color: 'var(--text-main)',
+                      fontSize: '0.9rem',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                    Descrição (Opcional)
+                  </label>
+                  <textarea
+                    placeholder="Breve resumo da finalidade deste relatório..."
+                    value={descNovoModelo}
+                    onChange={e => setDescNovoModelo(e.target.value)}
+                    rows={3}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: '1px solid var(--card-border)',
+                      background: 'rgba(0, 0, 0, 0.2)',
+                      color: 'var(--text-main)',
+                      fontSize: '0.88rem',
+                      boxSizing: 'border-box',
+                      resize: 'none'
+                    }}
+                  />
+                </div>
+
+                {/* Resumo do que será salvo */}
+                <div style={{ padding: '12px', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.08)', border: '1px solid rgba(99, 102, 241, 0.2)', fontSize: '0.8rem' }}>
+                  <div style={{ color: '#818cf8', fontWeight: 700, marginBottom: '4px' }}>⚙️ Configuração a ser salva:</div>
+                  <div>• <strong>{colunasSelecionadas.length} colunas</strong> selecionadas</div>
+                  <div>• Filtros: Status ({filtroStatus}), Cargo ({filtroCargo}), UF ({filtroEstado})</div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setModalSalvarAberto(false)}
+                    className="btn-secondary"
+                    style={{ padding: '8px 16px', fontSize: '0.88rem' }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={salvandoModelo || !nomeNovoModelo.trim()}
+                    className="btn-primary"
+                    style={{ padding: '8px 18px', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    {salvandoModelo ? <RefreshCw size={14} className="spin" /> : <Save size={14} />} Salvar Modelo
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
