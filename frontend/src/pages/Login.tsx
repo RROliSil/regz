@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Lock, Mail, Loader2, AlertCircle, ShieldCheck, Sun, Moon, Container } from 'lucide-react';
+import { Lock, Mail, Loader2, AlertCircle, Sun, Moon } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
@@ -33,7 +33,7 @@ export const Login: React.FC = () => {
     switch (theme) {
       case 'light': return <Sun size={18} />;
       case 'dark': return <Moon size={18} />;
-      default: return <Container size={18} />;
+      default: return <img src="/logo.png" alt="Regz" style={{ width: '18px', height: '18px', borderRadius: '4px', objectFit: 'cover' }} />;
     }
   };
 
@@ -81,14 +81,14 @@ export const Login: React.FC = () => {
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '64px',
-            height: '64px',
+            width: '68px',
+            height: '68px',
             borderRadius: '20px',
-            background: 'linear-gradient(135deg, #6366f1 0%, #5e5eee 100%)',
-            boxShadow: '0 10px 25px rgba(99, 102, 241, 0.4)',
-            marginBottom: '16px'
+            boxShadow: '0 10px 25px rgba(99, 102, 241, 0.45)',
+            marginBottom: '16px',
+            overflow: 'hidden'
           }}>
-            <ShieldCheck size={36} color="#ffffff" />
+            <img src="/logo.png" alt="Regz Gestão de Pessoas" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <h1 className="login-title" style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
             Regz <span className="text-gradient">Gestão</span>

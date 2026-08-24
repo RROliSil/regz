@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Sliders, ShieldCheck, Briefcase, FileBarChart, Settings, Container, ChevronLeft, ChevronRight, LogOut, User, Sun, Moon } from 'lucide-react';
+import { Home, Users, Sliders, ShieldCheck, Briefcase, FileBarChart, Settings, ChevronLeft, ChevronRight, LogOut, User, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -27,8 +27,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       {/* App Logo & Header */}
       <div className="sidebar-brand">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-          <div className="brand-logo" title="Regz Gestão de Pessoas">
-            <Container size={24} color="#ffffff" />
+          <div className="brand-logo" title="Regz Gestão de Pessoas" style={{ padding: 0, overflow: 'hidden', background: 'transparent', boxShadow: '0 4px 14px rgba(99, 102, 241, 0.4)' }}>
+            <img src="/logo.png" alt="Regz" style={{ width: '38px', height: '38px', borderRadius: '10px', objectFit: 'cover', display: 'block' }} />
           </div>
           {!collapsed && (
             <div className="brand-info">
@@ -48,7 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             'Modo Escuro (Clique para alternar para Modo Padrão)'
           }
         >
-          {theme === 'padrao' && <Container size={18} />}
+          {theme === 'padrao' && <img src="/logo.png" alt="Regz Padrão" style={{ width: '18px', height: '18px', borderRadius: '4px', objectFit: 'cover' }} />}
           {theme === 'light' && <Sun size={18} />}
           {theme === 'dark' && <Moon size={18} />}
         </button>

@@ -714,8 +714,8 @@ export const SuperAdmin: React.FC = () => {
         marginBottom: '28px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ background: 'linear-gradient(135deg, #6366f1 0%, #38bdf8 100%)', padding: '12px', borderRadius: '14px', color: '#ffffff' }}>
-            <Shield size={28} />
+          <div style={{ width: '48px', height: '48px', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)', flexShrink: 0 }}>
+            <img src="/logo.png" alt="Regz Master" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
