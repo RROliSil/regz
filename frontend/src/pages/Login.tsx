@@ -81,14 +81,25 @@ export const Login: React.FC = () => {
             display: 'inline-flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '68px',
-            height: '68px',
+            width: '72px',
+            height: '72px',
             borderRadius: '20px',
             boxShadow: '0 10px 25px rgba(99, 102, 241, 0.45)',
             marginBottom: '16px',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            background: 'transparent'
           }}>
-            <img src="/logo.png" alt="Regz Gestão de Pessoas" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <video
+              src="/videos/RegzICO.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              poster="/logo.png"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            >
+              <img src="/logo.png" alt="Regz Gestão de Pessoas" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </video>
           </div>
           <h1 className="login-title" style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
             Regz <span className="text-gradient">Gestão</span>
