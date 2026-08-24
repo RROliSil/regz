@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Sliders, ShieldCheck, Briefcase, FileBarChart, Settings, ChevronLeft, ChevronRight, LogOut, User, Sun, Moon } from 'lucide-react';
+import { Home, Users, Sliders, ShieldCheck, Briefcase, FileBarChart, Settings, ChevronLeft, ChevronRight, LogOut, User, Sun, Moon, Palette } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -38,7 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           )}
         </div>
 
-        {/* Botão de Tema (Regz / Sol / Lua) sem texto */}
+        {/* Botão de Tema (Paleta de Cores / Sol / Lua) sem texto */}
         <button
           onClick={cycleTheme}
           className="theme-toggle-btn"
@@ -48,7 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             'Modo Escuro (Clique para alternar para Modo Padrão)'
           }
         >
-          {theme === 'padrao' && <img src="/logo.png" alt="Regz Padrão" style={{ width: '18px', height: '18px', borderRadius: '4px', objectFit: 'cover' }} />}
+          {theme === 'padrao' && <Palette size={18} />}
           {theme === 'light' && <Sun size={18} />}
           {theme === 'dark' && <Moon size={18} />}
         </button>

@@ -203,8 +203,8 @@ I. Isolamento Estrito de Dados Multi-Empresas (Multi-Tenancy por empresa_id):
   - A tela de Login (`Login.tsx` e `index.css`) está totalmente integrada ao sistema multi-tema da aplicação através dos tokens CSS `var(--bg-gradient)`, `var(--card-bg)`, `var(--text-main)` e `var(--card-border)`.
   - No Modo Claro (`light`), o fundo da página de login é claro (`#f8fafc` / `#e2e8f0`), o card é branco (`#ffffff`) e todos os títulos, subtítulos, rótulos de campos (E-mail, Senha) e inputs utilizam texto preto (`#000000` / `#0f172a`) com contraste nítido. O ícone de alternância é o Sol (`Sun`).
   - No Modo Escuro (`dark`), o fundo da página é escuro monocromático (`#18181b` / `#09090b`), o card é `#1b1b1f` e os textos são claros (`#f4f4f5`). O ícone de alternância é a Lua (`Moon`).
-  - No Modo Padrão (`padrao`), o fundo é o Dark Indigo Glassmorphism (`#1e1b4b` / `#0f172a` / `#020617`), e o ícone de alternância de tema no login e na barra lateral é o novo Logotipo Oficial da Regz (`/logo.png`), com o cubo isométrico e silhuetas humanas.
-  - O novo ícone oficial (`/logo.png` e `/favicon.png`) está aplicado em todo o sistema: Favicon do navegador, Cabeçalho da barra lateral (`Sidebar.tsx`), Card de Login (`Login.tsx`), e Portal Executivo Master (`SuperAdmin.tsx`).
+  - No Modo Padrão (`padrao`), o fundo é o Dark Indigo Glassmorphism (`#1e1b4b` / `#0f172a` / `#020617`), e o ícone de alternância de tema no login e na barra lateral é a Paleta de Cores (`Palette` da biblioteca `lucide-react`).
+  - O novo ícone oficial (`/logo.png` e `/favicon.png`) está aplicado como identidade da marca em: Favicon do navegador, Cabeçalho da barra lateral (`Sidebar.tsx`), Card de Login (`Login.tsx`), e Portal Executivo Master (`SuperAdmin.tsx`).
 - REGRA 162: Rota Oficial `/superadmrgz` e Modo Padrão Exclusivo no Portal Super Admin:
   - A rota canônica e exclusiva do Portal Super Admin é `http://192.168.2.72:8280/superadmrgz` (`/superadmrgz`).
   - Usuários com perfil Super Admin são redirecionados automaticamente para `/superadmrgz` após o login.
