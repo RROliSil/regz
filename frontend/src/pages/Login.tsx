@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Lock, Mail, Loader2, AlertCircle, Sun, Moon, Palette } from 'lucide-react';
+import { Lock, Mail, Loader2, AlertCircle, Sun, Moon, Palette, Eye, EyeOff } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
   const { theme, cycleTheme } = useTheme();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -128,6 +129,7 @@ export const Login: React.FC = () => {
                 disabled={loading}
                 className="login-input"
                 style={{ paddingLeft: '42px' }}
+                autoFocus
                 required
               />
               <Mail size={18} className="login-input-icon" color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -138,16 +140,38 @@ export const Login: React.FC = () => {
             <label className="login-label" style={{ color: 'var(--text-main)', fontSize: '0.88rem', fontWeight: 600 }}>Senha</label>
             <div style={{ position: 'relative' }}>
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 disabled={loading}
                 className="login-input"
-                style={{ paddingLeft: '42px' }}
+                style={{ paddingLeft: '42px', paddingRight: '42px' }}
                 required
               />
               <Lock size={18} className="login-input-icon" color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? 'Ocultar senha' : 'Exibir senha'}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--text-muted)',
+                  borderRadius: '6px'
+                }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
