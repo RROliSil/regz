@@ -1473,8 +1473,7 @@ export const Relatorios: React.FC = () => {
                                 minWidth: '60px',
                                 cursor: 'pointer', 
                                 userSelect: 'none',
-                                transition: 'all 0.15s ease',
-                                position: 'relative'
+                                transition: 'all 0.15s ease'
                               }}
                               title={`Clique para ordenar por ${col.label} (${isSorted && sortDirection === 'asc' ? 'Decrescente' : 'Crescente'})`}
                             >
@@ -1583,37 +1582,37 @@ export const Relatorios: React.FC = () => {
                 <thead>
                   <tr>
                     {geoCols.estado && (
-                      <th style={{ width: `${columnWidths.estado || DEFAULT_RELATORIO_WIDTHS.estado}px`, position: 'relative' }}>
+                      <th style={{ width: `${columnWidths.estado || DEFAULT_RELATORIO_WIDTHS.estado}px` }}>
                         <span>Estado (UF)</span>
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'estado')} title="Arraste para redimensionar coluna" />
                       </th>
                     )}
                     {geoCols.cidade && (
-                      <th style={{ width: `${columnWidths.cidade || DEFAULT_RELATORIO_WIDTHS.cidade}px`, position: 'relative' }}>
+                      <th style={{ width: `${columnWidths.cidade || DEFAULT_RELATORIO_WIDTHS.cidade}px` }}>
                         <span>Cidade / Município</span>
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'cidade')} title="Arraste para redimensionar coluna" />
                       </th>
                     )}
                     {geoCols.ativos && (
-                      <th style={{ textAlign: 'right', width: `${columnWidths.ativos || DEFAULT_RELATORIO_WIDTHS.ativos}px`, position: 'relative' }}>
+                      <th style={{ textAlign: 'right', width: `${columnWidths.ativos || DEFAULT_RELATORIO_WIDTHS.ativos}px` }}>
                         <span>Ativos</span>
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'ativos')} title="Arraste para redimensionar coluna" />
                       </th>
                     )}
                     {geoCols.inativos && (
-                      <th style={{ textAlign: 'right', width: `${columnWidths.inativos || DEFAULT_RELATORIO_WIDTHS.inativos}px`, position: 'relative' }}>
+                      <th style={{ textAlign: 'right', width: `${columnWidths.inativos || DEFAULT_RELATORIO_WIDTHS.inativos}px` }}>
                         <span>Inativos</span>
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'inativos')} title="Arraste para redimensionar coluna" />
                       </th>
                     )}
                     {geoCols.total && (
-                      <th style={{ textAlign: 'right', width: `${columnWidths.total || DEFAULT_RELATORIO_WIDTHS.total}px`, position: 'relative' }}>
+                      <th style={{ textAlign: 'right', width: `${columnWidths.total || DEFAULT_RELATORIO_WIDTHS.total}px` }}>
                         <span>Total Geral</span>
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'total')} title="Arraste para redimensionar coluna" />
                       </th>
                     )}
                     {geoCols.percentual && (
-                      <th style={{ textAlign: 'right', width: `${columnWidths.percentual || DEFAULT_RELATORIO_WIDTHS.percentual}px`, position: 'relative' }}>
+                      <th style={{ textAlign: 'right', width: `${columnWidths.percentual || DEFAULT_RELATORIO_WIDTHS.percentual}px` }}>
                         <span>% do Headcount</span>
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'percentual')} title="Arraste para redimensionar coluna" />
                       </th>
@@ -1665,37 +1664,37 @@ export const Relatorios: React.FC = () => {
                 <thead>
                   <tr>
                     {rbacCols.id && (
-                      <th style={{ width: `${columnWidths.id || DEFAULT_RELATORIO_WIDTHS.id}px`, position: 'relative' }}>
+                      <th style={{ width: `${columnWidths.id || DEFAULT_RELATORIO_WIDTHS.id}px` }}>
                         <span>ID</span>
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'id')} title="Arraste para redimensionar coluna" />
                       </th>
                     )}
                     {rbacCols.nome && (
-                      <th style={{ width: `${columnWidths.nome || DEFAULT_RELATORIO_WIDTHS.nome}px`, position: 'relative' }}>
+                      <th style={{ width: `${columnWidths.nome || DEFAULT_RELATORIO_WIDTHS.nome}px` }}>
                         <span>Nome do Usuário</span>
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'nome')} title="Arraste para redimensionar coluna" />
                       </th>
                     )}
                     {rbacCols.email && (
-                      <th style={{ width: `${columnWidths.email || DEFAULT_RELATORIO_WIDTHS.email}px`, position: 'relative' }}>
+                      <th style={{ width: `${columnWidths.email || DEFAULT_RELATORIO_WIDTHS.email}px` }}>
                         <span>E-mail de Acesso</span>
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'email')} title="Arraste para redimensionar coluna" />
                       </th>
                     )}
                     {rbacCols.perfil && (
-                      <th style={{ width: `${columnWidths.perfil || DEFAULT_RELATORIO_WIDTHS.perfil}px`, position: 'relative' }}>
+                      <th style={{ width: `${columnWidths.perfil || DEFAULT_RELATORIO_WIDTHS.perfil}px` }}>
                         <span>Perfil de Acesso</span>
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'perfil')} title="Arraste para redimensionar coluna" />
                       </th>
                     )}
                     {rbacCols.tipo && (
-                      <th style={{ width: `${columnWidths.tipo || DEFAULT_RELATORIO_WIDTHS.tipo}px`, position: 'relative' }}>
+                      <th style={{ width: `${columnWidths.tipo || DEFAULT_RELATORIO_WIDTHS.tipo}px` }}>
                         <span>Tipo</span>
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'tipo')} title="Arraste para redimensionar coluna" />
                       </th>
                     )}
                     {rbacCols.status && (
-                      <th style={{ textAlign: 'center', width: `${columnWidths.status || DEFAULT_RELATORIO_WIDTHS.status}px`, position: 'relative' }}>
+                      <th style={{ textAlign: 'center', width: `${columnWidths.status || DEFAULT_RELATORIO_WIDTHS.status}px` }}>
                         <span>Status</span>
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'status')} title="Arraste para redimensionar coluna" />
                       </th>

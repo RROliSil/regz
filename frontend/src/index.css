@@ -176,26 +176,15 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
-.theme-toggle-btn svg {
-  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.25s ease, filter 0.25s ease;
-}
-
 .theme-toggle-btn:hover {
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(56, 189, 248, 0.22));
-  border-color: rgba(129, 140, 248, 0.55);
+  background: rgba(255, 255, 255, 0.18);
+  border-color: var(--accent-purple);
   color: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
-}
-
-.theme-toggle-btn:hover svg {
-  transform: rotate(18deg) scale(1.12);
-  color: #818cf8;
-  filter: drop-shadow(0 0 6px rgba(129, 140, 248, 0.8));
 }
 
 .brand-logo {
@@ -726,33 +715,39 @@ th.col-acoes .col-resizer {
 
 /* Wrapper de Rolagem com Cabeçalho Fixo (Sticky Header) */
 .table-sticky-wrapper {
-  max-height: calc(100vh - 310px);
+  max-height: calc(100vh - 280px);
   min-height: 380px;
   overflow: auto;
   position: relative;
   border-radius: 12px;
 }
 
+.table-sticky-wrapper .custom-table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
 .table-sticky-wrapper .custom-table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background: #0f172a;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 30 !important;
+  background: #0f172a !important;
+  border-bottom: 2px solid var(--card-border) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
 }
 
 [data-theme="light"] .table-sticky-wrapper .custom-table thead th {
   background: #ffffff !important;
-  color: #334155 !important;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08) !important;
+  color: #1e293b !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
   border-bottom: 2px solid #cbd5e1 !important;
 }
 
 [data-theme="dark"] .table-sticky-wrapper .custom-table thead th {
   background: #141416 !important;
-  color: #a1a1aa !important;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5) !important;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f4f4f5 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6) !important;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.15) !important;
 }
 
 /* Alça de Redimensionar Coluna por Arraste com Divisória Neon Cyan */
