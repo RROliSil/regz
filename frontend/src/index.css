@@ -3635,10 +3635,23 @@ select option,
   transition: background 0.3s ease;
 }
 
+@keyframes loginFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .login-card {
   background: var(--card-bg) !important;
   border: 1px solid var(--card-border) !important;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+  animation: loginFadeIn 0.6s ease-out forwards;
+  will-change: transform, opacity;
   transition: all 0.3s ease;
 }
 

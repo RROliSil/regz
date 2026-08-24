@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Lock, Mail, Loader2, AlertCircle, Sun, Moon, Palette } from 'lucide-react';
@@ -10,6 +10,17 @@ export const Login: React.FC = () => {
   const [senha, setSenha] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const isPlayingRef = useRef(true);
+
+  const handleLogoMouseEnter = () => {
+    if (videoRef.current && !isPlayingRef.current) {
+      isPlayingRef.current = true;
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,25 +88,36 @@ export const Login: React.FC = () => {
       }}>
         {/* Header do Card Login */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '72px',
-            height: '72px',
-            borderRadius: '20px',
-            boxShadow: '0 10px 25px rgba(99, 102, 241, 0.45)',
-            marginBottom: '16px',
-            overflow: 'hidden',
-            background: 'transparent'
-          }}>
+          <div
+            onMouseEnter={handleLogoMouseEnter}
+            title="Logotipo Regz"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '72px',
+              height: '72px',
+              borderRadius: '20px',
+              boxShadow: '0 10px 25px rgba(99, 102, 241, 0.45)',
+              marginBottom: '16px',
+              overflow: 'hidden',
+              background: 'transparent',
+              cursor: 'pointer',
+              transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+            }}
+          >
             <video
+              ref={videoRef}
               src="/videos/RegzICO.mp4"
               autoPlay
               muted
               playsInline
               poster="/videos/poster_start.png"
+              onPlay={() => {
+                isPlayingRef.current = true;
+              }}
               onEnded={(e) => {
+                isPlayingRef.current = false;
                 const v = e.currentTarget;
                 v.pause();
                 if (v.duration) v.currentTime = v.duration;
