@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Lock, Mail, Loader2, AlertCircle, Sun, Moon, Palette, Eye, EyeOff } from 'lucide-react';
+import { Lock, Mail, Loader2, AlertCircle, AlertTriangle, Sun, Moon, Palette, Eye, EyeOff } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login } = useAuth();
   const { theme, cycleTheme } = useTheme();
-  const [email, setEmail] = useState('');
+  const [rememberEmail, setRememberEmail] = useState(() => {
+    return localStorage.getItem('regz_remember_email_enabled') === 'true';
+  });
+  const [email, setEmail] = useState(() => {
+    return localStorage.getItem('regz_remembered_email') || '';
+  });
   const [senha, setSenha] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [capsLockActive, setCapsLockActive] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -19,6 +25,14 @@ export const Login: React.FC = () => {
     if (!email.trim() || !senha) {
       setErrorMsg('Informe o e-mail e a senha.');
       return;
+    }
+
+    if (rememberEmail) {
+      localStorage.setItem('regz_remembered_email', email.trim());
+      localStorage.setItem('regz_remember_email_enabled', 'true');
+    } else {
+      localStorage.removeItem('regz_remembered_email');
+      localStorage.removeItem('regz_remember_email_enabled');
     }
 
     setLoading(true);
@@ -144,6 +158,9 @@ export const Login: React.FC = () => {
                 placeholder="••••••••"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
+                onKeyDown={(e) => setCapsLockActive(e.getModifierState('CapsLock'))}
+                onKeyUp={(e) => setCapsLockActive(e.getModifierState('CapsLock'))}
+                onBlur={() => setCapsLockActive(false)}
                 disabled={loading}
                 className="login-input"
                 style={{ paddingLeft: '42px', paddingRight: '42px' }}
@@ -173,6 +190,51 @@ export const Login: React.FC = () => {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+            {capsLockActive && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '0.78rem',
+                color: '#f59e0b',
+                marginTop: '6px',
+                fontWeight: 500
+              }}>
+                <AlertTriangle size={14} /> Caps Lock está ativado
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '-4px' }}>
+            <label style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              fontSize: '0.84rem',
+              color: 'var(--text-muted)',
+              userSelect: 'none'
+            }}>
+              <input
+                type="checkbox"
+                checked={rememberEmail}
+                onChange={(e) => {
+                  setRememberEmail(e.target.checked);
+                  if (!e.target.checked) {
+                    localStorage.removeItem('regz_remembered_email');
+                    localStorage.removeItem('regz_remember_email_enabled');
+                  }
+                }}
+                style={{
+                  width: '16px',
+                  height: '16px',
+                  borderRadius: '4px',
+                  accentColor: '#6366f1',
+                  cursor: 'pointer'
+                }}
+              />
+              Lembrar meu e-mail
+            </label>
           </div>
 
           <button

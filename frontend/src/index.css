@@ -3677,6 +3677,41 @@ select option,
   transition: all 0.2s ease;
 }
 
+/* Fix Autocomplete / Autofill do Chrome/Edge/Safari nos inputs de Login */
+.login-input:-webkit-autofill,
+.login-input:-webkit-autofill:hover,
+.login-input:-webkit-autofill:focus,
+.login-input:-webkit-autofill:active,
+.login-input:-internal-autofill-previewed,
+.login-input:-internal-autofill-selected {
+  -webkit-box-shadow: 0 0 0 1000px #0f172a inset !important;
+  -webkit-text-fill-color: var(--text-main, #ffffff) !important;
+  caret-color: var(--text-main, #ffffff) !important;
+  transition: background-color 50000s ease-in-out 0s;
+}
+
+[data-theme="light"] .login-input:-webkit-autofill,
+[data-theme="light"] .login-input:-webkit-autofill:hover,
+[data-theme="light"] .login-input:-webkit-autofill:focus,
+[data-theme="light"] .login-input:-webkit-autofill:active,
+[data-theme="light"] .login-input:-internal-autofill-previewed,
+[data-theme="light"] .login-input:-internal-autofill-selected {
+  -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #000000 !important;
+  caret-color: #000000 !important;
+}
+
+[data-theme="dark"] .login-input:-webkit-autofill,
+[data-theme="dark"] .login-input:-webkit-autofill:hover,
+[data-theme="dark"] .login-input:-webkit-autofill:focus,
+[data-theme="dark"] .login-input:-webkit-autofill:active,
+[data-theme="dark"] .login-input:-internal-autofill-previewed,
+[data-theme="dark"] .login-input:-internal-autofill-selected {
+  -webkit-box-shadow: 0 0 0 1000px #121214 inset !important;
+  -webkit-text-fill-color: #f4f4f5 !important;
+  caret-color: #f4f4f5 !important;
+}
+
 .login-footer-note {
   color: var(--text-dim);
 }
