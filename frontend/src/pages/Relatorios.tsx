@@ -129,6 +129,32 @@ const COLUNAS_CADASTRAIS = [
   { key: 'status', label: 'Status' }
 ];
 
+// Larguras padrão de colunas da tabela de relatórios (em pixels)
+const DEFAULT_RELATORIO_WIDTHS: Record<string, number> = {
+  foto: 65,
+  nome: 240,
+  cpf: 150,
+  cargo: 190,
+  email: 220,
+  telefone: 150,
+  cbo: 160,
+  endereco: 260,
+  cidade_uf: 180,
+  criado_em: 150,
+  status: 120,
+  // Geo
+  estado: 130,
+  cidade: 220,
+  ativos: 120,
+  inativos: 120,
+  total: 130,
+  percentual: 150,
+  // RBAC
+  id: 80,
+  perfil: 180,
+  tipo: 140
+};
+
 export const Relatorios: React.FC = () => {
   const { token } = useAuth();
   const { showSnackbar } = useSnackbar();
@@ -145,6 +171,44 @@ export const Relatorios: React.FC = () => {
   const [salvandoModelo, setSalvandoModelo] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isSpinning, setIsSpinning] = useState(false);
+
+  // Redimensionamento manual de colunas com persistência em LocalStorage
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>(() => {
+    try {
+      const saved = localStorage.getItem('regz_relatorios_column_widths');
+      if (saved) return { ...DEFAULT_RELATORIO_WIDTHS, ...JSON.parse(saved) };
+    } catch (e) {
+      console.error('Erro ao carregar regz_relatorios_column_widths:', e);
+    }
+    return DEFAULT_RELATORIO_WIDTHS;
+  });
+
+  const handleMouseDownResize = (e: React.MouseEvent, colKey: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startWidth = columnWidths[colKey] || DEFAULT_RELATORIO_WIDTHS[colKey] || 180;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const delta = moveEvent.clientX - startX;
+      const newWidth = Math.max(60, startWidth + delta);
+      setColumnWidths(prev => {
+        const updated = { ...prev, [colKey]: newWidth };
+        try {
+          localStorage.setItem('regz_relatorios_column_widths', JSON.stringify(updated));
+        } catch (err) {}
+        return updated;
+      });
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  };
 
   // Seleção de Colunas no Construtor Livre (Keys de colunas padrão + IDs/Nomes de campos personalizados com prefixo 'custom_')
   const [colunasSelecionadas, setColunasSelecionadas] = useState<string[]>([
@@ -1381,7 +1445,7 @@ export const Relatorios: React.FC = () => {
             <p>Carregando dados do relatório...</p>
           </div>
         ) : (
-          <div className="table-flex-wrapper" style={{ overflowX: 'auto' }}>
+          <div className="table-flex-wrapper table-sticky-wrapper">
             {/* MODO 1: CONSTRUTOR LIVRE DE COLUNAS */}
             {modo === 'construtor' && (
               <>
@@ -1399,29 +1463,39 @@ export const Relatorios: React.FC = () => {
                       <tr>
                         {colunasAtivasConstrutor.map(col => {
                           const isSorted = sortColumn === col.key;
+                          const colW = columnWidths[col.key] || DEFAULT_RELATORIO_WIDTHS[col.key] || 180;
                           return (
                             <th 
                               key={col.key}
                               onClick={() => handleToggleSort(col.key)}
                               style={{ 
+                                width: `${colW}px`,
+                                minWidth: '60px',
                                 cursor: 'pointer', 
                                 userSelect: 'none',
-                                transition: 'all 0.15s ease'
+                                transition: 'all 0.15s ease',
+                                position: 'relative'
                               }}
                               title={`Clique para ordenar por ${col.label} (${isSorted && sortDirection === 'asc' ? 'Decrescente' : 'Crescente'})`}
                             >
-                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', width: 'calc(100% - 12px)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 <span>{col.label}</span>
                                 {isSorted ? (
                                   sortDirection === 'asc' ? (
-                                    <ArrowUp size={14} color="#818cf8" />
+                                    <ArrowUp size={14} color="#818cf8" style={{ flexShrink: 0 }} />
                                   ) : (
-                                    <ArrowDown size={14} color="#818cf8" />
+                                    <ArrowDown size={14} color="#818cf8" style={{ flexShrink: 0 }} />
                                   )
                                 ) : (
-                                  <ArrowUpDown size={13} style={{ opacity: 0.3 }} />
+                                  <ArrowUpDown size={13} style={{ opacity: 0.3, flexShrink: 0 }} />
                                 )}
                               </div>
+                              <div
+                                className="resizer"
+                                onClick={(e) => e.stopPropagation()}
+                                onMouseDown={(e) => handleMouseDownResize(e, col.key)}
+                                title="Arraste para redimensionar a largura da coluna"
+                              />
                             </th>
                           );
                         })}
@@ -1438,10 +1512,11 @@ export const Relatorios: React.FC = () => {
                         colaboradoresFiltrados.map(c => (
                           <tr key={c.id}>
                             {colunasAtivasConstrutor.map(col => {
+                              const colW = columnWidths[col.key] || DEFAULT_RELATORIO_WIDTHS[col.key] || 180;
                               // Renderização específica para foto
                               if (col.key === 'foto') {
                                 return (
-                                  <td key={col.key}>
+                                  <td key={col.key} style={{ width: `${colW}px` }}>
                                     {c.foto_url ? (
                                       <img src={c.foto_url} alt={c.nome} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
                                     ) : (
@@ -1456,7 +1531,7 @@ export const Relatorios: React.FC = () => {
                               // Renderização específica para status
                               if (col.key === 'status') {
                                 return (
-                                  <td key={col.key}>
+                                  <td key={col.key} style={{ width: `${colW}px` }}>
                                     <span style={{
                                       color: c.ativo !== false ? '#34d399' : '#fb7185',
                                       fontWeight: 700,
@@ -1471,7 +1546,7 @@ export const Relatorios: React.FC = () => {
                               // Renderização específica para cargo
                               if (col.key === 'cargo') {
                                 return (
-                                  <td key={col.key}>
+                                  <td key={col.key} style={{ width: `${colW}px` }}>
                                     <span className="cargo-badge" style={{ padding: '2px 8px', borderRadius: '6px', fontSize: '0.8rem' }}>
                                       {c.cargo || 'Não definido'}
                                     </span>
@@ -1482,7 +1557,7 @@ export const Relatorios: React.FC = () => {
                               // Renderização para campos personalizados e demais valores
                               const val = getValorCelula(c, col);
                               return (
-                                <td key={col.key} style={col.key === 'nome' ? { fontWeight: 600 } : undefined}>
+                                <td key={col.key} style={{ width: `${colW}px`, ...(col.key === 'nome' ? { fontWeight: 600 } : {}) }}>
                                   {val === 'Sim' ? (
                                     <span style={{ color: '#34d399', fontWeight: 600 }}>✓ Sim</span>
                                   ) : val === 'Não' ? (
@@ -1507,12 +1582,42 @@ export const Relatorios: React.FC = () => {
               <table className="custom-table">
                 <thead>
                   <tr>
-                    {geoCols.estado && <th>Estado (UF)</th>}
-                    {geoCols.cidade && <th>Cidade / Município</th>}
-                    {geoCols.ativos && <th style={{ textAlign: 'right' }}>Ativos</th>}
-                    {geoCols.inativos && <th style={{ textAlign: 'right' }}>Inativos</th>}
-                    {geoCols.total && <th style={{ textAlign: 'right' }}>Total Geral</th>}
-                    {geoCols.percentual && <th style={{ textAlign: 'right' }}>% do Headcount</th>}
+                    {geoCols.estado && (
+                      <th style={{ width: `${columnWidths.estado || DEFAULT_RELATORIO_WIDTHS.estado}px`, position: 'relative' }}>
+                        <span>Estado (UF)</span>
+                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'estado')} title="Arraste para redimensionar coluna" />
+                      </th>
+                    )}
+                    {geoCols.cidade && (
+                      <th style={{ width: `${columnWidths.cidade || DEFAULT_RELATORIO_WIDTHS.cidade}px`, position: 'relative' }}>
+                        <span>Cidade / Município</span>
+                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'cidade')} title="Arraste para redimensionar coluna" />
+                      </th>
+                    )}
+                    {geoCols.ativos && (
+                      <th style={{ textAlign: 'right', width: `${columnWidths.ativos || DEFAULT_RELATORIO_WIDTHS.ativos}px`, position: 'relative' }}>
+                        <span>Ativos</span>
+                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'ativos')} title="Arraste para redimensionar coluna" />
+                      </th>
+                    )}
+                    {geoCols.inativos && (
+                      <th style={{ textAlign: 'right', width: `${columnWidths.inativos || DEFAULT_RELATORIO_WIDTHS.inativos}px`, position: 'relative' }}>
+                        <span>Inativos</span>
+                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'inativos')} title="Arraste para redimensionar coluna" />
+                      </th>
+                    )}
+                    {geoCols.total && (
+                      <th style={{ textAlign: 'right', width: `${columnWidths.total || DEFAULT_RELATORIO_WIDTHS.total}px`, position: 'relative' }}>
+                        <span>Total Geral</span>
+                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'total')} title="Arraste para redimensionar coluna" />
+                      </th>
+                    )}
+                    {geoCols.percentual && (
+                      <th style={{ textAlign: 'right', width: `${columnWidths.percentual || DEFAULT_RELATORIO_WIDTHS.percentual}px`, position: 'relative' }}>
+                        <span>% do Headcount</span>
+                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'percentual')} title="Arraste para redimensionar coluna" />
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -1525,25 +1630,25 @@ export const Relatorios: React.FC = () => {
                   ) : (
                     dadosGeo.map(g => (
                       <tr key={`${g.estado}-${g.cidade}`}>
-                        {geoCols.estado && <td style={{ fontWeight: 700, color: '#818cf8' }}>{g.estado}</td>}
-                        {geoCols.cidade && <td style={{ fontWeight: 600 }}>{g.cidade}</td>}
+                        {geoCols.estado && <td style={{ width: `${columnWidths.estado || DEFAULT_RELATORIO_WIDTHS.estado}px`, fontWeight: 700, color: '#818cf8' }}>{g.estado}</td>}
+                        {geoCols.cidade && <td style={{ width: `${columnWidths.cidade || DEFAULT_RELATORIO_WIDTHS.cidade}px`, fontWeight: 600 }}>{g.cidade}</td>}
                         {geoCols.ativos && (
-                          <td style={{ textAlign: 'right', color: '#34d399', fontWeight: 700 }}>
+                          <td style={{ width: `${columnWidths.ativos || DEFAULT_RELATORIO_WIDTHS.ativos}px`, textAlign: 'right', color: '#34d399', fontWeight: 700 }}>
                             {g.ativos}
                           </td>
                         )}
                         {geoCols.inativos && (
-                          <td style={{ textAlign: 'right', color: '#fb7185', fontWeight: 600 }}>
+                          <td style={{ width: `${columnWidths.inativos || DEFAULT_RELATORIO_WIDTHS.inativos}px`, textAlign: 'right', color: '#fb7185', fontWeight: 600 }}>
                             {g.inativos}
                           </td>
                         )}
                         {geoCols.total && (
-                          <td style={{ textAlign: 'right', fontWeight: 800, color: '#f8fafc' }}>
+                          <td style={{ width: `${columnWidths.total || DEFAULT_RELATORIO_WIDTHS.total}px`, textAlign: 'right', fontWeight: 800, color: '#f8fafc' }}>
                             {g.total}
                           </td>
                         )}
                         {geoCols.percentual && (
-                          <td style={{ textAlign: 'right', color: '#38bdf8', fontWeight: 700 }}>
+                          <td style={{ width: `${columnWidths.percentual || DEFAULT_RELATORIO_WIDTHS.percentual}px`, textAlign: 'right', color: '#38bdf8', fontWeight: 700 }}>
                             {g.percentual}
                           </td>
                         )}
@@ -1559,12 +1664,42 @@ export const Relatorios: React.FC = () => {
               <table className="custom-table">
                 <thead>
                   <tr>
-                    {rbacCols.id && <th style={{ width: '60px' }}>ID</th>}
-                    {rbacCols.nome && <th>Nome do Usuário</th>}
-                    {rbacCols.email && <th>E-mail de Acesso</th>}
-                    {rbacCols.perfil && <th>Perfil de Acesso</th>}
-                    {rbacCols.tipo && <th>Tipo</th>}
-                    {rbacCols.status && <th style={{ textAlign: 'center', width: '100px' }}>Status</th>}
+                    {rbacCols.id && (
+                      <th style={{ width: `${columnWidths.id || DEFAULT_RELATORIO_WIDTHS.id}px`, position: 'relative' }}>
+                        <span>ID</span>
+                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'id')} title="Arraste para redimensionar coluna" />
+                      </th>
+                    )}
+                    {rbacCols.nome && (
+                      <th style={{ width: `${columnWidths.nome || DEFAULT_RELATORIO_WIDTHS.nome}px`, position: 'relative' }}>
+                        <span>Nome do Usuário</span>
+                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'nome')} title="Arraste para redimensionar coluna" />
+                      </th>
+                    )}
+                    {rbacCols.email && (
+                      <th style={{ width: `${columnWidths.email || DEFAULT_RELATORIO_WIDTHS.email}px`, position: 'relative' }}>
+                        <span>E-mail de Acesso</span>
+                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'email')} title="Arraste para redimensionar coluna" />
+                      </th>
+                    )}
+                    {rbacCols.perfil && (
+                      <th style={{ width: `${columnWidths.perfil || DEFAULT_RELATORIO_WIDTHS.perfil}px`, position: 'relative' }}>
+                        <span>Perfil de Acesso</span>
+                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'perfil')} title="Arraste para redimensionar coluna" />
+                      </th>
+                    )}
+                    {rbacCols.tipo && (
+                      <th style={{ width: `${columnWidths.tipo || DEFAULT_RELATORIO_WIDTHS.tipo}px`, position: 'relative' }}>
+                        <span>Tipo</span>
+                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'tipo')} title="Arraste para redimensionar coluna" />
+                      </th>
+                    )}
+                    {rbacCols.status && (
+                      <th style={{ textAlign: 'center', width: `${columnWidths.status || DEFAULT_RELATORIO_WIDTHS.status}px`, position: 'relative' }}>
+                        <span>Status</span>
+                        <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'status')} title="Arraste para redimensionar coluna" />
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -1577,18 +1712,18 @@ export const Relatorios: React.FC = () => {
                   ) : (
                     usuarios.map(u => (
                       <tr key={u.id}>
-                        {rbacCols.id && <td>#{u.id}</td>}
-                        {rbacCols.nome && <td style={{ fontWeight: 600 }}>{u.nome}</td>}
-                        {rbacCols.email && <td>{u.email}</td>}
+                        {rbacCols.id && <td style={{ width: `${columnWidths.id || DEFAULT_RELATORIO_WIDTHS.id}px` }}>#{u.id}</td>}
+                        {rbacCols.nome && <td style={{ width: `${columnWidths.nome || DEFAULT_RELATORIO_WIDTHS.nome}px`, fontWeight: 600 }}>{u.nome}</td>}
+                        {rbacCols.email && <td style={{ width: `${columnWidths.email || DEFAULT_RELATORIO_WIDTHS.email}px` }}>{u.email}</td>}
                         {rbacCols.perfil && (
-                          <td>
+                          <td style={{ width: `${columnWidths.perfil || DEFAULT_RELATORIO_WIDTHS.perfil}px` }}>
                             <span className={`badge-perfil ${u.perfil?.is_admin ? 'admin' : 'gestor-rh'}`}>
                               {u.perfil?.nome || 'Sem Perfil'}
                             </span>
                           </td>
                         )}
                         {rbacCols.tipo && (
-                          <td>
+                          <td style={{ width: `${columnWidths.tipo || DEFAULT_RELATORIO_WIDTHS.tipo}px` }}>
                             {u.perfil?.is_admin ? (
                               <span style={{ color: '#fbbf24', fontWeight: 700, fontSize: '0.8rem' }}>Administrador Master</span>
                             ) : (
@@ -1597,7 +1732,7 @@ export const Relatorios: React.FC = () => {
                           </td>
                         )}
                         {rbacCols.status && (
-                          <td style={{ textAlign: 'center' }}>
+                          <td style={{ width: `${columnWidths.status || DEFAULT_RELATORIO_WIDTHS.status}px`, textAlign: 'center' }}>
                             <span style={{
                               color: u.ativo !== false ? '#34d399' : '#fb7185',
                               fontWeight: 700,

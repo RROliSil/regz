@@ -169,11 +169,14 @@ F. Design e Temas Visuais:
 G. Persistência de Preferências do Usuário (LocalStorage):
 - Quantidade de itens por página na tabela ("regz_page_size").
 - Colunas visíveis selecionadas ("regz_visible_columns").
-- Larguras personalizadas das colunas redimensionáveis ("regz_column_widths").
+- Larguras personalizadas das colunas redimensionáveis na listagem de colaboradores ("regz_column_widths") e no módulo de relatórios ("regz_relatorios_column_widths").
 - Modo do gráfico de distribuição geográfica Cidades/Estados ("regz_home_geo_mode").
 
 H. Módulo de Relatórios & Exportações:
-- Seleção de relatório via Janela Dropdown unificada (Quadro de Colaboradores, Campos Personalizados, Distribuição Geográfica e Usuários/Perfis RBAC) com suporte visual padronizado aos 3 temas.
+- Seleção de relatório via Construtor Livre de Colunas, Distribuição Geográfica e Usuários/Perfis RBAC com suporte visual padronizado aos 3 temas.
+- Fixação dos Cabeçalhos das Tabelas (Sticky Header) através da classe `.table-sticky-wrapper`, mantendo os títulos das colunas fixados no topo do container durante a rolagem vertical de relatórios extensos nos 3 temas visuais.
+- Redimensionamento Manual de Colunas em todas as tabelas de relatórios via alças arrastáveis (`.resizer`) com persistência automática no LocalStorage (`regz_relatorios_column_widths`).
+- Ordenação interativa clicando diretamente no cabeçalho de cada coluna (alternando entre Crescente / Decrescente).
 - Botões de ação dispostos em linha (Seletor -> Botão Atualizar compacto só com ícone e animação de rotação 360° -> Exportar Excel CSV -> PDF / Imprimir).
 - Botão Exportar Excel (CSV) com fundo rgba(30,41,59,0.8) e borda verde no Modo Tema Padrão, fundo #1b1b1f no Modo Dark, e cores da tag Gestor de RH no Modo Claro.
 - Exportação em CSV/XLSX codificado com BOM UTF-8 (\uFEFF) para visualização imediata no Microsoft Excel sem desconfigurar acentos.
