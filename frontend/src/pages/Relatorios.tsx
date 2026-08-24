@@ -21,29 +21,9 @@ import {
   X,
   ArrowUp,
   ArrowDown,
-  ArrowUpDown
+  ArrowUpDown,
+  Eraser
 } from 'lucide-react';
-
-// Componente vetorial do ícone de Vassoura
-const BroomIcon: React.FC<{ size?: number; className?: string; style?: React.CSSProperties }> = ({ size = 15, className, style }) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-    style={style}
-  >
-    <path d="m14 4 6 6" />
-    <path d="m18 8-8.5 8.5a2.12 2.12 0 1 1-3-3L15 5" />
-    <path d="m3 21 6-6" />
-    <path d="M2 22s2-4 5-4 5 4 5 4-2 0-5 0-5 0Z" />
-  </svg>
-);
 
 interface Colaborador {
   id: number;
@@ -208,6 +188,22 @@ export const Relatorios: React.FC = () => {
 
     window.addEventListener('mousemove', onMouseMove);
     window.addEventListener('mouseup', onMouseUp);
+  };
+
+  // Orientação da Página para Impressão e PDF (Retrato vs Paisagem)
+  const [orientacaoPDF, setOrientacaoPDF] = useState<'portrait' | 'landscape'>(() => {
+    try {
+      const saved = localStorage.getItem('regz_relatorio_pdf_orientation');
+      if (saved === 'landscape' || saved === 'portrait') return saved;
+    } catch (e) {}
+    return 'portrait';
+  });
+
+  const handleSetOrientacaoPDF = (orientacao: 'portrait' | 'landscape') => {
+    setOrientacaoPDF(orientacao);
+    try {
+      localStorage.setItem('regz_relatorio_pdf_orientation', orientacao);
+    } catch (e) {}
   };
 
   // Seleção de Colunas no Construtor Livre (Keys de colunas padrão + IDs/Nomes de campos personalizados com prefixo 'custom_')
@@ -838,6 +834,16 @@ export const Relatorios: React.FC = () => {
       showSnackbar('Selecione ao menos 1 coluna para imprimir o relatório!', 'error');
       return;
     }
+
+    // Injetar ou atualizar regra de @page dinâmica de acordo com a orientação selecionada
+    let styleEl = document.getElementById('dynamic-print-page-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'dynamic-print-page-style';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.innerHTML = `@media print { @page { size: A4 ${orientacaoPDF}; margin: ${orientacaoPDF === 'landscape' ? '8mm 10mm' : '10mm 12mm'}; } }`;
+
     window.print();
   };
 
@@ -885,7 +891,28 @@ export const Relatorios: React.FC = () => {
           <button onClick={exportarCSV} className="btn-secondary btn-export-excel" title="Exportar Tabela para Excel/CSV">
             <FileSpreadsheet size={16} /> Exportar Excel (CSV)
           </button>
-          <button onClick={imprimirPDF} className="btn-primary btn-relatorio-primary" title="Imprimir ou Salvar em PDF A4">
+
+          {/* Seletor de Orientação do PDF / Impressão */}
+          <div className="pdf-orientation-toggle" title="Orientação da página para Impressão / PDF">
+            <button
+              type="button"
+              onClick={() => handleSetOrientacaoPDF('portrait')}
+              className={`orientation-btn ${orientacaoPDF === 'portrait' ? 'active' : ''}`}
+              title="Formato A4 Retrato (Vertical)"
+            >
+              Retrato
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSetOrientacaoPDF('landscape')}
+              className={`orientation-btn ${orientacaoPDF === 'landscape' ? 'active' : ''}`}
+              title="Formato A4 Paisagem (Horizontal - ideal para tabelas largas)"
+            >
+              Paisagem
+            </button>
+          </div>
+
+          <button onClick={imprimirPDF} className="btn-primary btn-relatorio-primary" title={`Imprimir ou Salvar em PDF A4 (${orientacaoPDF === 'landscape' ? 'Paisagem' : 'Retrato'})`}>
             <Printer size={16} /> PDF / Imprimir
           </button>
         </div>
@@ -1001,7 +1028,7 @@ export const Relatorios: React.FC = () => {
                 className="btn-secondary btn-builder-action btn-builder-clear"
                 title="Limpar seleção de colunas e redefinir filtros"
               >
-                <BroomIcon size={14} /> Limpar Filtros
+                <Eraser size={14} /> Limpar Filtros
               </button>
             </div>
           </div>
@@ -1389,7 +1416,7 @@ export const Relatorios: React.FC = () => {
                 style={{ height: '38px', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 title="Limpar todos os filtros da busca"
               >
-                <BroomIcon size={15} /> Limpar Filtros
+                <Eraser size={15} /> Limpar Filtros
               </button>
             </div>
           </div>
