@@ -94,7 +94,7 @@ export const Login: React.FC = () => {
               autoPlay
               muted
               playsInline
-              poster="/logo.png"
+              poster="/videos/poster_start.png"
               onEnded={(e) => {
                 const v = e.currentTarget;
                 v.pause();
