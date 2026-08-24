@@ -108,9 +108,6 @@ export const Login: React.FC = () => {
           <h1 className="login-title" style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-main)', margin: 0 }}>
             Regz <span className="text-gradient">Gestão</span>
           </h1>
-          <p className="login-subtitle" style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '6px' }}>
-            Acesso Restrito ao Sistema
-          </p>
         </div>
 
         {errorMsg && (
