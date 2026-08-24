@@ -217,6 +217,7 @@ export const Login: React.FC = () => {
             }}>
               <input
                 type="checkbox"
+                className="login-checkbox"
                 checked={rememberEmail}
                 onChange={(e) => {
                   setRememberEmail(e.target.checked);
@@ -225,15 +226,8 @@ export const Login: React.FC = () => {
                     localStorage.removeItem('regz_remember_email_enabled');
                   }
                 }}
-                style={{
-                  width: '16px',
-                  height: '16px',
-                  borderRadius: '4px',
-                  accentColor: '#6366f1',
-                  cursor: 'pointer'
-                }}
               />
-              Lembrar meu e-mail
+              <span>Lembrar meu e-mail</span>
             </label>
           </div>
 
