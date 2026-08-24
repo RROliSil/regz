@@ -2372,6 +2372,23 @@ th.col-acoes .col-resizer {
   border-color: rgba(255, 255, 255, 0.25) !important;
 }
 
+/* Botões de Ações de Auditoria no Modo Escuro (fundo #141416) */
+[data-theme="dark"] .btn-auditoria-action,
+[data-theme="dark"] .btn-auditoria-csv,
+[data-theme="dark"] .btn-auditoria-refresh {
+  background: #141416 !important;
+  color: #f4f4f5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+[data-theme="dark"] .btn-auditoria-action:hover,
+[data-theme="dark"] .btn-auditoria-csv:hover,
+[data-theme="dark"] .btn-auditoria-refresh:hover {
+  background: #1f1f23 !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
 /* Botão Remover Foto Atual (Fundo vermelho #f43f5e sem brilho em todos os temas) */
 .btn-remove-photo {
   background: #f43f5e !important;

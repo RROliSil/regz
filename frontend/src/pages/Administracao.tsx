@@ -1956,7 +1956,7 @@ export const Administracao: React.FC = () => {
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <button
                     onClick={exportarAuditoriaCSV}
-                    className="btn-secondary"
+                    className="btn-secondary btn-auditoria-action btn-auditoria-csv"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', padding: '7px 14px' }}
                     title="Exportar registros filtrados para planilha Excel/CSV"
                   >
@@ -1964,7 +1964,7 @@ export const Administracao: React.FC = () => {
                   </button>
                   <button
                     onClick={fetchAuditoria}
-                    className="btn-secondary"
+                    className="btn-secondary btn-auditoria-action btn-auditoria-refresh"
                     style={{ padding: '7px 12px', display: 'flex', alignItems: 'center' }}
                     title="Atualizar Logs"
                   >
