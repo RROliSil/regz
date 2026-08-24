@@ -2662,8 +2662,11 @@ select option,
     color: #64748b !important;
   }
 
-  .table-flex-wrapper {
+  .table-flex-wrapper,
+  .table-sticky-wrapper {
     overflow: visible !important;
+    max-height: none !important;
+    min-height: auto !important;
     width: 100% !important;
     max-width: 100% !important;
   }
@@ -2671,9 +2674,9 @@ select option,
   .custom-table {
     width: 100% !important;
     max-width: 100% !important;
-    table-layout: auto !important;
+    table-layout: fixed !important;
     border-collapse: collapse !important;
-    font-size: 9.5pt !important;
+    font-size: 9pt !important;
   }
 
   .custom-table th {
@@ -2681,18 +2684,25 @@ select option,
     color: #0f172a !important;
     border-bottom: 2px solid #cbd5e1 !important;
     border-right: none !important;
-    padding: 8px 10px !important;
+    padding: 6px 8px !important;
     text-align: left !important;
     font-weight: 700 !important;
+    position: static !important;
+    box-shadow: none !important;
   }
 
   .custom-table td {
     color: #1e293b !important;
     border-bottom: 1px solid #e2e8f0 !important;
     border-right: none !important;
-    padding: 8px 10px !important;
+    padding: 6px 8px !important;
     white-space: normal !important;
     word-break: break-word !important;
+  }
+
+  .resizer,
+  .col-resizer {
+    display: none !important;
   }
 
   .badge-perfil, .cargo-badge {
