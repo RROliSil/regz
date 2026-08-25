@@ -137,7 +137,6 @@ export const Login: React.FC = () => {
             <div style={{ position: 'relative' }}>
               <input
                 type="email"
-                placeholder="seu.email@empresa.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -158,7 +157,6 @@ export const Login: React.FC = () => {
             <div style={{ position: 'relative' }}>
               <input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 onKeyDown={(e) => setCapsLockActive(e.getModifierState('CapsLock'))}

@@ -307,6 +307,7 @@ J. Logs de Auditoria e Rastreabilidade de Usuários:
 6. Todas as requisições de API no frontend injetam globalmente o cabeçalho 'ngrok-skip-browser-warning: true'. Rotas alias '/regz' e '/regz/login' disponíveis.
 7. Suporte completo a PWA e Cache de Assets Estáticos através do Service Worker (/sw.js) e manifesto (/manifest.json), com títulos de página dinâmicos e intuitivos por rota (/home, /colaboradores, /relatorios, /campos, /administracao, /superadmrgz).
 8. Tratamento avançado de Autofill/Autocomplete nos inputs de Login com 'color-scheme: dark/light', preservando a legibilidade e contraste das letras durante o hover e seleção de sugestões salvas do Chrome/Edge.
+9. Campos de Login limpos e sem placeholders para garantir estética visual pura e minimalista no acesso ao sistema.
 
 ===============================================================================
 FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO
