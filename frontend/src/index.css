@@ -3668,7 +3668,10 @@ select option,
 
 .login-input {
   background: rgba(15, 23, 42, 0.6);
-  color: var(--text-main);
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  caret-color: #ffffff !important;
+  color-scheme: dark;
   border: 1px solid var(--card-border);
   transition: all 0.2s ease;
 }
@@ -3681,9 +3684,18 @@ select option,
 .login-input:-internal-autofill-previewed,
 .login-input:-internal-autofill-selected {
   -webkit-box-shadow: 0 0 0 1000px #0f172a inset !important;
-  -webkit-text-fill-color: var(--text-main, #ffffff) !important;
-  caret-color: var(--text-main, #ffffff) !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color: #ffffff !important;
+  caret-color: #ffffff !important;
+  color-scheme: dark !important;
   transition: background-color 50000s ease-in-out 0s;
+}
+
+[data-theme="light"] .login-input {
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  caret-color: #0f172a !important;
+  color-scheme: light;
 }
 
 [data-theme="light"] .login-input:-webkit-autofill,
@@ -3693,8 +3705,17 @@ select option,
 [data-theme="light"] .login-input:-internal-autofill-previewed,
 [data-theme="light"] .login-input:-internal-autofill-selected {
   -webkit-box-shadow: 0 0 0 1000px #ffffff inset !important;
-  -webkit-text-fill-color: #000000 !important;
-  caret-color: #000000 !important;
+  -webkit-text-fill-color: #0f172a !important;
+  color: #0f172a !important;
+  caret-color: #0f172a !important;
+  color-scheme: light !important;
+}
+
+[data-theme="dark"] .login-input {
+  color: #f4f4f5 !important;
+  -webkit-text-fill-color: #f4f4f5 !important;
+  caret-color: #f4f4f5 !important;
+  color-scheme: dark;
 }
 
 [data-theme="dark"] .login-input:-webkit-autofill,
@@ -3705,7 +3726,9 @@ select option,
 [data-theme="dark"] .login-input:-internal-autofill-selected {
   -webkit-box-shadow: 0 0 0 1000px #121214 inset !important;
   -webkit-text-fill-color: #f4f4f5 !important;
+  color: #f4f4f5 !important;
   caret-color: #f4f4f5 !important;
+  color-scheme: dark !important;
 }
 
 /* Checkbox customizado para respeitar temas em todo o webapp */

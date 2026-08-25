@@ -143,6 +143,10 @@ export const Login: React.FC = () => {
                 disabled={loading}
                 className="login-input"
                 style={{ paddingLeft: '42px' }}
+                autoComplete="username"
+                spellCheck={false}
+                autoCorrect="off"
+                autoCapitalize="none"
                 required
               />
               <Mail size={18} className="login-input-icon" color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -163,6 +167,8 @@ export const Login: React.FC = () => {
                 disabled={loading}
                 className="login-input"
                 style={{ paddingLeft: '42px', paddingRight: '42px' }}
+                autoComplete="current-password"
+                spellCheck={false}
                 required
               />
               <Lock size={18} className="login-input-icon" color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
