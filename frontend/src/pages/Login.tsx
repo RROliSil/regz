@@ -143,7 +143,6 @@ export const Login: React.FC = () => {
                 disabled={loading}
                 className="login-input"
                 style={{ paddingLeft: '42px' }}
-                autoFocus
                 required
               />
               <Mail size={18} className="login-input-icon" color="var(--text-muted)" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
