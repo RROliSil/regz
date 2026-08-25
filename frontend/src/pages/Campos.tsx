@@ -296,8 +296,8 @@ export const Campos: React.FC = () => {
         </div>
       )}
 
-      {/* Grid com 4 Cards Específicos para Criar Campo */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '24px' }}>
+      {/* Grid com 4 Cards Específicos para Criar Campo (Layout 2x2 Fixo) */}
+      <div className="campos-cards-grid">
         
         {/* ======================================================== */}
         {/* CARD 1: CRIAR CAMPO NUMÉRICO */}
