@@ -266,6 +266,8 @@ export function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<LoginRoute />} />
+              <Route path="/regz" element={<LoginRoute />} />
+              <Route path="/regz/login" element={<LoginRoute />} />
               <Route path="/*" element={<ProtectedLayout />} />
             </Routes>
           </BrowserRouter>

@@ -302,10 +302,12 @@ J. Logs de Auditoria e Rastreabilidade de Usuários:
 2. No Portainer.io, abrir a Stack 'regz' e clicar no botão 'Pull and redeploy'.
 3. Importante: Manter a chave 'Re-pull image' DESMARCADA/DESATIVADA no popup para evitar tempo limite (TLS handshake timeout) na comunicação externa com o Docker Hub.
 4. O container do frontend subirá na porta 8280 e se conectará ao container do banco PostgreSQL na porta 5434.
-5. O container 'regz-ngrok-tunnel' subirá automaticamente junto com a stack expondo a aplicação online com certificado SSL no endereço público permanente:
+5. O container 'regz-ngrok-tunnel' subirá automaticamente junto com a stack na região América do Sul (São Paulo, --region=sa), expondo a aplicação online com certificado SSL no endereço público permanente:
    https://dining-product-giggle.ngrok-free.dev
+6. Todas as requisições de API no frontend injetam globalmente o cabeçalho 'ngrok-skip-browser-warning: true' para comunicação transparente. Rotas alias '/regz' e '/regz/login' disponíveis.
 
 ===============================================================================
 FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO
 ===============================================================================
+
 

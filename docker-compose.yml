@@ -51,6 +51,7 @@ services:
       - "http"
       - "frontend:4000"
       - "--url=https://dining-product-giggle.ngrok-free.dev"
+      - "--region=sa"
     depends_on:
       - frontend
 
