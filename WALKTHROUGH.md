@@ -1,27 +1,33 @@
 # Walkthrough: Resumo das Modificações Realizadas
 
-Este arquivo está localizado diretamente na raiz do seu projeto (`C:\rafael rafael\ProjetosDev\regz\WALKTHROUGH.md`).
+Este arquivo está localizado diretamente na raiz do seu projeto (`C:\rafaelrafael\ProjetosDev\regz\WALKTHROUGH.md`).
 
 ---
 
 ## 1. O Que Foi Realizado Recentemente
 
-### A. Adequação de Caminhos do Projeto
-- Atualizado o endereço raiz para `C:\rafael rafael\ProjetosDev\regz` em todos os links e arquivos de documentação.
+### A. Título Dinâmico por Rota (`App.tsx`)
+- Implementado o componente `RouteTitleTracker` que monitora as trocas de rotas e atualiza dinamicamente o `<title>` da aba do navegador para cada módulo:
+  - `/home` -> `Regz - Home & Indicadores`
+  - `/colaboradores` -> `Regz - Gestão de Colaboradores`
+  - `/campos` -> `Regz - Campos Personalizados`
+  - `/relatorios` -> `Regz - Modelos & Relatórios`
+  - `/administracao` -> `Regz - Administração & Acessos`
+  - `/configuracoes` -> `Regz - Configurações do Sistema`
+  - `/superadmrgz` -> `Regz - Portal Super Admin Master`
+  - `/login` / `/regz` -> `Regz - Acesso ao Sistema`
 
-### B. Estabilização do Túnel Online (Ngrok)
-- Configurado o container `regz-ngrok-tunnel` no `docker-compose.yml` com a região de São Paulo (`--region=sa`) e a URL oficial `https://dining-product-giggle.ngrok-free.dev`.
-- Injetado o cabeçalho `ngrok-skip-browser-warning: "true"` globalmente no `main.tsx` para todas as chamadas de API.
-- Criadas as rotas alias `/regz` e `/regz/login` no `App.tsx`.
-
-### C. Padronização Visual de Checkboxes
-- Aplicada a geometria estrita quadrada `17px` x `17px` e as cores de todos os temas (Padrão, Escuro e Claro) para todos os checkboxes do sistema.
+### B. Cache de Assets Estáticos e PWA (`sw.js` & `manifest.json`)
+- Criado o Service Worker oficial `sw.js` com estratégia Stale-While-Revalidate para fontes, CSS, scripts Vite e ícones, acelerando drasticamente o carregamento em redes móveis e permitindo a instalação do aplicativo na tela inicial do celular ou desktop.
+- As chamadas de API (`/api/*`) são mantidas sempre pela rede em tempo real.
+- Criado o arquivo `manifest.json` e integrado com metadados no `index.html`.
+- Registrado o Service Worker no `main.tsx`.
 
 ---
 
 ## 2. Status dos Arquivos
 
-- [IMPLEMENTATION_PLAN.md](file:///C:/rafael%20rafael/ProjetosDev/regz/IMPLEMENTATION_PLAN.md)
-- [WALKTHROUGH.md](file:///C:/rafael%20rafael/ProjetosDev/regz/WALKTHROUGH.md)
-- [ESTRUTURA_E_REGRAS_DO_SISTEMA.txt](file:///C:/rafael%20rafael/ProjetosDev/regz/ESTRUTURA_E_REGRAS_DO_SISTEMA.txt)
-- [docker-compose.yml](file:///C:/rafael%20rafael/ProjetosDev/regz/docker-compose.yml)
+- [IMPLEMENTATION_PLAN.md](file:///C:/rafaelrafael/ProjetosDev/regz/IMPLEMENTATION_PLAN.md)
+- [WALKTHROUGH.md](file:///C:/rafaelrafael/ProjetosDev/regz/WALKTHROUGH.md)
+- [ESTRUTURA_E_REGRAS_DO_SISTEMA.txt](file:///C:/rafaelrafael/ProjetosDev/regz/ESTRUTURA_E_REGRAS_DO_SISTEMA.txt)
+- [docker-compose.yml](file:///C:/rafaelrafael/ProjetosDev/regz/docker-compose.yml)

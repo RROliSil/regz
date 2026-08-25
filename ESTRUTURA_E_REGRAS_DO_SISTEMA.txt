@@ -305,10 +305,12 @@ J. Logs de Auditoria e Rastreabilidade de Usuários:
 5. O container 'regz-ngrok-tunnel' subirá automaticamente na região América do Sul (--region=sa):
    https://dining-product-giggle.ngrok-free.dev
 6. Todas as requisições de API no frontend injetam globalmente o cabeçalho 'ngrok-skip-browser-warning: true'. Rotas alias '/regz' e '/regz/login' disponíveis.
+7. Suporte completo a PWA e Cache de Assets Estáticos através do Service Worker (/sw.js) e manifesto (/manifest.json), com títulos de página dinâmicos e intuitivos por rota (/home, /colaboradores, /relatorios, /campos, /administracao, /superadmrgz).
 
 ===============================================================================
 FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO
 ===============================================================================
+
 
 
 

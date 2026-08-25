@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -14,6 +14,37 @@ import { Login } from './pages/Login';
 import { SuperAdmin } from './pages/SuperAdmin';
 import { PermissoesAba } from './types/auth';
 import { Loader2, Eye, AlertTriangle } from 'lucide-react';
+
+const RouteTitleTracker: React.FC = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    const path = location.pathname.toLowerCase();
+    let title = 'Regz - Gestão de Pessoas';
+
+    if (path.includes('/home')) {
+      title = 'Regz - Home & Indicadores';
+    } else if (path.includes('/colaboradores')) {
+      title = 'Regz - Gestão de Colaboradores';
+    } else if (path.includes('/campos')) {
+      title = 'Regz - Campos Personalizados';
+    } else if (path.includes('/relatorios')) {
+      title = 'Regz - Modelos & Relatórios';
+    } else if (path.includes('/administracao')) {
+      title = 'Regz - Administração & Acessos';
+    } else if (path.includes('/configuracoes')) {
+      title = 'Regz - Configurações do Sistema';
+    } else if (path.includes('/superadmrgz')) {
+      title = 'Regz - Portal Super Admin Master';
+    } else if (path.includes('/login') || path.includes('/regz')) {
+      title = 'Regz - Acesso ao Sistema';
+    }
+
+    document.title = title;
+  }, [location]);
+
+  return null;
+};
 
 const ProtectedLayout: React.FC = () => {
   const { usuario, loading, temPermissao } = useAuth();
@@ -264,6 +295,7 @@ export function App() {
       <AuthProvider>
         <SnackbarProvider>
           <BrowserRouter>
+            <RouteTitleTracker />
             <Routes>
               <Route path="/login" element={<LoginRoute />} />
               <Route path="/regz" element={<LoginRoute />} />
