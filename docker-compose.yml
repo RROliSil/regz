@@ -55,6 +55,14 @@ services:
     depends_on:
       - frontend
 
+  localtunnel:
+    image: efrecon/localtunnel:latest
+    container_name: regz-localtunnel
+    restart: always
+    command: "--port 4000 --host https://localtunnel.me --subdomain regz-gestao --local-host frontend"
+    depends_on:
+      - frontend
+
 volumes:
   regz_postgres_data:
     driver: local
