@@ -1227,7 +1227,7 @@ th.col-acoes .col-resizer {
   color: var(--text-muted);
 }
 
-.form-group input {
+.form-group input:not([type="checkbox"]):not([type="radio"]) {
   background: rgba(15, 23, 42, 0.8);
   border: 1px solid var(--card-border);
   padding: 10px 14px;
@@ -1239,7 +1239,7 @@ th.col-acoes .col-resizer {
   width: 100%;
 }
 
-.form-group input:focus {
+.form-group input:not([type="checkbox"]):not([type="radio"]):focus {
   border-color: var(--accent-purple);
   box-shadow: 0 0 12px rgba(99, 102, 241, 0.3);
 }
@@ -3710,83 +3710,110 @@ select option,
 
 /* Checkbox customizado para respeitar temas em todo o webapp */
 input[type="checkbox"],
-.login-checkbox {
-  appearance: none;
-  -webkit-appearance: none;
-  width: 17px;
-  height: 17px;
-  border-radius: 5px;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1.5px solid var(--card-border);
-  cursor: pointer;
-  display: inline-grid;
-  place-content: center;
-  margin: 0;
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  position: relative;
-  vertical-align: middle;
+.login-checkbox,
+.form-group input[type="checkbox"],
+.checkbox-label input[type="checkbox"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 17px !important;
+  min-width: 17px !important;
+  max-width: 17px !important;
+  height: 17px !important;
+  min-height: 17px !important;
+  max-height: 17px !important;
+  padding: 0 !important;
+  border-radius: 5px !important;
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1.5px solid var(--card-border) !important;
+  cursor: pointer !important;
+  display: inline-grid !important;
+  place-content: center !important;
+  margin: 0 !important;
+  transition: all 0.2s ease !important;
+  flex-shrink: 0 !important;
+  position: relative !important;
+  vertical-align: middle !important;
+  box-sizing: border-box !important;
 }
 
 input[type="checkbox"]:hover,
-.login-checkbox:hover {
-  border-color: #6366f1;
-  box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
+.login-checkbox:hover,
+.form-group input[type="checkbox"]:hover,
+.checkbox-label input[type="checkbox"]:hover {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.3) !important;
 }
 
 input[type="checkbox"]:checked,
-.login-checkbox:checked {
+.login-checkbox:checked,
+.form-group input[type="checkbox"]:checked,
+.checkbox-label input[type="checkbox"]:checked {
   background: #6366f1 !important;
   border-color: #6366f1 !important;
-  box-shadow: 0 0 10px rgba(99, 102, 241, 0.45);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.45) !important;
 }
 
 input[type="checkbox"]:checked::before,
-.login-checkbox:checked::before {
-  content: "";
-  width: 8px;
-  height: 4.5px;
-  border-left: 2px solid #ffffff;
-  border-bottom: 2px solid #ffffff;
-  transform: rotate(-45deg) translate(1px, -1px);
+.login-checkbox:checked::before,
+.form-group input[type="checkbox"]:checked::before,
+.checkbox-label input[type="checkbox"]:checked::before {
+  content: "" !important;
+  width: 8px !important;
+  height: 4.5px !important;
+  border-left: 2px solid #ffffff !important;
+  border-bottom: 2px solid #ffffff !important;
+  transform: rotate(-45deg) translate(1px, -1px) !important;
+  display: block !important;
 }
 
 input[type="checkbox"]:disabled,
 .login-checkbox:disabled {
-  opacity: 0.5;
+  opacity: 0.5 !important;
   cursor: not-allowed !important;
 }
 
 [data-theme="light"] input[type="checkbox"],
-[data-theme="light"] .login-checkbox {
+[data-theme="light"] .login-checkbox,
+[data-theme="light"] .form-group input[type="checkbox"],
+[data-theme="light"] .checkbox-label input[type="checkbox"] {
   background: #ffffff !important;
   border: 1.5px solid #cbd5e1 !important;
 }
 
 [data-theme="light"] input[type="checkbox"]:hover,
-[data-theme="light"] .login-checkbox:hover {
+[data-theme="light"] .login-checkbox:hover,
+[data-theme="light"] .form-group input[type="checkbox"]:hover,
+[data-theme="light"] .checkbox-label input[type="checkbox"]:hover {
   border-color: #6366f1 !important;
 }
 
 [data-theme="light"] input[type="checkbox"]:checked,
-[data-theme="light"] .login-checkbox:checked {
+[data-theme="light"] .login-checkbox:checked,
+[data-theme="light"] .form-group input[type="checkbox"]:checked,
+[data-theme="light"] .checkbox-label input[type="checkbox"]:checked {
   background: #6366f1 !important;
   border-color: #6366f1 !important;
 }
 
 [data-theme="dark"] input[type="checkbox"],
-[data-theme="dark"] .login-checkbox {
+[data-theme="dark"] .login-checkbox,
+[data-theme="dark"] .form-group input[type="checkbox"],
+[data-theme="dark"] .checkbox-label input[type="checkbox"] {
   background: #121214 !important;
   border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
 }
 
 [data-theme="dark"] input[type="checkbox"]:hover,
-[data-theme="dark"] .login-checkbox:hover {
+[data-theme="dark"] .login-checkbox:hover,
+[data-theme="dark"] .form-group input[type="checkbox"]:hover,
+[data-theme="dark"] .checkbox-label input[type="checkbox"]:hover {
   border-color: #6366f1 !important;
 }
 
 [data-theme="dark"] input[type="checkbox"]:checked,
-[data-theme="dark"] .login-checkbox:checked {
+[data-theme="dark"] .login-checkbox:checked,
+[data-theme="dark"] .form-group input[type="checkbox"]:checked,
+[data-theme="dark"] .checkbox-label input[type="checkbox"]:checked {
   background: #6366f1 !important;
   border-color: #6366f1 !important;
 }
