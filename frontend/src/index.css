@@ -548,11 +548,7 @@ h1, h2, h3, h4, h5, h6 {
   color: #ffffff;
 }
 
-.checkbox-label input[type="checkbox"] {
-  accent-color: var(--accent-purple);
-  width: 16px;
-  height: 16px;
-}
+
 
 /* Custom Select Dropdown */
 .form-group select.custom-select {
@@ -3712,7 +3708,8 @@ select option,
   caret-color: #f4f4f5 !important;
 }
 
-/* Checkbox customizado para respeitar temas */
+/* Checkbox customizado para respeitar temas em todo o webapp */
+input[type="checkbox"],
 .login-checkbox {
   appearance: none;
   -webkit-appearance: none;
@@ -3728,19 +3725,23 @@ select option,
   transition: all 0.2s ease;
   flex-shrink: 0;
   position: relative;
+  vertical-align: middle;
 }
 
+input[type="checkbox"]:hover,
 .login-checkbox:hover {
   border-color: #6366f1;
   box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
 }
 
+input[type="checkbox"]:checked,
 .login-checkbox:checked {
   background: #6366f1 !important;
   border-color: #6366f1 !important;
   box-shadow: 0 0 10px rgba(99, 102, 241, 0.45);
 }
 
+input[type="checkbox"]:checked::before,
 .login-checkbox:checked::before {
   content: "";
   width: 8px;
@@ -3750,29 +3751,41 @@ select option,
   transform: rotate(-45deg) translate(1px, -1px);
 }
 
+input[type="checkbox"]:disabled,
+.login-checkbox:disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+}
+
+[data-theme="light"] input[type="checkbox"],
 [data-theme="light"] .login-checkbox {
   background: #ffffff !important;
   border: 1.5px solid #cbd5e1 !important;
 }
 
+[data-theme="light"] input[type="checkbox"]:hover,
 [data-theme="light"] .login-checkbox:hover {
   border-color: #6366f1 !important;
 }
 
+[data-theme="light"] input[type="checkbox"]:checked,
 [data-theme="light"] .login-checkbox:checked {
   background: #6366f1 !important;
   border-color: #6366f1 !important;
 }
 
+[data-theme="dark"] input[type="checkbox"],
 [data-theme="dark"] .login-checkbox {
   background: #121214 !important;
   border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
 }
 
+[data-theme="dark"] input[type="checkbox"]:hover,
 [data-theme="dark"] .login-checkbox:hover {
   border-color: #6366f1 !important;
 }
 
+[data-theme="dark"] input[type="checkbox"]:checked,
 [data-theme="dark"] .login-checkbox:checked {
   background: #6366f1 !important;
   border-color: #6366f1 !important;
