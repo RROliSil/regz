@@ -296,13 +296,16 @@ J. Logs de Auditoria e Rastreabilidade de Usuários:
   - Exportação direta dos registros filtrados para planilha Excel/CSV em UTF-8.
 
 
-4. INSTRUÇÕES DE EXECUÇÃO E DEPLOY NO PORTAINER.IO
+4. INSTRUÇÕES DE EXECUÇÃO E DEPLOY NO PORTAINER.IO & ACESSO ONLINE VIA NGROK
 -------------------------------------------------------------------------------
 1. Toda alteração no código deve ser commitada e enviada via 'git push origin main'.
 2. No Portainer.io, abrir a Stack 'regz' e clicar no botão 'Pull and redeploy'.
 3. Importante: Manter a chave 'Re-pull image' DESMARCADA/DESATIVADA no popup para evitar tempo limite (TLS handshake timeout) na comunicação externa com o Docker Hub.
 4. O container do frontend subirá na porta 8280 e se conectará ao container do banco PostgreSQL na porta 5434.
+5. O container 'regz-ngrok-tunnel' subirá automaticamente junto com a stack expondo a aplicação online com certificado SSL no endereço público permanente:
+   https://dining-product-giggle.ngrok-free.dev
 
 ===============================================================================
 FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO
 ===============================================================================
+
