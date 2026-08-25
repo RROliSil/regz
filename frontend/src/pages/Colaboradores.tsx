@@ -33,7 +33,7 @@ const DEFAULT_COLUMN_WIDTHS: ColumnWidths = {
   endereco: 240,
   cidade: 160,
   criado_em: 130,
-  acoes: 165
+  acoes: 195
 };
 
 import { useAuth } from '../context/AuthContext';
@@ -68,6 +68,9 @@ export const Colaboradores: React.FC = () => {
   // Modal de Crachá Digital & QR Code
   const [selectedColabQrCode, setSelectedColabQrCode] = useState<Colaborador | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+
+  // Modal Lightbox para exibição de Foto Grande ao Clicar
+  const [expandedPhotoUrl, setExpandedPhotoUrl] = useState<string | null>(null);
 
   const openQrModal = (colab: Colaborador) => {
     setSelectedColabQrCode(colab);
@@ -1023,7 +1026,7 @@ export const Colaboradores: React.FC = () => {
                     <div className="resizer" onMouseDown={(e) => handleResizeStart('criado_em', e)} />
                   </th>
                 )}
-                <th className="col-acoes" style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, minWidth: '165px' }}>
+                <th className="col-acoes" style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, minWidth: '195px' }}>
                   Ações
                 </th>
               </tr>
@@ -1154,7 +1157,7 @@ export const Colaboradores: React.FC = () => {
                     )}
 
                     {/* Coluna Ações Centralizada */}
-                    <td className="col-acoes" style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, minWidth: '165px', whiteSpace: 'nowrap' }}>
+                    <td className="col-acoes" style={{ textAlign: 'center', width: `${columnWidths.acoes}px`, minWidth: '195px', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'inline-flex', gap: '8px', justifyContent: 'center' }}>
                         <button
                           onClick={(e) => {
@@ -1290,7 +1293,16 @@ export const Colaboradores: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', padding: '10px 0' }}>
-              <div className="avatar-preview-large">
+              <div
+                className="avatar-preview-large"
+                style={{ cursor: targetPhotoColaborador.foto_url ? 'zoom-in' : 'default' }}
+                onClick={() => {
+                  if (targetPhotoColaborador.foto_url) {
+                    setExpandedPhotoUrl(targetPhotoColaborador.foto_url);
+                  }
+                }}
+                title={targetPhotoColaborador.foto_url ? "Clique para ver a foto ampliada em tela cheia" : undefined}
+              >
                 {targetPhotoColaborador.foto_url ? (
                   <img src={targetPhotoColaborador.foto_url} alt={targetPhotoColaborador.nome} />
                 ) : (
@@ -1317,6 +1329,70 @@ export const Colaboradores: React.FC = () => {
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Lightbox de Foto Ampliada em Alta Resolução */}
+      {expandedPhotoUrl && (
+        <div
+          className="modal-backdrop"
+          style={{
+            zIndex: 11000,
+            background: 'rgba(0, 0, 0, 0.85)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'zoom-out'
+          }}
+          onClick={() => setExpandedPhotoUrl(null)}
+        >
+          <div
+            style={{
+              position: 'relative',
+              maxWidth: '90vw',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setExpandedPhotoUrl(null)}
+              style={{
+                position: 'absolute',
+                top: '-45px',
+                right: '0',
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: 'none',
+                color: '#ffffff',
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'background 0.2s ease'
+              }}
+              title="Fechar visualização ampliada"
+            >
+              <X size={22} />
+            </button>
+            <img
+              src={expandedPhotoUrl}
+              alt="Foto do Colaborador Ampliada"
+              style={{
+                maxWidth: 'min(500px, 85vw)',
+                maxHeight: '75vh',
+                borderRadius: '16px',
+                border: '3px solid rgba(255, 255, 255, 0.25)',
+                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
+                objectFit: 'contain'
+              }}
+            />
           </div>
         </div>
       )}
