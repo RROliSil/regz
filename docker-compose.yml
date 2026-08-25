@@ -49,8 +49,8 @@ services:
       - NGROK_AUTHTOKEN=3IQ56JVfEXPsOXQK1Cvrwq07L4c_x9L953LsceNkFmEFSBoe
     command:
       - "http"
-      - "--domain=dining-product-giggle.ngrok-free.dev"
       - "frontend:4000"
+      - "--url=https://dining-product-giggle.ngrok-free.dev"
     depends_on:
       - frontend
 
