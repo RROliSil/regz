@@ -86,7 +86,7 @@ const ProtectedLayout: React.FC = () => {
   }
 
   if (!usuario) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/Regz" replace />;
   }
 
   if (isSuperAdmin) {
@@ -297,9 +297,10 @@ export function App() {
           <BrowserRouter>
             <RouteTitleTracker />
             <Routes>
-              <Route path="/login" element={<LoginRoute />} />
+              <Route path="/Regz" element={<LoginRoute />} />
               <Route path="/regz" element={<LoginRoute />} />
-              <Route path="/regz/login" element={<LoginRoute />} />
+              <Route path="/login" element={<Navigate to="/Regz" replace />} />
+              <Route path="/regz/login" element={<Navigate to="/Regz" replace />} />
               <Route path="/*" element={<ProtectedLayout />} />
             </Routes>
           </BrowserRouter>
