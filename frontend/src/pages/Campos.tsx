@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CampoCustomizado } from '../types/auth';
-import { Plus, Trash2, Loader2, Check, AlertCircle, Type, Hash, ListFilter, Eye, X, CheckSquare, RotateCcw, PowerOff } from 'lucide-react';
+import { Plus, Loader2, Check, AlertCircle, Type, Hash, ListFilter, Eye, X, CheckSquare, RotateCcw, PowerOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSnackbar } from '../context/SnackbarContext';
 
@@ -249,22 +249,7 @@ export const Campos: React.FC = () => {
     }
   };
 
-  // Remover um Campo Personalizado Permanentemente
-  const handleDeleteCampo = async (id: number, nome: string) => {
-    if (confirm(`⚠️ ATENÇÃO: Deseja realmente EXCLUIR PERMANENTEMENTE o campo "${nome}"?\n\nTodos os dados históricos preenchidos pelos colaboradores neste campo serão apagados em cascata.\n\nDica: Se você deseja apenas ocultar de novos cadastros sem perder os dados existentes, utilize o botão Inativar.`)) {
-      try {
-        const res = await fetch(`/api/campos-customizados/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
-        if (res.ok) {
-          showSnackbar(`Campo "${nome}" excluído permanentemente!`, 'success');
-          fetchCampos();
-        } else {
-          showSnackbar('Erro ao excluir campo', 'error');
-        }
-      } catch (err) {
-        showSnackbar('Erro ao comunicar com o servidor', 'error');
-      }
-    }
-  };
+
 
   const getTipoBadge = (tipo: string) => {
     switch (tipo) {
@@ -756,10 +741,18 @@ export const Campos: React.FC = () => {
         <div className="modal-backdrop">
           <div
             className="modal-content glass-panel animate-fadeIn"
-            style={{ width: '900px', maxWidth: '95vw', padding: '0', overflow: 'hidden' }}
+            style={{
+              width: '95vw',
+              maxWidth: '1450px',
+              maxHeight: '92vh',
+              padding: '0',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden'
+            }}
           >
             {/* Modal Header com Posição Relativa e Margem 0 (Impede corte do título e do X) */}
-            <div className="modal-header" style={{ position: 'relative', top: 0, margin: 0, padding: '22px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="modal-header" style={{ position: 'relative', top: 0, margin: 0, padding: '22px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255, 255, 255, 0.1)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <Eye size={22} color="#5e5eee" />
                 <h3 className="modal-title" style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>
@@ -776,29 +769,29 @@ export const Campos: React.FC = () => {
               </button>
             </div>
 
-            {/* Modal Table Content (Padrão: sem rolagem horizontal, colunas arrastáveis) */}
-            <div style={{ padding: '20px 24px' }}>
-              <div className="table-flex-wrapper" style={{ overflowX: 'hidden' }}>
-                <table className="custom-table" style={{ tableLayout: 'fixed', width: '100%' }}>
+            {/* Modal Table Content com Rolagem Horizontal e Vertical Padronizadas */}
+            <div className="custom-scrollbar" style={{ padding: '20px 28px', overflowY: 'auto', flex: 1, maxHeight: 'calc(92vh - 85px)' }}>
+              <div className="table-flex-wrapper custom-scrollbar" style={{ overflowX: 'auto', width: '100%' }}>
+                <table className="custom-table" style={{ minWidth: '900px', width: '100%' }}>
                   <thead>
                     <tr>
-                      <th style={{ width: `${colWidths.nome}px`, position: 'relative' }}>
+                      <th style={{ width: `${colWidths.nome}px`, minWidth: '180px', position: 'relative' }}>
                         Nome do Campo
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'nome')} />
                       </th>
-                      <th style={{ width: `${colWidths.tipo}px`, position: 'relative' }}>
+                      <th style={{ width: `${colWidths.tipo}px`, minWidth: '140px', position: 'relative' }}>
                         Tipo
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'tipo')} />
                       </th>
-                      <th style={{ width: `${colWidths.regras}px`, position: 'relative' }}>
+                      <th style={{ width: `${colWidths.regras}px`, minWidth: '260px', position: 'relative' }}>
                         Regras / Opções
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'regras')} />
                       </th>
-                      <th style={{ width: `${colWidths.obrigatorio}px`, position: 'relative' }}>
+                      <th style={{ width: `${colWidths.obrigatorio}px`, minWidth: '110px', position: 'relative' }}>
                         Obrigatório
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'obrigatorio')} />
                       </th>
-                      <th style={{ width: '110px', minWidth: '110px', maxWidth: '110px', textAlign: 'center' }}>
+                      <th style={{ width: '80px', minWidth: '80px', maxWidth: '80px', textAlign: 'center' }}>
                         Ações
                       </th>
                     </tr>
@@ -892,7 +885,8 @@ export const Campos: React.FC = () => {
                                     border: '1px solid rgba(251, 146, 60, 0.3)',
                                     opacity: podeEditar ? 1 : 0.4,
                                     cursor: podeEditar ? 'pointer' : 'not-allowed',
-                                    padding: '6px 8px'
+                                    padding: '6px 10px',
+                                    borderRadius: '6px'
                                   }}
                                   title={podeEditar ? "Inativar campo (Ocultar de novos cadastros sem apagar dados)" : "Ação desativada: Seu perfil permite apenas visualização"}
                                 >
@@ -906,27 +900,14 @@ export const Campos: React.FC = () => {
                                   style={{
                                     opacity: podeEditar ? 1 : 0.4,
                                     cursor: podeEditar ? 'pointer' : 'not-allowed',
-                                    padding: '6px 8px'
+                                    padding: '6px 10px',
+                                    borderRadius: '6px'
                                   }}
                                   title={podeEditar ? "Reativar campo" : "Ação desativada: Seu perfil permite apenas visualização"}
                                 >
                                   <RotateCcw size={14} />
                                 </button>
                               )}
-
-                              <button
-                                onClick={() => podeEditar && c.id && handleDeleteCampo(c.id, c.nome)}
-                                className="btn-action delete"
-                                disabled={!podeEditar}
-                                style={{
-                                  opacity: podeEditar ? 1 : 0.4,
-                                  cursor: podeEditar ? 'pointer' : 'not-allowed',
-                                  padding: '6px 8px'
-                                }}
-                                title={podeEditar ? "Excluir permanentemente do banco" : "Ação desativada: Seu perfil permite apenas visualização"}
-                              >
-                                <Trash2 size={14} />
-                              </button>
                             </div>
                           </td>
                         </tr>
