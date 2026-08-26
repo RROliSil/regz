@@ -2730,8 +2730,14 @@ select option,
   .search-box,
   .nav-section-label,
   .sidebar-footer,
+  .snackbar-container,
+  .snackbar-toast,
+  .snackbar-timer-bar,
+  [class*="snackbar"],
   .app-layout > *:not(.main-viewport) {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
   }
 
   .app-layout,
@@ -2814,18 +2820,35 @@ select option,
     break-inside: avoid !important;
   }
 
-  .custom-table th {
-    background-color: #f1f5f9 !important;
+  /* Cabeçalho da tabela 100% branco com texto preto em qualquer tema */
+  .custom-table th,
+  .custom-table thead th,
+  .table-sticky-wrapper .custom-table thead th,
+  [data-theme="dark"] .table-sticky-wrapper .custom-table thead th,
+  [data-theme="dark"] .custom-table thead th,
+  [data-theme="dark"] .custom-table th,
+  [data-theme="light"] .table-sticky-wrapper .custom-table thead th,
+  [data-theme="light"] .custom-table thead th,
+  [data-theme="light"] .custom-table th {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #0f172a !important;
     border-top: 1.5px solid #cbd5e1 !important;
-    border-bottom: 1.5px solid #cbd5e1 !important;
+    border-bottom: 2px solid #0f172a !important;
     border-left: none !important;
     border-right: none !important;
-    padding: 5px 6px !important;
+    padding: 6px 8px !important;
     text-align: left !important;
     font-weight: 700 !important;
     position: static !important;
     box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .custom-table th *,
+  .custom-table thead th * {
+    color: #0f172a !important;
+    background: transparent !important;
   }
 
   .custom-table td {

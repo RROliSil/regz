@@ -334,6 +334,7 @@ J. Logs de Auditoria e Rastreabilidade de Usuários:
 15. Padronização Universal de Barras de Rolagem: dimensão uniforme e fina (6px), cantos arredondados (8px) e trilha transparente aplicadas em todos os temas (Dark, Padrão e Claro), com thumb suave e translúcido no modo dark para harmonia visual completa com os modais e painéis.
 16. Modal de Campos Personalizados Cadastrados Expandida: ocupa quase toda a tela (95vw, máx 1450px) com rolagem horizontal fluida quando as colunas/regras ultrapassarem a visualização, e exclusão permanente removida em prol da inativação segura para preservação de dados históricos.
 17. Ocultação Estrita de Campos Personalizados Inativos: campos marcados como inativos são totalmente omitidos dos formulários de cadastro e edição de colaboradores e da listagem do construtor de relatórios, não exigindo validações e mantendo os formulários 100% limpos.
+18. Cabeçalho de Impressão Puro e Ocultação de Notificações: na impressão de relatórios, o cabeçalho da tabela é forçado a permanecer 100% branco com texto preto (#0f172a) em qualquer tema ativo (Dark, Padrão ou Claro), e o sistema de notificações flutuantes (snackbars) é completamente ocultado da folha.
 
 ===============================================================================
 FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO
