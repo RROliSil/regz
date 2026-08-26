@@ -1442,7 +1442,7 @@ export const Colaboradores: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="modal-form">
+            <form onSubmit={handleSubmit} className="modal-form" autoComplete="off" data-lpignore="true">
               {formError && (
                 <div className="alert-danger">
                   {formError}
@@ -1502,6 +1502,8 @@ export const Colaboradores: React.FC = () => {
                     placeholder="Digite o nome completo"
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
+                    autoComplete="off"
+                    data-lpignore="true"
                     required
                   />
                 </div>
@@ -1514,6 +1516,8 @@ export const Colaboradores: React.FC = () => {
                     value={cpf}
                     onChange={handleCpfChange}
                     maxLength={14}
+                    autoComplete="off"
+                    data-lpignore="true"
                     required
                   />
                 </div>
@@ -1695,6 +1699,8 @@ export const Colaboradores: React.FC = () => {
                     value={cep}
                     onChange={handleCepChange}
                     maxLength={9}
+                    autoComplete="off"
+                    data-lpignore="true"
                   />
                   {cepError && <span className="field-error">{cepError}</span>}
                 </div>
@@ -1709,6 +1715,8 @@ export const Colaboradores: React.FC = () => {
                       setLogradouro(e.target.value);
                       triggerGeocoding(e.target.value, numero, cidade, estado, cep);
                     }}
+                    autoComplete="off"
+                    data-lpignore="true"
                   />
                 </div>
               </div>
@@ -1724,6 +1732,8 @@ export const Colaboradores: React.FC = () => {
                       setNumero(e.target.value);
                       triggerGeocoding(logradouro, e.target.value, cidade, estado, cep);
                     }}
+                    autoComplete="off"
+                    data-lpignore="true"
                   />
                 </div>
 
@@ -1734,6 +1744,8 @@ export const Colaboradores: React.FC = () => {
                     placeholder="Apto, Bloco, etc."
                     value={complemento}
                     onChange={(e) => setComplemento(e.target.value)}
+                    autoComplete="off"
+                    data-lpignore="true"
                   />
                 </div>
 
@@ -1744,6 +1756,8 @@ export const Colaboradores: React.FC = () => {
                     placeholder="Bairro"
                     value={bairro}
                     onChange={(e) => setBairro(e.target.value)}
+                    autoComplete="off"
+                    data-lpignore="true"
                   />
                 </div>
               </div>
@@ -1759,6 +1773,8 @@ export const Colaboradores: React.FC = () => {
                       setCidade(e.target.value);
                       triggerGeocoding(logradouro, numero, e.target.value, estado, cep);
                     }}
+                    autoComplete="off"
+                    data-lpignore="true"
                   />
                 </div>
 
@@ -1774,6 +1790,8 @@ export const Colaboradores: React.FC = () => {
                       triggerGeocoding(logradouro, numero, cidade, uf, cep);
                     }}
                     maxLength={2}
+                    autoComplete="off"
+                    data-lpignore="true"
                   />
                 </div>
               </div>
@@ -1847,6 +1865,8 @@ export const Colaboradores: React.FC = () => {
                             placeholder={`Informe ${campo.nome.toLowerCase()}...`}
                             value={valorAtual}
                             onChange={(e) => setValorAtual(e.target.value)}
+                            autoComplete="off"
+                            data-lpignore="true"
                             required={campo.obrigatorio}
                           />
                           {campo.tipo === 'numero' && (campo.min_caracteres || campo.max_caracteres) && (

@@ -323,6 +323,8 @@ export const Campos: React.FC = () => {
           </div>
 
           <form
+            autoComplete="off"
+            data-lpignore="true"
             onSubmit={(e) => {
               e.preventDefault();
               handleCreateCampo({
@@ -343,6 +345,8 @@ export const Campos: React.FC = () => {
                   placeholder="Ex: CPF, PIS, Matrícula, CEP..."
                   value={numNome}
                   onChange={(e) => setNumNome(e.target.value)}
+                  autoComplete="off"
+                  data-lpignore="true"
                   disabled={submittingType === 'numero'}
                 />
               </div>
@@ -433,6 +437,8 @@ export const Campos: React.FC = () => {
           </div>
 
           <form
+            autoComplete="off"
+            data-lpignore="true"
             onSubmit={(e) => {
               e.preventDefault();
               handleCreateCampo({
@@ -453,6 +459,8 @@ export const Campos: React.FC = () => {
                   placeholder="Ex: Setor, Nome da Mãe, Nome do Pai..."
                   value={txtNome}
                   onChange={(e) => setTxtNome(e.target.value)}
+                  autoComplete="off"
+                  data-lpignore="true"
                   disabled={submittingType === 'texto'}
                 />
               </div>
@@ -543,6 +551,8 @@ export const Campos: React.FC = () => {
           </div>
 
           <form
+            autoComplete="off"
+            data-lpignore="true"
             onSubmit={(e) => {
               e.preventDefault();
               if (!selOpcoes.trim()) {
@@ -566,6 +576,8 @@ export const Campos: React.FC = () => {
                   placeholder="Ex: Estado Civil, Turno, Nível..."
                   value={selNome}
                   onChange={(e) => setSelNome(e.target.value)}
+                  autoComplete="off"
+                  data-lpignore="true"
                   disabled={submittingType === 'selecao'}
                 />
               </div>
@@ -642,6 +654,8 @@ export const Campos: React.FC = () => {
           </div>
 
           <form
+            autoComplete="off"
+            data-lpignore="true"
             onSubmit={(e) => {
               e.preventDefault();
               handleCreateCampo({
@@ -660,6 +674,8 @@ export const Campos: React.FC = () => {
                   placeholder="Ex: CNH Ativa, Possui Filhos, Vale Transporte..."
                   value={altNome}
                   onChange={(e) => setAltNome(e.target.value)}
+                  autoComplete="off"
+                  data-lpignore="true"
                   disabled={submittingType === 'alternativa'}
                 />
               </div>

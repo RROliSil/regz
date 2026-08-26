@@ -172,8 +172,9 @@ F. Design e Temas Visuais:
   1. Modo Padrão (Tema Navy Blue / Neon Azul).
   2. Modo Claro [data-theme="light"] (Fundo branco, cartões com borda #868a93, texto dos rótulos de checkbox "Tornar este campo obrigatório" permanecem pretos #0f172a no hover, containers de permissão por aba da página Administração possuem fundo 100% branco puro #ffffff com borda sutil #cbd5e1).
   3. Modo Escuro [data-theme="dark"] (Fundo preto/cinza #121214 / #141416, cartões em #121214, botões inativos de Administração em #1b1b1f, botões de ação de auditoria 'Exportar CSV' e 'Atualizar Logs' com fundo #141416, botões da página Campos com brilho branco discreto box-shadow: 0 2px 8px rgba(255, 255, 255, 0.12), avatar do usuário sem brilho com box-shadow: none, badges de CBO em #141416 com texto branco e borda suave).
-- Preservação de Cores em Sugestões Automáticas do Navegador (Autofill / Autocomplete Hover Preview):
+- Preservação de Cores e Desativação de Prompt de Salvar Endereço (Autofill / Google Account Prompt):
   - Ao focar ou passar o mouse em cima das sugestões de moradias salvas do navegador (Chrome/Edge/Safari/Chromium), todos os inputs, selects e textareas do sistema (incluindo o modal Editar Colaborador) preservam integralmente as cores de fundo, texto e borda originais de cada tema (Modo Escuro: #141416 / texto #f4f4f5; Modo Claro: #ffffff / texto #0f172a; Modo Padrão: #0f172a / texto #ffffff), neutralizando as pseudo-classes :-internal-autofill-previewed, :-webkit-autofill, :-internal-autofill-selected e :autofill.
+  - Todos os formulários e campos cadastrais corporativos (Colaboradores, Empresas, Campos e Administração) utilizam explicitamente `autoComplete="off"` e `data-lpignore="true"`, impedindo que o navegador exiba diálogos invasivos de "Quer guardar o endereço na sua Conta Google?".
 
 G. Persistência de Preferências do Usuário (LocalStorage):
 - Quantidade de itens por página na tabela ("regz_page_size").

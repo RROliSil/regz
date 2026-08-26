@@ -1281,7 +1281,7 @@ export const SuperAdmin: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleSaveEmpresa} className="modal-form" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <form onSubmit={handleSaveEmpresa} className="modal-form" autoComplete="off" data-lpignore="true" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div className="form-group">
                   <label>Razão Social *</label>
@@ -1290,6 +1290,8 @@ export const SuperAdmin: React.FC = () => {
                     value={empresaRazaoSocial}
                     onChange={(e) => setEmpresaRazaoSocial(e.target.value)}
                     placeholder="Ex: Empresa Cliente LTDA"
+                    autoComplete="off"
+                    data-lpignore="true"
                     required
                   />
                 </div>
@@ -1300,6 +1302,8 @@ export const SuperAdmin: React.FC = () => {
                     value={empresaNomeFantasia}
                     onChange={(e) => setEmpresaNomeFantasia(e.target.value)}
                     placeholder="Ex: Empresa Cliente"
+                    autoComplete="off"
+                    data-lpignore="true"
                     required
                   />
                 </div>
@@ -1314,6 +1318,8 @@ export const SuperAdmin: React.FC = () => {
                     onChange={(e) => handleCnpjChange(e.target.value)}
                     placeholder="00.000.000/0000-00"
                     maxLength={18}
+                    autoComplete="off"
+                    data-lpignore="true"
                     required
                   />
                 </div>
@@ -1366,6 +1372,8 @@ export const SuperAdmin: React.FC = () => {
                       value={dbHost}
                       onChange={(e) => setDbHost(e.target.value)}
                       placeholder="localhost / 192.168.1.100"
+                      autoComplete="off"
+                      data-lpignore="true"
                     />
                   </div>
 
@@ -1376,6 +1384,8 @@ export const SuperAdmin: React.FC = () => {
                       value={dbPort}
                       onChange={(e) => setDbPort(Number(e.target.value))}
                       placeholder="5432"
+                      autoComplete="off"
+                      data-lpignore="true"
                     />
                   </div>
 
@@ -1386,6 +1396,8 @@ export const SuperAdmin: React.FC = () => {
                       value={dbName}
                       onChange={(e) => setDbName(e.target.value)}
                       placeholder="regz_db"
+                      autoComplete="off"
+                      data-lpignore="true"
                     />
                   </div>
                 </div>
@@ -1398,6 +1410,8 @@ export const SuperAdmin: React.FC = () => {
                       value={dbUser}
                       onChange={(e) => setDbUser(e.target.value)}
                       placeholder="postgres"
+                      autoComplete="off"
+                      data-lpignore="true"
                     />
                   </div>
 
@@ -1408,6 +1422,8 @@ export const SuperAdmin: React.FC = () => {
                       value={dbPass}
                       onChange={(e) => setDbPass(e.target.value)}
                       placeholder="••••••••"
+                      autoComplete="new-password"
+                      data-lpignore="true"
                     />
                   </div>
                 </div>
@@ -1472,6 +1488,8 @@ export const SuperAdmin: React.FC = () => {
                         onChange={(e) => handleCepEmpresaChange(e.target.value)}
                         placeholder="00000-000"
                         maxLength={9}
+                        autoComplete="off"
+                        data-lpignore="true"
                       />
                       {buscandoCepEmpresa && (
                         <Loader2 className="spin" size={14} style={{ position: 'absolute', right: '10px', top: '12px', color: '#818cf8' }} />
@@ -1487,6 +1505,8 @@ export const SuperAdmin: React.FC = () => {
                       value={empresaLogradouro}
                       onChange={(e) => setEmpresaLogradouro(e.target.value)}
                       placeholder="Ex: Av. Paulista"
+                      autoComplete="off"
+                      data-lpignore="true"
                     />
                   </div>
 
@@ -1497,6 +1517,8 @@ export const SuperAdmin: React.FC = () => {
                       value={empresaNumero}
                       onChange={(e) => setEmpresaNumero(e.target.value)}
                       placeholder="1000"
+                      autoComplete="off"
+                      data-lpignore="true"
                     />
                   </div>
                 </div>
@@ -1509,6 +1531,8 @@ export const SuperAdmin: React.FC = () => {
                       value={empresaBairro}
                       onChange={(e) => setEmpresaBairro(e.target.value)}
                       placeholder="Bairro"
+                      autoComplete="off"
+                      data-lpignore="true"
                     />
                   </div>
 
@@ -1519,6 +1543,8 @@ export const SuperAdmin: React.FC = () => {
                       value={empresaCidade}
                       onChange={(e) => setEmpresaCidade(e.target.value)}
                       placeholder="Cidade"
+                      autoComplete="off"
+                      data-lpignore="true"
                     />
                   </div>
 
@@ -1530,6 +1556,8 @@ export const SuperAdmin: React.FC = () => {
                       onChange={(e) => setEmpresaEstado(e.target.value.toUpperCase())}
                       placeholder="SP"
                       maxLength={2}
+                      autoComplete="off"
+                      data-lpignore="true"
                     />
                   </div>
                 </div>
