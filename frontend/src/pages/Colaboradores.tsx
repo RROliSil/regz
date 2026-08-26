@@ -1797,94 +1797,129 @@ export const Colaboradores: React.FC = () => {
               </div>
 
               {/* Seção de Campos Personalizados */}
-              {camposCustomizadosList.length > 0 && (
-                <div style={{ marginTop: '20px' }}>
-                  <div className="form-section-title" style={{ marginBottom: '14px' }}>
-                    <span>CAMPOS PERSONALIZADOS</span>
-                  </div>
+              {/* Seção de Campos Personalizados */}
+              {(() => {
+                const camposVisiveis = camposCustomizadosList.filter((campo) => {
+                  if (campo.ativo !== false) return true;
+                  // Se o campo estiver inativo, só exibe caso o colaborador que está sendo editado já possua valor salvo previamente
+                  const valorGravado = campo.id ? valoresCustomizados[campo.id] : '';
+                  return !!(editingId && valorGravado && String(valorGravado).trim());
+                });
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                    {camposCustomizadosList.map((campo) => {
-                      const valorAtual = campo.id ? (valoresCustomizados[campo.id] || '') : '';
-                      const setValorAtual = (val: string) => {
-                        if (!campo.id) return;
-                        setValoresCustomizados(prev => ({ ...prev, [campo.id!]: val }));
-                      };
+                if (camposVisiveis.length === 0) return null;
 
-                      if (campo.tipo === 'selecao' && campo.opcoes) {
-                        const opcoesArr = campo.opcoes.split(',').map(o => o.trim()).filter(Boolean);
+                return (
+                  <div style={{ marginTop: '20px' }}>
+                    <div className="form-section-title" style={{ marginBottom: '14px' }}>
+                      <span>CAMPOS PERSONALIZADOS</span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      {camposVisiveis.map((campo) => {
+                        const valorAtual = campo.id ? (valoresCustomizados[campo.id] || '') : '';
+                        const setValorAtual = (val: string) => {
+                          if (!campo.id) return;
+                          setValoresCustomizados(prev => ({ ...prev, [campo.id!]: val }));
+                        };
+
+                        const isCampoInativo = campo.ativo === false;
+
+                        if (campo.tipo === 'selecao' && campo.opcoes) {
+                          const opcoesArr = campo.opcoes.split(',').map(o => o.trim()).filter(Boolean);
+                          return (
+                            <div key={campo.id} className="form-group">
+                              <label>
+                                {campo.nome} {campo.obrigatorio && '*'}
+                                {isCampoInativo && (
+                                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginLeft: '6px', fontWeight: 'normal' }}>
+                                    (Campo Inativado)
+                                  </span>
+                                )}
+                              </label>
+                              <select
+                                value={valorAtual}
+                                onChange={(e) => setValorAtual(e.target.value)}
+                                className="custom-select"
+                                required={campo.obrigatorio}
+                              >
+                                <option value="">Selecione...</option>
+                                {opcoesArr.map((opt, i) => (
+                                  <option key={i} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                            </div>
+                          );
+                        }
+
+                        if (campo.tipo === 'alternativa') {
+                          return (
+                            <div key={campo.id} className="form-group">
+                              <label>
+                                {campo.nome} {campo.obrigatorio && '*'}
+                                {isCampoInativo && (
+                                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginLeft: '6px', fontWeight: 'normal' }}>
+                                    (Campo Inativado)
+                                  </span>
+                                )}
+                              </label>
+                              <div className="boolean-field-box">
+                                <label className="checkbox-label" style={{ cursor: 'pointer', margin: 0 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={valorAtual === 'Sim'}
+                                    onChange={() => setValorAtual(valorAtual === 'Sim' ? '' : 'Sim')}
+                                  />
+                                  <span style={{ fontWeight: 600, color: valorAtual === 'Sim' ? '#34d399' : 'var(--text-main)' }}>Sim</span>
+                                </label>
+                                <label className="checkbox-label" style={{ cursor: 'pointer', margin: 0 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={valorAtual === 'Não'}
+                                    onChange={() => setValorAtual(valorAtual === 'Não' ? '' : 'Não')}
+                                  />
+                                  <span style={{ fontWeight: 600, color: valorAtual === 'Não' ? '#fb7185' : 'var(--text-main)' }}>Não</span>
+                                </label>
+                              </div>
+                            </div>
+                          );
+                        }
+
                         return (
                           <div key={campo.id} className="form-group">
-                            <label>{campo.nome} {campo.obrigatorio && '*'}</label>
-                            <select
+                            <label>
+                              {campo.nome} {campo.obrigatorio && '*'}
+                              {isCampoInativo && (
+                                <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginLeft: '6px', fontWeight: 'normal' }}>
+                                  (Campo Inativado)
+                                </span>
+                              )}
+                            </label>
+                            <input
+                              type={campo.tipo === 'data' ? 'date' : 'text'}
+                              placeholder={`Informe ${campo.nome.toLowerCase()}...`}
                               value={valorAtual}
                               onChange={(e) => setValorAtual(e.target.value)}
-                              className="custom-select"
+                              autoComplete="off"
+                              data-lpignore="true"
                               required={campo.obrigatorio}
-                            >
-                              <option value="">Selecione...</option>
-                              {opcoesArr.map((opt, i) => (
-                                <option key={i} value={opt}>{opt}</option>
-                              ))}
-                            </select>
+                            />
+                            {campo.tipo === 'numero' && (campo.min_caracteres || campo.max_caracteres) && (
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                                Dígitos numéricos: {campo.min_caracteres ? `Mín: ${campo.min_caracteres}` : ''} {campo.min_caracteres && campo.max_caracteres ? ' | ' : ''} {campo.max_caracteres ? `Máx: ${campo.max_caracteres}` : ''}
+                              </span>
+                            )}
+                            {campo.tipo === 'texto' && (campo.min_caracteres || campo.max_caracteres) && (
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
+                                Caracteres: {campo.min_caracteres ? `Mín: ${campo.min_caracteres}` : ''} {campo.min_caracteres && campo.max_caracteres ? ' | ' : ''} {campo.max_caracteres ? `Máx: ${campo.max_caracteres}` : ''}
+                              </span>
+                            )}
                           </div>
                         );
-                      }
-
-                      if (campo.tipo === 'alternativa') {
-                        return (
-                          <div key={campo.id} className="form-group">
-                            <label>{campo.nome} {campo.obrigatorio && '*'}</label>
-                            <div className="boolean-field-box">
-                              <label className="checkbox-label" style={{ cursor: 'pointer', margin: 0 }}>
-                                <input
-                                  type="checkbox"
-                                  checked={valorAtual === 'Sim'}
-                                  onChange={() => setValorAtual(valorAtual === 'Sim' ? '' : 'Sim')}
-                                />
-                                <span style={{ fontWeight: 600, color: valorAtual === 'Sim' ? '#34d399' : 'var(--text-main)' }}>Sim</span>
-                              </label>
-                              <label className="checkbox-label" style={{ cursor: 'pointer', margin: 0 }}>
-                                <input
-                                  type="checkbox"
-                                  checked={valorAtual === 'Não'}
-                                  onChange={() => setValorAtual(valorAtual === 'Não' ? '' : 'Não')}
-                                />
-                                <span style={{ fontWeight: 600, color: valorAtual === 'Não' ? '#fb7185' : 'var(--text-main)' }}>Não</span>
-                              </label>
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      return (
-                        <div key={campo.id} className="form-group">
-                          <label>{campo.nome} {campo.obrigatorio && '*'}</label>
-                          <input
-                            type={campo.tipo === 'data' ? 'date' : 'text'}
-                            placeholder={`Informe ${campo.nome.toLowerCase()}...`}
-                            value={valorAtual}
-                            onChange={(e) => setValorAtual(e.target.value)}
-                            autoComplete="off"
-                            data-lpignore="true"
-                            required={campo.obrigatorio}
-                          />
-                          {campo.tipo === 'numero' && (campo.min_caracteres || campo.max_caracteres) && (
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
-                              Dígitos numéricos: {campo.min_caracteres ? `Mín: ${campo.min_caracteres}` : ''} {campo.min_caracteres && campo.max_caracteres ? ' | ' : ''} {campo.max_caracteres ? `Máx: ${campo.max_caracteres}` : ''}
-                            </span>
-                          )}
-                          {campo.tipo === 'texto' && (campo.min_caracteres || campo.max_caracteres) && (
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '2px' }}>
-                              Caracteres: {campo.min_caracteres ? `Mín: ${campo.min_caracteres}` : ''} {campo.min_caracteres && campo.max_caracteres ? ' | ' : ''} {campo.max_caracteres ? `Máx: ${campo.max_caracteres}` : ''}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               <div className="modal-footer">
                 <button

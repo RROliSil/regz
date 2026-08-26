@@ -94,7 +94,7 @@ Campos:
 
 
 TABELA 5: campos_customizados
-Descrição: Permite a definição de novos campos dinâmicos sem alterar o schema do banco de dados.
+Descrição: Permite a definição de novos campos dinâmicos sem alterar o schema do banco de dados, com suporte a Soft Delete (Inativação e Reativação).
 Campos:
   - id SERIAL PRIMARY KEY
   - nome VARCHAR(255) NOT NULL UNIQUE
@@ -103,6 +103,8 @@ Campos:
   - obrigatorio BOOLEAN DEFAULT false
   - min_caracteres INT
   - max_caracteres INT
+  - ativo BOOLEAN DEFAULT true (Soft Delete: campos inativos são ocultados em novos cadastros preservando dados históricos)
+  - empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE
   - criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
 Campos Customizados Padrão:
@@ -177,6 +179,10 @@ F. Design e Temas Visuais:
   - Todos os formulários e campos cadastrais corporativos (Colaboradores, Empresas, Campos e Administração) utilizam explicitamente `autoComplete="off"` e `data-lpignore="true"`, impedindo que o navegador exiba diálogos invasivos de "Quer guardar o endereço na sua Conta Google?".
 - Padronização Visual das Ações na Listagem de Colaboradores (Ativos e Inativados):
   - Todos os botões de ação na coluna "Ações" (QR Code, Mapa, Inativar/Excluir e Reativar) utilizam o formato padronizado de ícone compacto (~36px), garantindo simetria, alinhamento central e 100% de visibilidade em ambas as abas ("Colaboradores Ativos" e "Inativados") sem overflow ou truncamento.
+- Inativação e Reativação de Campos Personalizados (Soft Delete de Campos):
+  - Permite aos usuários com permissão de escrita inativarem campos personalizados (`PUT /api/campos-customizados/:id/inativar`) ou reativá-los (`PUT /api/campos-customizados/:id/reativar`), com registro automático em auditoria.
+  - Campos inativados são omitidos automaticamente no cadastro de novos colaboradores, mas todos os dados preenchidos em colaboradores existentes são integralmente preservados no banco PostgreSQL (`colaboradores_valores_customizados`) e permanecem disponíveis em consultas, relatórios e exportações.
+  - No modal de campos cadastrados, a tabela exibe badge de status (Ativo / Inativo), botão de ação para Inativar/Reativar e botão de exclusão permanente com alerta de confirmação reforçado.
 
 G. Persistência de Preferências do Usuário (LocalStorage):
 - Quantidade de itens por página na tabela ("regz_page_size").

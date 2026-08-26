@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { CampoCustomizado } from '../types/auth';
-import { Plus, Trash2, Loader2, Check, AlertCircle, Type, Hash, ListFilter, Eye, X, CheckSquare } from 'lucide-react';
+import { Plus, Trash2, Loader2, Check, AlertCircle, Type, Hash, ListFilter, Eye, X, CheckSquare, RotateCcw, PowerOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSnackbar } from '../context/SnackbarContext';
 
@@ -219,19 +219,49 @@ export const Campos: React.FC = () => {
     }
   };
 
-  // Remover um Campo Personalizado
+  // Inativar um Campo Personalizado (Soft Delete)
+  const handleInativarCampo = async (id: number, nome: string) => {
+    try {
+      const res = await fetch(`/api/campos-customizados/${id}/inativar`, { method: 'PUT', headers: getAuthHeaders() });
+      if (res.ok) {
+        showSnackbar(`Campo "${nome}" inativado com sucesso! Não será mais exibido em novos cadastros.`, 'info');
+        fetchCampos();
+      } else {
+        showSnackbar('Erro ao inativar campo', 'error');
+      }
+    } catch (err) {
+      showSnackbar('Erro ao comunicar com o servidor', 'error');
+    }
+  };
+
+  // Reativar um Campo Personalizado
+  const handleReativarCampo = async (id: number, nome: string) => {
+    try {
+      const res = await fetch(`/api/campos-customizados/${id}/reativar`, { method: 'PUT', headers: getAuthHeaders() });
+      if (res.ok) {
+        showSnackbar(`Campo "${nome}" reativado com sucesso!`, 'success');
+        fetchCampos();
+      } else {
+        showSnackbar('Erro ao reativar campo', 'error');
+      }
+    } catch (err) {
+      showSnackbar('Erro ao comunicar com o servidor', 'error');
+    }
+  };
+
+  // Remover um Campo Personalizado Permanentemente
   const handleDeleteCampo = async (id: number, nome: string) => {
-    if (confirm(`Deseja realmente remover o campo "${nome}"? Os dados preenchidos pelos colaboradores neste campo serão excluídos.`)) {
+    if (confirm(`⚠️ ATENÇÃO: Deseja realmente EXCLUIR PERMANENTEMENTE o campo "${nome}"?\n\nTodos os dados históricos preenchidos pelos colaboradores neste campo serão apagados em cascata.\n\nDica: Se você deseja apenas ocultar de novos cadastros sem perder os dados existentes, utilize o botão Inativar.`)) {
       try {
         const res = await fetch(`/api/campos-customizados/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         if (res.ok) {
-          showSnackbar(`Campo "${nome}" removido com sucesso!`, 'success');
+          showSnackbar(`Campo "${nome}" excluído permanentemente!`, 'success');
           fetchCampos();
         } else {
-          alert('Erro ao remover campo');
+          showSnackbar('Erro ao excluir campo', 'error');
         }
       } catch (err) {
-        alert('Erro ao comunicar com o servidor');
+        showSnackbar('Erro ao comunicar com o servidor', 'error');
       }
     }
   };
@@ -768,8 +798,8 @@ export const Campos: React.FC = () => {
                         Obrigatório
                         <div className="resizer" onMouseDown={(e) => handleMouseDownResize(e, 'obrigatorio')} />
                       </th>
-                      <th style={{ width: '80px', minWidth: '80px', maxWidth: '80px', textAlign: 'center' }}>
-                        Ação
+                      <th style={{ width: '110px', minWidth: '110px', maxWidth: '110px', textAlign: 'center' }}>
+                        Ações
                       </th>
                     </tr>
                   </thead>
@@ -788,11 +818,40 @@ export const Campos: React.FC = () => {
                       </tr>
                     ) : (
                       campos.map((c) => (
-                        <tr key={c.id}>
+                        <tr key={c.id} style={{ opacity: c.ativo === false ? 0.75 : 1 }}>
                           <td>
-                            <span className="campo-nome">
-                              {c.nome}
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span className="campo-nome" style={{ fontWeight: 600 }}>
+                                {c.nome}
+                              </span>
+                              {c.ativo === false ? (
+                                <span style={{
+                                  background: 'rgba(148, 163, 184, 0.15)',
+                                  color: '#94a3b8',
+                                  border: '1px solid rgba(148, 163, 184, 0.3)',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 600,
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  Inativo
+                                </span>
+                              ) : (
+                                <span style={{
+                                  background: 'rgba(52, 211, 153, 0.12)',
+                                  color: '#34d399',
+                                  border: '1px solid rgba(52, 211, 153, 0.25)',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 600,
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  Ativo
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td>{getTipoBadge(c.tipo)}</td>
                           <td>
@@ -821,15 +880,54 @@ export const Campos: React.FC = () => {
                             )}
                           </td>
                           <td style={{ textAlign: 'center' }}>
-                            <button
-                              onClick={() => podeEditar && c.id && handleDeleteCampo(c.id, c.nome)}
-                              className="btn-action delete"
-                              disabled={!podeEditar}
-                              style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
-                              title={podeEditar ? "Remover este campo personalizado" : "Ação desativada: Seu perfil permite apenas visualização"}
-                            >
-                              <Trash2 size={15} />
-                            </button>
+                            <div style={{ display: 'inline-flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
+                              {c.ativo !== false ? (
+                                <button
+                                  onClick={() => podeEditar && c.id && handleInativarCampo(c.id, c.nome)}
+                                  className="btn-action inactivate"
+                                  disabled={!podeEditar}
+                                  style={{
+                                    background: 'rgba(251, 146, 60, 0.15)',
+                                    color: '#fb923c',
+                                    border: '1px solid rgba(251, 146, 60, 0.3)',
+                                    opacity: podeEditar ? 1 : 0.4,
+                                    cursor: podeEditar ? 'pointer' : 'not-allowed',
+                                    padding: '6px 8px'
+                                  }}
+                                  title={podeEditar ? "Inativar campo (Ocultar de novos cadastros sem apagar dados)" : "Ação desativada: Seu perfil permite apenas visualização"}
+                                >
+                                  <PowerOff size={14} />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => podeEditar && c.id && handleReativarCampo(c.id, c.nome)}
+                                  className="btn-action reactivate"
+                                  disabled={!podeEditar}
+                                  style={{
+                                    opacity: podeEditar ? 1 : 0.4,
+                                    cursor: podeEditar ? 'pointer' : 'not-allowed',
+                                    padding: '6px 8px'
+                                  }}
+                                  title={podeEditar ? "Reativar campo" : "Ação desativada: Seu perfil permite apenas visualização"}
+                                >
+                                  <RotateCcw size={14} />
+                                </button>
+                              )}
+
+                              <button
+                                onClick={() => podeEditar && c.id && handleDeleteCampo(c.id, c.nome)}
+                                className="btn-action delete"
+                                disabled={!podeEditar}
+                                style={{
+                                  opacity: podeEditar ? 1 : 0.4,
+                                  cursor: podeEditar ? 'pointer' : 'not-allowed',
+                                  padding: '6px 8px'
+                                }}
+                                title={podeEditar ? "Excluir permanentemente do banco" : "Ação desativada: Seu perfil permite apenas visualização"}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))

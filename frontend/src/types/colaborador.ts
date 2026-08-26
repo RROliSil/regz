@@ -40,6 +40,7 @@ export interface CampoCustomizado {
   obrigatorio?: boolean;
   min_caracteres?: number | null;
   max_caracteres?: number | null;
+  ativo?: boolean;
   criado_em?: string;
 }
 

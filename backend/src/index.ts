@@ -386,6 +386,7 @@ const initDb = async () => {
         min_caracteres INT,
         max_caracteres INT,
         empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE,
+        ativo BOOLEAN DEFAULT true,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -394,6 +395,7 @@ const initDb = async () => {
       ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS min_caracteres INT;
       ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS max_caracteres INT;
       ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE;
+      ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true;
     `);
 
     // Migração de empresa_id para registros legados que ainda possuem empresa_id NULL
@@ -2141,7 +2143,7 @@ app.get('/api/campos-customizados', async (req: Request, res: Response) => {
   const empId = getEmpresaIdFromReq(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    let query = 'SELECT * FROM campos_customizados';
+    let query = 'SELECT id, nome, tipo, opcoes, obrigatorio, min_caracteres, max_caracteres, empresa_id, COALESCE(ativo, true) as ativo, criado_em FROM campos_customizados';
     const params: any[] = [];
     if (empId) {
       query += ' WHERE empresa_id = $1 OR empresa_id IS NULL';
@@ -2210,7 +2212,81 @@ app.post('/api/campos-customizados', checkPermission('campos'), async (req: Requ
   }
 });
 
-// Excluir um campo customizado
+// Inativar um campo customizado (Soft Delete)
+app.put('/api/campos-customizados/:id/inativar', checkPermission('campos'), async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const empId = getEmpresaIdFromReq(req);
+  try {
+    const targetPool = await getPoolForEmpresa(empId);
+    const result = await targetPool.query(
+      'UPDATE campos_customizados SET ativo = false WHERE id = $1 RETURNING *',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Campo customizado não encontrado' });
+    }
+
+    const campoInativado = result.rows[0];
+
+    // Auditoria
+    const authUser = await getAuthUserFromReq(req);
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+    await registrarAuditoria({
+      empresa_id: empId,
+      usuario_id: authUser?.id,
+      usuario_nome: authUser?.nome || 'Usuário',
+      usuario_email: authUser?.email || '-',
+      acao: 'INATIVAR_CAMPO',
+      entidade: 'campos_customizados',
+      registro_id: id,
+      detalhes: { nome: campoInativado.nome, tipo: campoInativado.tipo },
+      ip: clientIp
+    });
+
+    res.json({ success: true, message: 'Campo inativado com sucesso', campo: campoInativado });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao inativar campo customizado' });
+  }
+});
+
+// Reativar um campo customizado
+app.put('/api/campos-customizados/:id/reativar', checkPermission('campos'), async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const empId = getEmpresaIdFromReq(req);
+  try {
+    const targetPool = await getPoolForEmpresa(empId);
+    const result = await targetPool.query(
+      'UPDATE campos_customizados SET ativo = true WHERE id = $1 RETURNING *',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Campo customizado não encontrado' });
+    }
+
+    const campoReativado = result.rows[0];
+
+    // Auditoria
+    const authUser = await getAuthUserFromReq(req);
+    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+    await registrarAuditoria({
+      empresa_id: empId,
+      usuario_id: authUser?.id,
+      usuario_nome: authUser?.nome || 'Usuário',
+      usuario_email: authUser?.email || '-',
+      acao: 'REATIVAR_CAMPO',
+      entidade: 'campos_customizados',
+      registro_id: id,
+      detalhes: { nome: campoReativado.nome, tipo: campoReativado.tipo },
+      ip: clientIp
+    });
+
+    res.json({ success: true, message: 'Campo reativado com sucesso', campo: campoReativado });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao reativar campo customizado' });
+  }
+});
+
+// Excluir um campo customizado permanentemente
 app.delete('/api/campos-customizados/:id', checkPermission('campos'), async (req: Request, res: Response) => {
   const { id } = req.params;
   const empId = getEmpresaIdFromReq(req);
