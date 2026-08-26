@@ -1227,7 +1227,7 @@ export const Colaboradores: React.FC = () => {
                             style={{ opacity: podeEditar ? 1 : 0.4, cursor: podeEditar ? 'pointer' : 'not-allowed' }}
                             title={podeEditar ? "Reativar Colaborador" : "Ação desativada: Seu perfil permite apenas visualização"}
                           >
-                            <RotateCcw size={15} /> Reativar
+                            <RotateCcw size={15} />
                           </button>
                         )}
                       </div>

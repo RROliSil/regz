@@ -175,6 +175,8 @@ F. Design e Temas Visuais:
 - Preservação de Cores e Desativação de Prompt de Salvar Endereço (Autofill / Google Account Prompt):
   - Ao focar ou passar o mouse em cima das sugestões de moradias salvas do navegador (Chrome/Edge/Safari/Chromium), todos os inputs, selects e textareas do sistema (incluindo o modal Editar Colaborador) preservam integralmente as cores de fundo, texto e borda originais de cada tema (Modo Escuro: #141416 / texto #f4f4f5; Modo Claro: #ffffff / texto #0f172a; Modo Padrão: #0f172a / texto #ffffff), neutralizando as pseudo-classes :-internal-autofill-previewed, :-webkit-autofill, :-internal-autofill-selected e :autofill.
   - Todos os formulários e campos cadastrais corporativos (Colaboradores, Empresas, Campos e Administração) utilizam explicitamente `autoComplete="off"` e `data-lpignore="true"`, impedindo que o navegador exiba diálogos invasivos de "Quer guardar o endereço na sua Conta Google?".
+- Padronização Visual das Ações na Listagem de Colaboradores (Ativos e Inativados):
+  - Todos os botões de ação na coluna "Ações" (QR Code, Mapa, Inativar/Excluir e Reativar) utilizam o formato padronizado de ícone compacto (~36px), garantindo simetria, alinhamento central e 100% de visibilidade em ambas as abas ("Colaboradores Ativos" e "Inativados") sem overflow ou truncamento.
 
 G. Persistência de Preferências do Usuário (LocalStorage):
 - Quantidade de itens por página na tabela ("regz_page_size").
