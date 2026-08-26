@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Briefcase, UserPlus, MapPin, Loader2, User, ChevronRight, ArrowUpDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { Users, Briefcase, UserPlus, MapPin, Loader2, User, ChevronRight, ArrowUpDown, ChevronDown, ChevronUp, Eye } from 'lucide-react';
 import { Colaborador, ESTADOS_MAP } from '../types/colaborador';
+import { useAccessibility } from '../context/AccessibilityContext';
 
 export const Home: React.FC = () => {
   const navigate = useNavigate();
+  const { setIsModalOpen } = useAccessibility();
 
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,8 +92,8 @@ export const Home: React.FC = () => {
 
   return (
     <div className="page-content">
-      {/* Header da Página */}
-      <header className="page-header" style={{ marginBottom: '28px' }}>
+      {/* Header da Página com Botão de Acessibilidade no Topo Direito */}
+      <header className="page-header" style={{ marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 className="page-title">
             Painel de <span className="text-gradient">Gestão & Indicadores</span>
@@ -100,6 +102,31 @@ export const Home: React.FC = () => {
             Visão geral executiva em tempo real do quadro de colaboradores, distribuição de cargos e dados organizacionais.
           </p>
         </div>
+
+        {/* Botão de Acessibilidade Visual no Canto Superior Direito */}
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="btn-secondary accessibility-trigger-btn"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '10px 18px',
+            borderRadius: '12px',
+            fontWeight: 600,
+            fontSize: '0.88rem',
+            background: 'rgba(99, 102, 241, 0.12)',
+            borderColor: 'rgba(99, 102, 241, 0.3)',
+            color: 'var(--text-main)',
+            boxShadow: '0 4px 14px rgba(99, 102, 241, 0.15)',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+          title="Abrir Central de Acessibilidade Visual (Alt + A)"
+        >
+          <Eye size={18} style={{ color: '#818cf8' }} />
+          <span>Acessibilidade Visual</span>
+        </button>
       </header>
 
       {/* Card 1: Total Colaboradores (com atalho para criar colaborador) */}

@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { AccessibilityProvider } from './context/AccessibilityContext';
 import { SnackbarProvider } from './context/SnackbarContext';
+import { AccessibilityModal } from './components/AccessibilityModal';
 import { Sidebar } from './components/Sidebar';
 import { Home } from './pages/Home';
 import { Colaboradores } from './pages/Colaboradores';
@@ -292,20 +294,23 @@ const LoginRoute: React.FC = () => {
 export function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <SnackbarProvider>
-          <BrowserRouter>
-            <RouteTitleTracker />
-            <Routes>
-              <Route path="/Regz" element={<LoginRoute />} />
-              <Route path="/regz" element={<LoginRoute />} />
-              <Route path="/login" element={<Navigate to="/Regz" replace />} />
-              <Route path="/regz/login" element={<Navigate to="/Regz" replace />} />
-              <Route path="/*" element={<ProtectedLayout />} />
-            </Routes>
-          </BrowserRouter>
-        </SnackbarProvider>
-      </AuthProvider>
+      <AccessibilityProvider>
+        <AuthProvider>
+          <SnackbarProvider>
+            <BrowserRouter>
+              <RouteTitleTracker />
+              <Routes>
+                <Route path="/Regz" element={<LoginRoute />} />
+                <Route path="/regz" element={<LoginRoute />} />
+                <Route path="/login" element={<Navigate to="/Regz" replace />} />
+                <Route path="/regz/login" element={<Navigate to="/Regz" replace />} />
+                <Route path="/*" element={<ProtectedLayout />} />
+              </Routes>
+              <AccessibilityModal />
+            </BrowserRouter>
+          </SnackbarProvider>
+        </AuthProvider>
+      </AccessibilityProvider>
     </ThemeProvider>
   );
 }

@@ -4725,6 +4725,123 @@ input[type="checkbox"]:disabled,
   color: #0f172a !important;
 }
 
+/* ======================================================== */
+/* SISTEMA GLOBAL DE ACESSIBILIDADE VISUAL & BAIXA VISÃO   */
+/* ======================================================== */
+
+/* 1. Escala de Fonte Global */
+[data-font-scale="medium"] {
+  font-size: 115% !important;
+}
+
+[data-font-scale="large"] {
+  font-size: 128% !important;
+}
+
+[data-font-scale="xlarge"] {
+  font-size: 142% !important;
+}
+
+/* 2. Modo Alto Contraste Puro para Baixa Visão */
+[data-high-contrast="true"] {
+  --bg-main: #000000 !important;
+  --bg-secondary: #000000 !important;
+  --bg-card: #000000 !important;
+  --text-main: #ffffff !important;
+  --text-muted: #facc15 !important;
+  --text-dim: #fef08a !important;
+  --border-color: #facc15 !important;
+  --primary: #facc15 !important;
+  --primary-hover: #eab308 !important;
+}
+
+[data-high-contrast="true"] body,
+[data-high-contrast="true"] .app-layout,
+[data-high-contrast="true"] .main-viewport,
+[data-high-contrast="true"] .glass-panel,
+[data-high-contrast="true"] .sidebar,
+[data-high-contrast="true"] .modal-content {
+  background: #000000 !important;
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #facc15 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+[data-high-contrast="true"] input,
+[data-high-contrast="true"] select,
+[data-high-contrast="true"] textarea {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #facc15 !important;
+}
+
+[data-high-contrast="true"] .btn-primary {
+  background: #facc15 !important;
+  color: #000000 !important;
+  font-weight: 800 !important;
+  border: 2px solid #facc15 !important;
+}
+
+[data-high-contrast="true"] .btn-secondary {
+  background: #000000 !important;
+  color: #facc15 !important;
+  font-weight: 800 !important;
+  border: 2px solid #facc15 !important;
+}
+
+[data-high-contrast="true"] .custom-table th {
+  background: #000000 !important;
+  color: #facc15 !important;
+  border-bottom: 2px solid #facc15 !important;
+}
+
+[data-high-contrast="true"] .custom-table td {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid #facc15 !important;
+}
+
+/* 3. Realce de Foco Reforçado */
+[data-focus-highlight="true"] *:focus,
+[data-focus-highlight="true"] *:focus-visible {
+  outline: 3.5px solid #facc15 !important;
+  outline-offset: 3px !important;
+  box-shadow: 0 0 15px rgba(250, 204, 21, 0.8) !important;
+}
+
+/* 4. Áreas de Clique e Ícones Ampliados */
+[data-large-clickables="true"] button,
+[data-large-clickables="true"] .btn-primary,
+[data-large-clickables="true"] .btn-secondary,
+[data-large-clickables="true"] .btn-action,
+[data-large-clickables="true"] .btn-icon-primary {
+  min-height: 48px !important;
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+  font-size: 1.05rem !important;
+}
+
+[data-large-clickables="true"] .btn-close {
+  width: 44px !important;
+  height: 44px !important;
+}
+
+/* 5. Modo Monocromático */
+[data-monochrome="true"] {
+  filter: grayscale(100%) contrast(120%) !important;
+}
+
+/* Botão de Trigger na Home */
+.accessibility-trigger-btn:hover {
+  background: rgba(99, 102, 241, 0.22) !important;
+  border-color: #6366f1 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.3) !important;
+}
+
 
 
 
