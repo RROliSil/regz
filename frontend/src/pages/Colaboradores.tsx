@@ -692,17 +692,24 @@ export const Colaboradores: React.FC = () => {
       return;
     }
 
-    // Validação estrita: O cargo informado DEVE existir na lista oficial da CBO
+    // Validação estrita: O cargo informado DEVE existir na lista oficial da CBO (ou corresponder a um sinônimo oficial)
+    let cargoParaSalvar = cargo.trim() || null;
     if (cargo.trim()) {
       const cargoTrimmed = cargo.toLowerCase().trim();
-      const cboValido = cargosList.find(cg => 
-        cg.nome.toLowerCase().trim() === cargoTrimmed || 
-        (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().trim() === cargoTrimmed)
-      );
+      const cboValido = cargosList.find(cg => {
+        if (cg.nome.toLowerCase().trim() === cargoTrimmed) return true;
+        if (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().trim() === cargoTrimmed) return true;
+        if (cg.sinonimos) {
+          const sinList = cg.sinonimos.split(',').map(s => s.toLowerCase().trim());
+          if (sinList.includes(cargoTrimmed) || sinList.some(s => s === cargoTrimmed)) return true;
+        }
+        return false;
+      });
       if (!cboValido) {
-        setFormError('O cargo/função informado não consta na lista oficial da CBO. Selecione uma ocupação válida da lista.');
+        setFormError('O cargo/função informado não consta na lista oficial da CBO. Selecione uma ocupação válida da lista de sugestões.');
         return;
       }
+      cargoParaSalvar = cboValido.nome;
     }
 
     // Validação de regras para Campos Customizados (min/max e dígitos numéricos)
@@ -744,7 +751,7 @@ export const Colaboradores: React.FC = () => {
     const payload = {
       nome: nome.trim(),
       cpf: cpf.trim(),
-      cargo: cargo.trim() || null,
+      cargo: cargoParaSalvar,
       cep: cep.trim() || null,
       logradouro: logradouro.trim() || null,
       numero: numero.trim() || null,
@@ -1514,12 +1521,14 @@ export const Colaboradores: React.FC = () => {
                 {/* Dropdown Selecionável com Busca por Nome ou Código CBO */}
                 <div className="form-group" style={{ position: 'relative' }} ref={cargoDropdownRef}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label style={{ marginBottom: '4px' }}>Cargo / Função (Pesquisa por Nome ou CBO)</label>
+                    <label style={{ marginBottom: '4px' }}>Cargo / Função (Pesquisa por Nome, CBO ou Sinônimos)</label>
                     {(() => {
                       if (!cargo.trim()) return null;
+                      const cargoTrimmed = cargo.toLowerCase().trim();
                       const cboMatch = cargosList.find(cg => 
-                        cg.nome.toLowerCase().trim() === cargo.toLowerCase().trim() || 
-                        (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().trim() === cargo.toLowerCase().trim())
+                        cg.nome.toLowerCase().trim() === cargoTrimmed || 
+                        (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().trim() === cargoTrimmed) ||
+                        (cg.sinonimos && cg.sinonimos.split(',').map(s => s.toLowerCase().trim()).includes(cargoTrimmed))
                       );
                       if (cboMatch) {
                         return (
@@ -1538,7 +1547,7 @@ export const Colaboradores: React.FC = () => {
                   <div style={{ position: 'relative' }}>
                     <input
                       type="text"
-                      placeholder="Pesquisar por cargo ou CBO..."
+                      placeholder="Pesquisar por cargo, CBO ou sinônimo (ex: Dev React, Front-end, DBA)..."
                       value={cargo}
                       onFocus={() => {
                         setCargoSearchOpen(true);
@@ -1553,9 +1562,11 @@ export const Colaboradores: React.FC = () => {
                         paddingRight: '36px',
                         borderColor: (() => {
                           if (!cargo.trim()) return undefined;
+                          const cargoTrimmed = cargo.toLowerCase().trim();
                           const isValid = cargosList.some(cg => 
-                            cg.nome.toLowerCase().trim() === cargo.toLowerCase().trim() || 
-                            (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().trim() === cargo.toLowerCase().trim())
+                            cg.nome.toLowerCase().trim() === cargoTrimmed || 
+                            (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().trim() === cargoTrimmed) ||
+                            (cg.sinonimos && cg.sinonimos.split(',').map(s => s.toLowerCase().trim()).includes(cargoTrimmed))
                           );
                           return isValid ? '#10b981' : '#f43f5e';
                         })()
@@ -1566,7 +1577,8 @@ export const Colaboradores: React.FC = () => {
 
                   {cargo.trim() && !cargosList.some(cg => 
                     cg.nome.toLowerCase().trim() === cargo.toLowerCase().trim() || 
-                    (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().trim() === cargo.toLowerCase().trim())
+                    (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().trim() === cargo.toLowerCase().trim()) ||
+                    (cg.sinonimos && cg.sinonimos.split(',').map(s => s.toLowerCase().trim()).includes(cargo.toLowerCase().trim()))
                   ) && (
                     <div style={{ fontSize: '0.78rem', color: '#f43f5e', marginTop: '4px' }}>
                       ⚠️ Cargo não consta na lista CBO. Escolha uma ocupação oficial sugerida abaixo.
@@ -1582,7 +1594,7 @@ export const Colaboradores: React.FC = () => {
                         right: 0,
                         top: '100%',
                         marginTop: '6px',
-                        maxHeight: '230px',
+                        maxHeight: '260px',
                         overflowY: 'auto',
                         zIndex: 999,
                         padding: '6px'
@@ -1592,31 +1604,58 @@ export const Colaboradores: React.FC = () => {
                         .filter(cg => {
                           const q = cargoSearchTerm.toLowerCase().trim();
                           if (!q) return true;
-                          return cg.nome.toLowerCase().includes(q) || (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().includes(q));
+                          const nomeMatch = cg.nome.toLowerCase().includes(q);
+                          const cboMatch = cg.codigo_cbo && cg.codigo_cbo.toLowerCase().includes(q);
+                          const sinMatch = cg.sinonimos && cg.sinonimos.toLowerCase().includes(q);
+                          return nomeMatch || cboMatch || sinMatch;
                         })
-                        .map(cg => (
-                          <div
-                            key={cg.id}
-                            onClick={() => {
-                              setCargo(cg.nome);
-                              setCargoSearchTerm(cg.nome);
-                              setCargoSearchOpen(false);
-                            }}
-                            className={`cargo-dropdown-item ${cargo.toLowerCase().trim() === cg.nome.toLowerCase().trim() ? 'selected' : ''}`}
-                          >
-                            <span className="cargo-dropdown-item-title">{cg.nome}</span>
-                            {cg.codigo_cbo && (
-                              <span className="cargo-dropdown-cbo-badge">
-                                CBO {cg.codigo_cbo}
-                              </span>
-                            )}
-                          </div>
-                        ))}
+                        .map(cg => {
+                          const q = cargoSearchTerm.toLowerCase().trim();
+                          let matchedSin: string | null = null;
+                          if (q && cg.sinonimos) {
+                            const sinArray = cg.sinonimos.split(',').map(s => s.trim());
+                            matchedSin = sinArray.find(s => s.toLowerCase().includes(q)) || null;
+                          }
+
+                          return (
+                            <div
+                              key={cg.id}
+                              onClick={() => {
+                                setCargo(cg.nome);
+                                setCargoSearchTerm(cg.nome);
+                                setCargoSearchOpen(false);
+                              }}
+                              className={`cargo-dropdown-item ${cargo.toLowerCase().trim() === cg.nome.toLowerCase().trim() ? 'selected' : ''}`}
+                              style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', padding: '8px 10px' }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                <span className="cargo-dropdown-item-title" style={{ fontWeight: 600 }}>{cg.nome}</span>
+                                {cg.codigo_cbo && (
+                                  <span className="cargo-dropdown-cbo-badge">
+                                    CBO {cg.codigo_cbo}
+                                  </span>
+                                )}
+                              </div>
+                              {matchedSin ? (
+                                <span style={{ fontSize: '0.74rem', color: '#6366f1', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(99, 102, 241, 0.1)', padding: '2px 6px', borderRadius: '4px' }}>
+                                  📌 Sinônimo correspondente: <strong>{matchedSin}</strong>
+                                </span>
+                              ) : cg.sinonimos ? (
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                                  Sinônimos: {cg.sinonimos.split(',').slice(0, 3).join(', ')}...
+                                </span>
+                              ) : null}
+                            </div>
+                          );
+                        })}
 
                       {cargosList.filter(cg => {
                         const q = cargoSearchTerm.toLowerCase().trim();
                         if (!q) return true;
-                        return cg.nome.toLowerCase().includes(q) || (cg.codigo_cbo && cg.codigo_cbo.toLowerCase().includes(q));
+                        const nomeMatch = cg.nome.toLowerCase().includes(q);
+                        const cboMatch = cg.codigo_cbo && cg.codigo_cbo.toLowerCase().includes(q);
+                        const sinMatch = cg.sinonimos && cg.sinonimos.toLowerCase().includes(q);
+                        return nomeMatch || cboMatch || sinMatch;
                       }).length === 0 && (
                         <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-dim)', fontSize: '0.84rem' }}>
                           Nenhum cargo CBO oficial encontrado para "{cargoSearchTerm}".

@@ -28,102 +28,102 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000,
 });
 
-// Base Completa de Ocupações Oficiais CBO (Classificação Brasileira de Ocupações - MTE/Brasil)
+// Base Completa de Ocupações Oficiais CBO (Classificação Brasileira de Ocupações - MTE/Brasil) com Sinônimos de Mercado (eSocial)
 const CBO_DATASET = [
   // Tecnologia da Informação & Computação
-  { codigo: '2124-05', titulo: 'Analista de desenvolvimento de sistemas' },
-  { codigo: '2124-10', titulo: 'Analista de redes e de comunicação de dados' },
-  { codigo: '2124-15', titulo: 'Analista de segurança da informação' },
-  { codigo: '2124-20', titulo: 'Analista de suporte computacional' },
-  { codigo: '2123-05', titulo: 'Administrador de banco de dados (DBA)' },
-  { codigo: '2123-10', titulo: 'Administrador de redes' },
-  { codigo: '2123-15', titulo: 'Administrador de sistemas operacionais' },
-  { codigo: '2124-30', titulo: 'Engenheiro de software' },
-  { codigo: '3171-10', titulo: 'Programador de sistemas de informação' },
-  { codigo: '3171-15', titulo: 'Programador de máquinas de comando numérico' },
-  { codigo: '3171-20', titulo: 'Programador de internet' },
-  { codigo: '3171-25', titulo: 'Programador multimídia' },
-  { codigo: '2124-25', titulo: 'Arquiteto de soluções de tecnologia da informação' },
-  { codigo: '2521-05', titulo: 'Administrador de empresas' },
+  { codigo: '2124-05', titulo: 'Analista de desenvolvimento de sistemas', sinonimos: 'Analista de Sistemas, Desenvolvedor de Software, Dev Júnior, Dev Pleno, Dev Sênior, Programador, Dev Backend' },
+  { codigo: '2124-10', titulo: 'Analista de redes e de comunicação de dados', sinonimos: 'Analista de Redes, Administrador de Redes, Engenheiro de Redes, Network Engineer, Sysadmin' },
+  { codigo: '2124-15', titulo: 'Analista de segurança da informação', sinonimos: 'SecOps, Especialista em Cibersegurança, InfoSec, Ethical Hacker, Analista de Cyber Security, Segurança da Informação' },
+  { codigo: '2124-20', titulo: 'Analista de suporte computacional', sinonimos: 'Help Desk, Suporte Técnico, Analista de TI, Service Desk, Técnico de Suporte' },
+  { codigo: '2123-05', titulo: 'Administrador de banco de dados (DBA)', sinonimos: 'DBA, Engenheiro de Dados, Administrador SQL, Data Engineer, Administrador Oracle, Administrador PostgreSQL' },
+  { codigo: '2123-10', titulo: 'Administrador de redes', sinonimos: 'Network Admin, Gerente de Redes, Especialista em Redes' },
+  { codigo: '2123-15', titulo: 'Administrador de sistemas operacionais', sinonimos: 'Sysadmin Linux, Administrador Windows Server, Engenheiro DevOps, DevOps, Cloud Engineer' },
+  { codigo: '2124-30', titulo: 'Engenheiro de software', sinonimos: 'Tech Lead, Arquiteto de Software, Dev Fullstack, Full Stack Developer, Desenvolvedor Backend, Dev Node, Dev Java, Dev Python, Engenheiro Backend, Software Engineer' },
+  { codigo: '3171-10', titulo: 'Programador de sistemas de informação', sinonimos: 'Programador, Desenvolvedor C#, Desenvolvedor Java, Desenvolvedor PHP, Dev Backend' },
+  { codigo: '3171-15', titulo: 'Programador de máquinas de comando numérico', sinonimos: 'Programador CNC, Operador CNC, Torneiro CNC, Centro de Usinagem' },
+  { codigo: '3171-20', titulo: 'Programador de internet', sinonimos: 'Dev React, Front-end, Frontend, Desenvolvedor Front-end, Dev Vue, Dev Angular, Desenvolvedor Web, Web Developer, Dev Next.js' },
+  { codigo: '3171-25', titulo: 'Programador multimídia', sinonimos: 'Game Developer, Desenvolvedor de Jogos, Programador 3D, Dev Unity, Dev Unreal' },
+  { codigo: '2124-25', titulo: 'Arquiteto de soluções de tecnologia da informação', sinonimos: 'Solutions Architect, Arquiteto Cloud, Arquiteto AWS, Arquiteto Azure, Arquiteto de Sistemas' },
+  { codigo: '2521-05', titulo: 'Administrador de empresas', sinonimos: 'Administrador, Gestor Empresarial, Analista de Negócios, Business Analyst' },
 
   // Design, Comunicação & Marketing
-  { codigo: '2624-10', titulo: 'Desenhos industriais (Designer UX/UI)' },
-  { codigo: '2624-05', titulo: 'Designer gráfico' },
-  { codigo: '2611-05', titulo: 'Jornalista' },
-  { codigo: '2612-05', titulo: 'Bibliotecário' },
-  { codigo: '2614-10', titulo: 'Filólogo / Linguista' },
-  { codigo: '2617-05', titulo: 'Locutor' },
-  { codigo: '2611-10', titulo: 'Redator de publicidade' },
-  { codigo: '2531-10', titulo: 'Redator publicitário / Copywriter' },
-  { codigo: '2531-15', titulo: 'Agente de publicidade e propaganda' },
+  { codigo: '2624-10', titulo: 'Desenhos industriais (Designer UX/UI)', sinonimos: 'Product Designer, Designer UI/UX, UI Designer, UX Designer, Web Designer, Designer de Interfaces' },
+  { codigo: '2624-05', titulo: 'Designer gráfico', sinonimos: 'Diretor de Arte, Designer Visual, Motion Designer, Ilustrador, Arte-Finalista' },
+  { codigo: '2611-05', titulo: 'Jornalista', sinonimos: 'Repórter, Assessor de Imprensa, Editor de Notícias, Comunicador' },
+  { codigo: '2612-05', titulo: 'Bibliotecário', sinonimos: 'Documentalista, Gestor da Informação, Arquivista' },
+  { codigo: '2614-10', titulo: 'Filólogo / Linguista', sinonimos: 'Revisor de Textos, Tradutor, Intérprete' },
+  { codigo: '2617-05', titulo: 'Locutor', sinonimos: 'Apresentador, Narrador, Locutor de Rádio, Podcaster' },
+  { codigo: '2611-10', titulo: 'Redator de publicidade', sinonimos: 'Redator Publicitário, Redator Criativo, Roteirista' },
+  { codigo: '2531-10', titulo: 'Redator publicitário / Copywriter', sinonimos: 'Copywriter, Redator de Conteúdo, Content Creator, Redator SEO, Escritor Publicitário' },
+  { codigo: '2531-15', titulo: 'Agente de publicidade e propaganda', sinonimos: 'Executivo de Contas, Publicitário, Mídia, Analista de Marketing' },
 
   // Gestão, Recursos Humanos & Administração
-  { codigo: '1421-05', titulo: 'Gerente administrativo' },
-  { codigo: '1421-15', titulo: 'Gerente de recursos humanos' },
-  { codigo: '1423-05', titulo: 'Gerente de comercialização / Vendas' },
-  { codigo: '1423-10', titulo: 'Gerente de marketing' },
-  { codigo: '1425-05', titulo: 'Gerente de tecnologia da informação' },
-  { codigo: '1426-05', titulo: 'Gerente de pesquisa e desenvolvimento' },
-  { codigo: '1414-05', titulo: 'Comerciante atacadista' },
-  { codigo: '2524-05', titulo: 'Analista de recursos humanos' },
-  { codigo: '4110-05', titulo: 'Auxiliar de escritório / Administrativo' },
-  { codigo: '4110-10', titulo: 'Assistente administrativo' },
-  { codigo: '4110-15', titulo: 'Atendente de judiciário' },
-  { codigo: '4110-20', titulo: 'Auxiliar de judiciário' },
+  { codigo: '1421-05', titulo: 'Gerente administrativo', sinonimos: 'Gerente Geral, Diretor Administrativo, Gestor de Operações, COO' },
+  { codigo: '1421-15', titulo: 'Gerente de recursos humanos', sinonimos: 'Gerente de DHO, Diretor de RH, Head of People, Gestor de Talentos' },
+  { codigo: '1423-05', titulo: 'Gerente de comercialização / Vendas', sinonimos: 'Gerente Comercial, Head of Sales, Diretor de Vendas, Gerente de Vendas' },
+  { codigo: '1423-10', titulo: 'Gerente de marketing', sinonimos: 'Head of Marketing, CMO, Gerente de Growth, Diretor de Marketing' },
+  { codigo: '1425-05', titulo: 'Gerente de tecnologia da informação', sinonimos: 'Gerente de TI, CTO, Diretor de Tecnologia, Head of Tech, IT Manager' },
+  { codigo: '1426-05', titulo: 'Gerente de pesquisa e desenvolvimento', sinonimos: 'Gerente de P&D, Gerente de Inovação, R&D Manager' },
+  { codigo: '1414-05', titulo: 'Comerciante atacadista', sinonimos: 'Distribuidor, Atacadista, Gerente de Distribuição' },
+  { codigo: '2524-05', titulo: 'Analista de recursos humanos', sinonimos: 'Business Partner, BP RH, Analista de DP, Analista de R&S, Recrutador, Headhunter, Analista de Departamento Pessoal' },
+  { codigo: '4110-05', titulo: 'Auxiliar de escritório / Administrativo', sinonimos: 'Auxiliar de Escritório, Auxiliar Administrativo, Office Boy, Auxiliar Operacional' },
+  { codigo: '4110-10', titulo: 'Assistente administrativo', sinonimos: 'Auxiliar de Operações, Assistente de Backoffice, Secretária, Recepcionista Administrativo, Assistente Operacional' },
+  { codigo: '4110-15', titulo: 'Atendente de judiciário', sinonimos: 'Escrevente, Atendente Cartorário, Auxiliar de Cartório' },
+  { codigo: '4110-20', titulo: 'Auxiliar de judiciário', sinonimos: 'Oficial de Justiça Auxiliar, Técnico Judiciário' },
 
   // Finanças, Contabilidade & Economia
-  { codigo: '2522-05', titulo: 'Contador' },
-  { codigo: '2522-10', titulo: 'Auditor (contadores e afins)' },
-  { codigo: '2522-15', titulo: 'Perito contábil' },
-  { codigo: '2525-05', titulo: 'Analista de câmbio' },
-  { codigo: '2525-10', titulo: 'Analista de cobrança' },
-  { codigo: '2525-15', titulo: 'Analista de crédito' },
-  { codigo: '2525-25', titulo: 'Analista financeiro' },
-  { codigo: '2512-05', titulo: 'Economista' },
-  { codigo: '4131-05', titulo: 'Auxiliar de contabilidade' },
-  { codigo: '4131-10', titulo: 'Auxiliar de faturamento' },
+  { codigo: '2522-05', titulo: 'Contador', sinonimos: 'Analista Contábil, Contador Geral, Controller, Auditor Contábil' },
+  { codigo: '2522-10', titulo: 'Auditor (contadores e afins)', sinonimos: 'Auditor Interno, Auditor Externo, Auditor Fiscal' },
+  { codigo: '2522-15', titulo: 'Perito contábil', sinonimos: 'Perito Judicial, Auditor Forense' },
+  { codigo: '2525-05', titulo: 'Analista de câmbio', sinonimos: 'Operador de Câmbio, Trader, Analista de Comércio Exterior' },
+  { codigo: '2525-10', titulo: 'Analista de cobrança', sinonimos: 'Operador de Cobrança, Negociador, Assistente de Cobrança' },
+  { codigo: '2525-15', titulo: 'Analista de crédito', sinonimos: 'Analista de Risco, Concessor de Crédito, Underwriter' },
+  { codigo: '2525-25', titulo: 'Analista financeiro', sinonimos: 'Analista de Tesouraria, Analista de Contas a Pagar, Analista de Contas a Receber, Assistente Financeiro, FP&A' },
+  { codigo: '2512-05', titulo: 'Economista', sinonimos: 'Analista Econômico, Consultor Financeiro, Consultor Econômico' },
+  { codigo: '4131-05', titulo: 'Auxiliar de contabilidade', sinonimos: 'Assistente Contábil, Auxiliar Fiscal, Assistente Fiscal' },
+  { codigo: '4131-10', titulo: 'Auxiliar de faturamento', sinonimos: 'Faturista, Assistente de Faturamento, Emissor de Notas Fiscais' },
 
   // Engenharia, Arquitetura & Infraestrutura
-  { codigo: '2142-05', titulo: 'Engenheiro civil' },
-  { codigo: '2143-05', titulo: 'Engenheiro eletricista' },
-  { codigo: '2144-05', titulo: 'Engenheiro mecânico' },
-  { codigo: '2140-05', titulo: 'Arquiteto urbanista' },
-  { codigo: '2149-05', titulo: 'Engenheiro de produção' },
-  { codigo: '2149-10', titulo: 'Engenheiro de segurança do trabalho' },
-  { codigo: '3121-05', titulo: 'Técnico em edificações' },
-  { codigo: '3131-05', titulo: 'Técnico em eletricidade' },
+  { codigo: '2142-05', titulo: 'Engenheiro civil', sinonimos: 'Engenheiro de Obras, Calculista, Gestor de Obras' },
+  { codigo: '2143-05', titulo: 'Engenheiro eletricista', sinonimos: 'Engenheiro Elétrico, Engenheiro de Automação, Engenheiro de Energia' },
+  { codigo: '2144-05', titulo: 'Engenheiro mecânico', sinonimos: 'Engenheiro de Manutenção, Engenheiro Automotivo, Projetista Mecânico' },
+  { codigo: '2140-05', titulo: 'Arquiteto urbanista', sinonimos: 'Arquiteto, Arquiteto de Interiores, Projetista Arquitetônico' },
+  { codigo: '2149-05', titulo: 'Engenheiro de produção', sinonimos: 'Engenheiro Industrial, Analista de Processos, Engenheiro de Qualidade' },
+  { codigo: '2149-10', titulo: 'Engenheiro de segurança do trabalho', sinonimos: 'Engenheiro do Trabalho, Auditor de Segurança, Engenheiro SST' },
+  { codigo: '3121-05', titulo: 'Técnico em edificações', sinonimos: 'Mestre de Obras, Encarregado de Obras, Fiscal de Obras' },
+  { codigo: '3131-05', titulo: 'Técnico em eletricidade', sinonimos: 'Eletrotécnico, Eletricista Industrial, Eletricista de Manutenção' },
 
   // Saúde, Medicina & Enfermagem
-  { codigo: '2251-25', titulo: 'Médico clínico' },
-  { codigo: '2235-05', titulo: 'Enfermeiro' },
-  { codigo: '3222-05', titulo: 'Técnico de enfermagem' },
-  { codigo: '2236-05', titulo: 'Fisioterapeuta geral' },
-  { codigo: '2237-10', titulo: 'Nutricionista' },
-  { codigo: '2232-05', titulo: 'Cirurgião dentista' },
-  { codigo: '2234-05', titulo: 'Farmacêutico' },
-  { codigo: '2515-10', titulo: 'Psicólogo clínico' },
+  { codigo: '2251-25', titulo: 'Médico clínico', sinonimos: 'Clínico Geral, Médico da Família, Médico Plantonista, Médico do Trabalho' },
+  { codigo: '2235-05', titulo: 'Enfermeiro', sinonimos: 'Enfermeiro Chefe, Enfermeiro do Trabalho, Enfermeiro Assistencial' },
+  { codigo: '3222-05', titulo: 'Técnico de enfermagem', sinonimos: 'Auxiliar de Enfermagem, Técnico de Saúde' },
+  { codigo: '2236-05', titulo: 'Fisioterapeuta geral', sinonimos: 'Fisioterapeuta, Fisioterapeuta do Trabalho, Ergonomista' },
+  { codigo: '2237-10', titulo: 'Nutricionista', sinonimos: 'Nutricionista Clínico, Nutricionista Esportivo, Nutricionista de Produção' },
+  { codigo: '2232-05', titulo: 'Cirurgião dentista', sinonimos: 'Dentista, Odontologista, Ortodontista' },
+  { codigo: '2234-05', titulo: 'Farmacêutico', sinonimos: 'Farmacêutico Bioquímico, Farmacêutico Responsável, Farmacêutico Hospitalar' },
+  { codigo: '2515-10', titulo: 'Psicólogo clínico', sinonimos: 'Psicólogo, Psicólogo Organizacional, Terapeuta' },
 
   // Logística, Operações & Transporte
-  { codigo: '4141-05', titulo: 'Almoxarife' },
-  { codigo: '4141-10', titulo: 'Conferente de carga e descarga' },
-  { codigo: '4142-05', titulo: 'Apontador de produção' },
-  { codigo: '7823-10', titulo: 'Motorista de furgão ou caminhonete' },
-  { codigo: '7823-20', titulo: 'Motorista de caminhão (rotas regionais e internacionais)' },
-  { codigo: '7824-05', titulo: 'Motorista de ônibus urbano' },
-  { codigo: '7825-10', titulo: 'Motorista de trator' },
-  { codigo: '7832-15', titulo: 'Operador de empilhadeira' },
+  { codigo: '4141-05', titulo: 'Almoxarife', sinonimos: 'Estoquista, Assistente de Almoxarifado, Operador de Estoque, Conferente de Almoxarifado' },
+  { codigo: '4141-10', titulo: 'Conferente de carga e descarga', sinonimos: 'Conferente de Estoque, Conferente Logístico, Expedidor, Encarregado de Carga' },
+  { codigo: '4142-05', titulo: 'Apontador de produção', sinonimos: 'Controlador de Produção, Apontador de Obra, Inspetor de Produção' },
+  { codigo: '7823-10', titulo: 'Motorista de furgão ou caminhonete', sinonimos: 'Motorista Entregador, Motorista Utilitário, Motorista Fiorino, Courier' },
+  { codigo: '7823-20', titulo: 'Motorista de caminhão (rotas regionais e internacionais)', sinonimos: 'Carreteiro, Motorista Carreteiro, Motorista Truck, Motorista Pesado, Motorista Rodoviário' },
+  { codigo: '7824-05', titulo: 'Motorista de ônibus urbano', sinonimos: 'Motorista de Coletivo, Motorista de Transporte Público, Motorista de Van' },
+  { codigo: '7825-10', titulo: 'Motorista de trator', sinonimos: 'Tratorista, Operador de Trator, Operador de Máquinas Agrícolas' },
+  { codigo: '7832-15', titulo: 'Operador de empilhadeira', sinonimos: 'Empilhadeirista, Operador de Máquinas Logísticas, Operador de Transpaleteira' },
 
   // Jurídico, Educação & Serviços
-  { codigo: '2410-05', titulo: 'Advogado' },
-  { codigo: '2312-05', titulo: 'Professor de nível superior na educação infantil' },
-  { codigo: '2313-05', titulo: 'Professor do ensino fundamental' },
-  { codigo: '2321-05', titulo: 'Professor do ensino médio' },
-  { codigo: '2344-05', titulo: 'Professor de ensino superior' },
-  { codigo: '5141-05', titulo: 'Zelador de edifício' },
-  { codigo: '5142-05', titulo: 'Coletor de lixo' },
-  { codigo: '5143-20', titulo: 'Faxineiro' },
-  { codigo: '5173-30', titulo: 'Vigilante' },
-  { codigo: '5174-10', titulo: 'Porteiro de edifício' }
+  { codigo: '2410-05', titulo: 'Advogado', sinonimos: 'Consultor Jurídico, Assessor Jurídico, Procurador, Advogado Trabalhista' },
+  { codigo: '2312-05', titulo: 'Professor de nível superior na educação infantil', sinonimos: 'Pedagogo, Professor Infantil, Educador Infantil' },
+  { codigo: '2313-05', titulo: 'Professor do ensino fundamental', sinonimos: 'Professor Fundamental, Educador' },
+  { codigo: '2321-05', titulo: 'Professor do ensino médio', sinonimos: 'Professor de Ensino Médio, Docente' },
+  { codigo: '2344-05', titulo: 'Professor de ensino superior', sinonimos: 'Professor Universitário, Docente Universitário, Pesquisador' },
+  { codigo: '5141-05', titulo: 'Zelador de edifício', sinonimos: 'Zelador, Encarregado Predial, Auxiliar de Manutenção Predial' },
+  { codigo: '5142-05', titulo: 'Coletor de lixo', sinonimos: 'Gari, Coletor de Resíduos, Auxiliar de Limpeza Urbana' },
+  { codigo: '5143-20', titulo: 'Faxineiro', sinonimos: 'Auxiliar de Limpeza, Servente de Limpeza, Camareiro' },
+  { codigo: '5173-30', titulo: 'Vigilante', sinonimos: 'Segurança, Guarda Patrimonial, Agente de Segurança, Vigia' },
+  { codigo: '5174-10', titulo: 'Porteiro de edifício', sinonimos: 'Porteiro, Controlador de Acesso, Agente de Portaria' }
 ];
 
 // Função de Sincronização Bidirecional e Auto-Invalidação no Banco de Dados
@@ -326,19 +326,21 @@ const initDb = async () => {
         id SERIAL PRIMARY KEY,
         nome VARCHAR(255) NOT NULL UNIQUE,
         codigo_cbo VARCHAR(20),
+        sinonimos TEXT,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
 
     await pool.query(`
       ALTER TABLE cargos ADD COLUMN IF NOT EXISTS codigo_cbo VARCHAR(20);
+      ALTER TABLE cargos ADD COLUMN IF NOT EXISTS sinonimos TEXT;
     `);
 
     // Sincronizar/Importar TODOS os cargos da base CBO oficial no PostgreSQL
     for (const item of CBO_DATASET) {
       await pool.query(
-        'INSERT INTO cargos (nome, codigo_cbo) VALUES ($1, $2) ON CONFLICT (nome) DO UPDATE SET codigo_cbo = EXCLUDED.codigo_cbo',
-        [item.titulo, item.codigo]
+        'INSERT INTO cargos (nome, codigo_cbo, sinonimos) VALUES ($1, $2, $3) ON CONFLICT (nome) DO UPDATE SET codigo_cbo = EXCLUDED.codigo_cbo, sinonimos = EXCLUDED.sinonimos',
+        [item.titulo, item.codigo, item.sinonimos || null]
       );
     }
 
@@ -830,10 +832,19 @@ const initTenantDb = async (tenantPool: Pool, empresaId: number) => {
       id SERIAL PRIMARY KEY,
       nome VARCHAR(255) NOT NULL UNIQUE,
       codigo_cbo VARCHAR(20),
+      sinonimos TEXT,
       criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     ALTER TABLE cargos ADD COLUMN IF NOT EXISTS codigo_cbo VARCHAR(20);
+    ALTER TABLE cargos ADD COLUMN IF NOT EXISTS sinonimos TEXT;
   `);
+
+  for (const item of CBO_DATASET) {
+    await tenantPool.query(
+      'INSERT INTO cargos (nome, codigo_cbo, sinonimos) VALUES ($1, $2, $3) ON CONFLICT (nome) DO UPDATE SET codigo_cbo = EXCLUDED.codigo_cbo, sinonimos = EXCLUDED.sinonimos',
+      [item.titulo, item.codigo, item.sinonimos || null]
+    );
+  }
 
   await tenantPool.query(`
     CREATE TABLE IF NOT EXISTS colaboradores (
@@ -2092,7 +2103,8 @@ app.get('/api/cbo/search', (req: Request, res: Response) => {
 
   const filtered = CBO_DATASET.filter(item => 
     item.titulo.toLowerCase().includes(query) ||
-    item.codigo.includes(query)
+    item.codigo.toLowerCase().includes(query) ||
+    (item.sinonimos && item.sinonimos.toLowerCase().includes(query))
   );
 
   res.json(filtered);
@@ -2101,17 +2113,19 @@ app.get('/api/cbo/search', (req: Request, res: Response) => {
 // Listar todos os cargos do catálogo
 app.get('/api/cargos', async (req: Request, res: Response) => {
   const q = (req.query.q as string || '').toLowerCase().trim();
+  const empId = getEmpresaIdFromReq(req);
   try {
-    let queryStr = 'SELECT * FROM cargos';
+    const targetPool = await getPoolForEmpresa(empId);
+    let queryStr = 'SELECT id, nome, codigo_cbo, sinonimos FROM cargos';
     const params: any[] = [];
 
     if (q) {
-      queryStr += ' WHERE LOWER(nome) LIKE $1 OR LOWER(codigo_cbo) LIKE $1';
+      queryStr += ' WHERE LOWER(nome) LIKE $1 OR LOWER(codigo_cbo) LIKE $1 OR LOWER(COALESCE(sinonimos, \'\')) LIKE $1';
       params.push(`%${q}%`);
     }
 
     queryStr += ' ORDER BY nome ASC';
-    const result = await pool.query(queryStr, params);
+    const result = await targetPool.query(queryStr, params);
     res.json(result.rows);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar cargos' });
@@ -2525,8 +2539,13 @@ app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Req
     if (cargo && typeof cargo === 'string' && cargo.trim()) {
       const cargoTrimmed = cargo.trim();
       const cargoDb = await targetPool.query(
-        'SELECT nome, codigo_cbo FROM cargos WHERE LOWER(nome) = LOWER($1) OR LOWER(codigo_cbo) = LOWER($1)',
-        [cargoTrimmed]
+        `SELECT nome, codigo_cbo FROM cargos 
+         WHERE LOWER(nome) = LOWER($1) 
+            OR LOWER(codigo_cbo) = LOWER($1)
+            OR LOWER(COALESCE(sinonimos, '')) LIKE $2
+         ORDER BY CASE WHEN LOWER(nome) = LOWER($1) THEN 1 WHEN LOWER(codigo_cbo) = LOWER($1) THEN 2 ELSE 3 END
+         LIMIT 1`,
+        [cargoTrimmed, `%${cargoTrimmed.toLowerCase()}%`]
       );
       if (cargoDb.rows.length === 0) {
         return res.status(400).json({ error: 'O cargo/função informado não consta na lista oficial da CBO. Selecione uma ocupação válida da lista.' });
@@ -2607,8 +2626,13 @@ app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: 
     if (cargo && typeof cargo === 'string' && cargo.trim()) {
       const cargoTrimmed = cargo.trim();
       const cargoDb = await targetPool.query(
-        'SELECT nome, codigo_cbo FROM cargos WHERE LOWER(nome) = LOWER($1) OR LOWER(codigo_cbo) = LOWER($1)',
-        [cargoTrimmed]
+        `SELECT nome, codigo_cbo FROM cargos 
+         WHERE LOWER(nome) = LOWER($1) 
+            OR LOWER(codigo_cbo) = LOWER($1)
+            OR LOWER(COALESCE(sinonimos, '')) LIKE $2
+         ORDER BY CASE WHEN LOWER(nome) = LOWER($1) THEN 1 WHEN LOWER(codigo_cbo) = LOWER($1) THEN 2 ELSE 3 END
+         LIMIT 1`,
+        [cargoTrimmed, `%${cargoTrimmed.toLowerCase()}%`]
       );
       if (cargoDb.rows.length === 0) {
         return res.status(400).json({ error: 'O cargo/função informado não consta na lista oficial da CBO. Selecione uma ocupação válida da lista.' });

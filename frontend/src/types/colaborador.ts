@@ -22,12 +22,14 @@ export interface Cargo {
   id?: number;
   nome: string;
   codigo_cbo?: string | null;
+  sinonimos?: string | null;
   criado_em?: string;
 }
 
 export interface CboItem {
   codigo: string;
   titulo: string;
+  sinonimos?: string | null;
 }
 
 export interface CampoCustomizado {
