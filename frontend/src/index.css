@@ -53,6 +53,32 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 body {
@@ -2302,25 +2328,33 @@ th.col-acoes .col-resizer {
   border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
-/* Cor da Barra de Rolagem (Scrollbar Thumb) em #d1d1d1 (Apenas no Modo Dark) */
+/* Barra de Rolagem (Scrollbar) Padronizada e Fina no Modo Dark */
 [data-theme="dark"] * {
-  scrollbar-color: #d1d1d1 #141416;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar,
+[data-theme="dark"] *::-webkit-scrollbar {
+  width: 6px !important;
+  height: 6px !important;
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-thumb,
 [data-theme="dark"] *::-webkit-scrollbar-thumb {
-  background-color: #d1d1d1 !important;
-  border-radius: 6px !important;
+  background-color: rgba(255, 255, 255, 0.22) !important;
+  border-radius: 8px !important;
+  transition: background 0.2s ease !important;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.45) !important;
 }
 
 [data-theme="dark"] ::-webkit-scrollbar-track,
 [data-theme="dark"] *::-webkit-scrollbar-track {
-  background: #141416 !important;
-}
-
-[data-theme="dark"] ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  background: transparent !important;
 }
 
 /* Ajustes de fundo da página Colaboradores (Apenas no Modo Dark) */
@@ -3626,29 +3660,28 @@ select option,
 /* Custom Scrollbar Elegante para Modais & Containers (Tema Escuro / Executivo) */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(99, 102, 241, 0.45) rgba(15, 23, 42, 0.6);
+  scrollbar-color: rgba(99, 102, 241, 0.45) transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.6);
+  background: transparent;
   border-radius: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(99, 102, 241, 0.45);
   border-radius: 8px;
-  border: 1px solid rgba(15, 23, 42, 0.4);
   transition: all 0.2s ease;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(56, 189, 248, 0.75);
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.4);
 }
 
 .custom-scrollbar::-webkit-scrollbar-corner {

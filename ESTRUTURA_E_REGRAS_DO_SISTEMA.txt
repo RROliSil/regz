@@ -331,6 +331,7 @@ J. Logs de Auditoria e Rastreabilidade de Usuários:
 12. Visualizador Lightbox de Foto Ampliada: ao clicar na foto do colaborador no modal de gerenciamento de fotos, a imagem é exibida em alta resolução com backdrop escurecido e efeito blur.
 13. Isolamento de Cabeçalhos Ngrok: o header 'ngrok-skip-browser-warning' é injetado exclusivamente em rotas internas do próprio domínio da aplicação, garantindo compatibilidade total sem bloqueio CORS em APIs externas públicas (ViaCEP, BrasilAPI, Google Maps).
 14. Impressão A4 Otimizada (Retrato e Paisagem): formatação de impressão limpa sem sombras, contornos de containers ou caixas escuras, com fundo branco puro, cabeçalho de tabela com repetição em páginas múltiplas (thead table-header-group) e proteção contra quebra de linhas (tr break-inside avoid).
+15. Padronização Universal de Barras de Rolagem: dimensão uniforme e fina (6px), cantos arredondados (8px) e trilha transparente aplicadas em todos os temas (Dark, Padrão e Claro), com thumb suave e translúcido no modo dark para harmonia visual completa com os modais e painéis.
 
 ===============================================================================
 FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO
