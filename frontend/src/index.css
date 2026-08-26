@@ -2773,14 +2773,14 @@ select option,
   .pdf-header-only {
     display: block !important;
     margin-bottom: 14px !important;
-    border-bottom: 2px solid #4f46e5 !important;
+    border-bottom: 2px solid #000000 !important;
     padding-bottom: 8px !important;
     width: 100% !important;
   }
 
   .pdf-header-only h2 {
     font-size: 15pt !important;
-    color: #0f172a !important;
+    color: #000000 !important;
     font-weight: 800 !important;
     margin: 0 !important;
     letter-spacing: -0.02em !important;
@@ -2788,13 +2788,20 @@ select option,
 
   .pdf-header-only p {
     font-size: 9pt !important;
-    color: #334155 !important;
+    color: #000000 !important;
     margin: 2px 0 !important;
   }
 
   .pdf-header-only span {
     font-size: 8pt !important;
-    color: #64748b !important;
+    color: #000000 !important;
+  }
+
+  .printable-report-area span:not([style*="color: #34d399"]):not([style*="color: #fb7185"]),
+  .printable-report-area p,
+  .printable-report-area strong,
+  .printable-report-area h2 {
+    color: #000000 !important;
   }
 
   .custom-table {
@@ -2832,9 +2839,9 @@ select option,
   [data-theme="light"] .custom-table th {
     background: #ffffff !important;
     background-color: #ffffff !important;
-    color: #0f172a !important;
-    border-top: 1.5px solid #cbd5e1 !important;
-    border-bottom: 2px solid #0f172a !important;
+    color: #000000 !important;
+    border-top: 2px solid #000000 !important;
+    border-bottom: 2px solid #000000 !important;
     border-left: none !important;
     border-right: none !important;
     padding: 6px 8px !important;
@@ -2847,19 +2854,23 @@ select option,
 
   .custom-table th *,
   .custom-table thead th * {
-    color: #0f172a !important;
+    color: #000000 !important;
     background: transparent !important;
   }
 
   .custom-table td {
-    color: #1e293b !important;
-    border-bottom: 1px solid #e2e8f0 !important;
+    color: #000000 !important;
+    border-bottom: 1px solid #000000 !important;
     border-left: none !important;
     border-right: none !important;
-    padding: 4.5px 6px !important;
+    padding: 5px 6px !important;
     white-space: normal !important;
     word-break: break-word !important;
     background: transparent !important;
+  }
+
+  .custom-table td *:not([style*="color: #34d399"]):not([style*="color: #fb7185"]) {
+    color: #000000 !important;
   }
 
   .resizer,
@@ -2868,9 +2879,9 @@ select option,
   }
 
   .badge-perfil, .cargo-badge {
-    border: 1px solid #cbd5e1 !important;
-    background: #f8fafc !important;
-    color: #0f172a !important;
+    border: 1px solid #000000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
     box-shadow: none !important;
     padding: 1px 5px !important;
     font-size: 8pt !important;
