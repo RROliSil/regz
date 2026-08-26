@@ -4731,28 +4731,28 @@ input[type="checkbox"]:disabled,
 
 /* 1. Escala de Fonte Global */
 [data-font-scale="medium"] {
-  font-size: 115% !important;
+  font-size: 110% !important;
 }
 
 [data-font-scale="large"] {
-  font-size: 128% !important;
+  font-size: 120% !important;
 }
 
 [data-font-scale="xlarge"] {
-  font-size: 142% !important;
+  font-size: 130% !important;
 }
 
-/* 2. Modo Alto Contraste Puro para Baixa Visão */
+/* 2. Modo Alto Contraste Puro para Baixa Visão (Verde Neon #00ff00) */
 [data-high-contrast="true"] {
   --bg-main: #000000 !important;
   --bg-secondary: #000000 !important;
   --bg-card: #000000 !important;
   --text-main: #ffffff !important;
-  --text-muted: #facc15 !important;
-  --text-dim: #fef08a !important;
-  --border-color: #facc15 !important;
-  --primary: #facc15 !important;
-  --primary-hover: #eab308 !important;
+  --text-muted: #00ff00 !important;
+  --text-dim: #bbf7d0 !important;
+  --border-color: #00ff00 !important;
+  --primary: #00ff00 !important;
+  --primary-hover: #00dd00 !important;
 }
 
 [data-high-contrast="true"] body,
@@ -4764,7 +4764,7 @@ input[type="checkbox"]:disabled,
   background: #000000 !important;
   background-color: #000000 !important;
   color: #ffffff !important;
-  border-color: #facc15 !important;
+  border-color: #00ff00 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: none !important;
@@ -4775,41 +4775,41 @@ input[type="checkbox"]:disabled,
 [data-high-contrast="true"] textarea {
   background: #000000 !important;
   color: #ffffff !important;
-  border: 2px solid #facc15 !important;
+  border: 2px solid #00ff00 !important;
 }
 
 [data-high-contrast="true"] .btn-primary {
-  background: #facc15 !important;
+  background: #00ff00 !important;
   color: #000000 !important;
   font-weight: 800 !important;
-  border: 2px solid #facc15 !important;
+  border: 2px solid #00ff00 !important;
 }
 
 [data-high-contrast="true"] .btn-secondary {
   background: #000000 !important;
-  color: #facc15 !important;
+  color: #00ff00 !important;
   font-weight: 800 !important;
-  border: 2px solid #facc15 !important;
+  border: 2px solid #00ff00 !important;
 }
 
 [data-high-contrast="true"] .custom-table th {
   background: #000000 !important;
-  color: #facc15 !important;
-  border-bottom: 2px solid #facc15 !important;
+  color: #00ff00 !important;
+  border-bottom: 2px solid #00ff00 !important;
 }
 
 [data-high-contrast="true"] .custom-table td {
   background: #000000 !important;
   color: #ffffff !important;
-  border-bottom: 1px solid #facc15 !important;
+  border-bottom: 1px solid #00ff00 !important;
 }
 
 /* 3. Realce de Foco Reforçado */
 [data-focus-highlight="true"] *:focus,
 [data-focus-highlight="true"] *:focus-visible {
-  outline: 3.5px solid #facc15 !important;
+  outline: 3.5px solid #00ff00 !important;
   outline-offset: 3px !important;
-  box-shadow: 0 0 15px rgba(250, 204, 21, 0.8) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.8) !important;
 }
 
 /* 4. Áreas de Clique e Ícones Ampliados */
@@ -4829,17 +4829,12 @@ input[type="checkbox"]:disabled,
   height: 44px !important;
 }
 
-/* 5. Modo Monocromático */
-[data-monochrome="true"] {
-  filter: grayscale(100%) contrast(120%) !important;
-}
-
 /* Botão de Trigger na Home */
 .accessibility-trigger-btn:hover {
-  background: rgba(99, 102, 241, 0.22) !important;
-  border-color: #6366f1 !important;
+  background: rgba(99, 102, 241, 0.25) !important;
+  border-color: #818cf8 !important;
   transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.3) !important;
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35) !important;
 }
 
 

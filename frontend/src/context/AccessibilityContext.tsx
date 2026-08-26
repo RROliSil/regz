@@ -7,7 +7,6 @@ export interface AccessibilitySettings {
   highContrast: boolean;
   focusHighlight: boolean;
   largeClickables: boolean;
-  monochrome: boolean;
   dyslexicFont: boolean;
 }
 
@@ -24,7 +23,6 @@ const DEFAULT_SETTINGS: AccessibilitySettings = {
   highContrast: false,
   focusHighlight: false,
   largeClickables: false,
-  monochrome: false,
   dyslexicFont: false,
 };
 
@@ -84,13 +82,6 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
       root.setAttribute('data-large-clickables', 'true');
     } else {
       root.removeAttribute('data-large-clickables');
-    }
-
-    // Modo Monocromático
-    if (settings.monochrome) {
-      root.setAttribute('data-monochrome', 'true');
-    } else {
-      root.removeAttribute('data-monochrome');
     }
 
     // Fonte para Dislexia

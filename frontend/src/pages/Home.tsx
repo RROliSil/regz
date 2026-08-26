@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Briefcase, UserPlus, MapPin, Loader2, User, ChevronRight, ArrowUpDown, ChevronDown, ChevronUp, Eye } from 'lucide-react';
+import { Users, Briefcase, UserPlus, MapPin, Loader2, User, ChevronRight, ArrowUpDown, ChevronDown, ChevronUp, PersonStanding } from 'lucide-react';
 import { Colaborador, ESTADOS_MAP } from '../types/colaborador';
 import { useAccessibility } from '../context/AccessibilityContext';
 
@@ -92,7 +92,7 @@ export const Home: React.FC = () => {
 
   return (
     <div className="page-content">
-      {/* Header da Página com Botão de Acessibilidade no Topo Direito */}
+      {/* Header da Página com Botão de Ícone PersonStanding no Topo Direito */}
       <header className="page-header" style={{ marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 className="page-title">
@@ -103,29 +103,27 @@ export const Home: React.FC = () => {
           </p>
         </div>
 
-        {/* Botão de Acessibilidade Visual no Canto Superior Direito */}
+        {/* Botão de Acessibilidade com Ícone person-standing no Canto Superior Direito */}
         <button
           onClick={() => setIsModalOpen(true)}
-          className="btn-secondary accessibility-trigger-btn"
+          className="btn-icon-secondary accessibility-trigger-btn"
           style={{
+            width: '42px',
+            height: '42px',
+            borderRadius: '12px',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            padding: '10px 18px',
-            borderRadius: '12px',
-            fontWeight: 600,
-            fontSize: '0.88rem',
+            justifyContent: 'center',
             background: 'rgba(99, 102, 241, 0.12)',
-            borderColor: 'rgba(99, 102, 241, 0.3)',
-            color: 'var(--text-main)',
-            boxShadow: '0 4px 14px rgba(99, 102, 241, 0.15)',
+            border: '1.5px solid rgba(99, 102, 241, 0.3)',
+            color: '#818cf8',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
           }}
-          title="Abrir Central de Acessibilidade Visual (Alt + A)"
+          title="Central de Acessibilidade Visual (Alt + A)"
+          aria-label="Abrir Central de Acessibilidade Visual"
         >
-          <Eye size={18} style={{ color: '#818cf8' }} />
-          <span>Acessibilidade Visual</span>
+          <PersonStanding size={24} />
         </button>
       </header>
 
