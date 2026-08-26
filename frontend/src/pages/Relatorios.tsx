@@ -842,7 +842,7 @@ export const Relatorios: React.FC = () => {
       styleEl.id = 'dynamic-print-page-style';
       document.head.appendChild(styleEl);
     }
-    styleEl.innerHTML = `@media print { @page { size: A4 ${orientacaoPDF}; margin: ${orientacaoPDF === 'landscape' ? '8mm 10mm' : '10mm 12mm'}; } }`;
+    styleEl.innerHTML = `@media print { @page { size: A4 ${orientacaoPDF}; margin: ${orientacaoPDF === 'landscape' ? '8mm 8mm' : '10mm 10mm'}; } }`;
 
     window.print();
   };

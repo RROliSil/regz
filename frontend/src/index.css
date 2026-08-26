@@ -2662,18 +2662,29 @@ select option,
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm 12mm;
+    margin: 10mm 10mm;
+  }
+
+  *, *::before, *::after {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    filter: none !important;
+    -webkit-filter: none !important;
   }
 
   html, body {
     background: #ffffff !important;
+    background-color: #ffffff !important;
     color: #0f172a !important;
     width: 100% !important;
     height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
-    font-size: 10pt !important;
+    font-size: 9pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .no-print,
@@ -2689,88 +2700,94 @@ select option,
     display: none !important;
   }
 
-  .app-layout {
-    display: block !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  .main-viewport {
-    margin-left: 0 !important;
-    margin-top: 0 !important;
-    padding: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-
+  .app-layout,
+  .main-viewport,
   .relatorios-container {
-    padding: 0 !important;
+    display: block !important;
     margin: 0 !important;
+    padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
   }
 
-  .printable-report-area {
+  .glass-panel,
+  .printable-report-area,
+  .table-flex-wrapper,
+  .table-sticky-wrapper {
     background: #ffffff !important;
-    color: #0f172a !important;
-    box-shadow: none !important;
+    background-color: #ffffff !important;
     border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
     padding: 0 !important;
     margin: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
+    overflow: visible !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
   .pdf-header-only {
     display: block !important;
-    margin-bottom: 20px !important;
-    border-bottom: 2.5px solid #4f46e5 !important;
-    padding-bottom: 10px !important;
+    margin-bottom: 14px !important;
+    border-bottom: 2px solid #4f46e5 !important;
+    padding-bottom: 8px !important;
     width: 100% !important;
   }
 
   .pdf-header-only h2 {
-    font-size: 16pt !important;
+    font-size: 15pt !important;
     color: #0f172a !important;
     font-weight: 800 !important;
     margin: 0 !important;
+    letter-spacing: -0.02em !important;
   }
 
   .pdf-header-only p {
-    font-size: 10pt !important;
-    color: #475569 !important;
-    margin: 4px 0 !important;
+    font-size: 9pt !important;
+    color: #334155 !important;
+    margin: 2px 0 !important;
   }
 
   .pdf-header-only span {
-    font-size: 8.5pt !important;
+    font-size: 8pt !important;
     color: #64748b !important;
-  }
-
-  .table-flex-wrapper,
-  .table-sticky-wrapper {
-    overflow: visible !important;
-    max-height: none !important;
-    min-height: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
   }
 
   .custom-table {
     width: 100% !important;
     max-width: 100% !important;
-    table-layout: fixed !important;
+    table-layout: auto !important;
     border-collapse: collapse !important;
-    font-size: 9pt !important;
+    border: none !important;
+    font-size: 8.5pt !important;
+    margin-top: 6px !important;
+  }
+
+  .custom-table thead {
+    display: table-header-group !important;
+  }
+
+  .custom-table tbody {
+    display: table-row-group !important;
+  }
+
+  .custom-table tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   .custom-table th {
-    background: #f1f5f9 !important;
+    background-color: #f1f5f9 !important;
     color: #0f172a !important;
-    border-bottom: 2px solid #cbd5e1 !important;
+    border-top: 1.5px solid #cbd5e1 !important;
+    border-bottom: 1.5px solid #cbd5e1 !important;
+    border-left: none !important;
     border-right: none !important;
-    padding: 6px 8px !important;
+    padding: 5px 6px !important;
     text-align: left !important;
     font-weight: 700 !important;
     position: static !important;
@@ -2780,10 +2797,12 @@ select option,
   .custom-table td {
     color: #1e293b !important;
     border-bottom: 1px solid #e2e8f0 !important;
+    border-left: none !important;
     border-right: none !important;
-    padding: 6px 8px !important;
+    padding: 4.5px 6px !important;
     white-space: normal !important;
     word-break: break-word !important;
+    background: transparent !important;
   }
 
   .resizer,
@@ -2796,8 +2815,9 @@ select option,
     background: #f8fafc !important;
     color: #0f172a !important;
     box-shadow: none !important;
-    padding: 2px 6px !important;
-    font-size: 8.5pt !important;
+    padding: 1px 5px !important;
+    font-size: 8pt !important;
+    border-radius: 4px !important;
   }
 }
 
