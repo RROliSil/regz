@@ -53,32 +53,6 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
-}
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: 8px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
-  border-radius: 8px;
-  transition: background 0.2s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
-}
-
-::-webkit-scrollbar-corner {
-  background: transparent;
 }
 
 body {
@@ -4835,6 +4809,31 @@ input[type="checkbox"]:disabled,
   border-color: #818cf8 !important;
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(99, 102, 241, 0.35) !important;
+}
+
+/* Correção de Enquadramento no Modal de Acessibilidade (Evitar cortes no topo e no botão fechar) */
+.accessibility-modal-container {
+  padding: 0 !important;
+}
+
+.accessibility-modal-container .modal-header {
+  position: static !important;
+  top: 0 !important;
+  margin: 0 !important;
+  margin-top: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-bottom: 0 !important;
+  padding: 16px 24px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.accessibility-modal-container .btn-close {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  margin: 0 !important;
 }
 
 

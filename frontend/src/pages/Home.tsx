@@ -92,39 +92,40 @@ export const Home: React.FC = () => {
 
   return (
     <div className="page-content">
-      {/* Header da Página com Botão de Ícone PersonStanding no Topo Direito */}
-      <header className="page-header" style={{ marginBottom: '28px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-        <div>
-          <h1 className="page-title">
+      {/* Header da Página com Botão de Ícone PersonStanding ao Lado do Título */}
+      <header className="page-header" style={{ marginBottom: '28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '6px' }}>
+          <h1 className="page-title" style={{ margin: 0 }}>
             Painel de <span className="text-gradient">Gestão & Indicadores</span>
           </h1>
-          <p className="page-description">
-            Visão geral executiva em tempo real do quadro de colaboradores, distribuição de cargos e dados organizacionais.
-          </p>
+
+          {/* Botão de Acessibilidade com Ícone person-standing ao Lado do Título */}
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="btn-icon-secondary accessibility-trigger-btn"
+            style={{
+              width: '38px',
+              height: '38px',
+              borderRadius: '10px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(99, 102, 241, 0.12)',
+              border: '1.5px solid rgba(99, 102, 241, 0.3)',
+              color: '#818cf8',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            title="Central de Acessibilidade Visual (Alt + A)"
+            aria-label="Abrir Central de Acessibilidade Visual"
+          >
+            <PersonStanding size={22} />
+          </button>
         </div>
 
-        {/* Botão de Acessibilidade com Ícone person-standing no Canto Superior Direito */}
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="btn-icon-secondary accessibility-trigger-btn"
-          style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'rgba(99, 102, 241, 0.12)',
-            border: '1.5px solid rgba(99, 102, 241, 0.3)',
-            color: '#818cf8',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-          title="Central de Acessibilidade Visual (Alt + A)"
-          aria-label="Abrir Central de Acessibilidade Visual"
-        >
-          <PersonStanding size={24} />
-        </button>
+        <p className="page-description">
+          Visão geral executiva em tempo real do quadro de colaboradores, distribuição de cargos e dados organizacionais.
+        </p>
       </header>
 
       {/* Card 1: Total Colaboradores (com atalho para criar colaborador) */}
