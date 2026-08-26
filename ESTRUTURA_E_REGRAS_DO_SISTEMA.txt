@@ -156,9 +156,13 @@ D. Busca, Filtro & Tabela de Colaboradores:
 D. Estrutura do Banco de Dados PostgreSQL (Tabela `empresas`):
 - Tabela `empresas`: `id` (SERIAL PRIMARY KEY), `razao_social` (VARCHAR), `nome_fantasia` (VARCHAR), `cnpj` (VARCHAR UNIQUE), `cep`, `logradouro`, `numero`, `complemento`, `bairro`, `cidade`, `estado`, `logo_url` (TEXT), `cor_primaria` (DEFAULT '#6366f1'), `cor_secundaria` (DEFAULT '#38bdf8'), `cor_destaque` (DEFAULT '#34d399'), `status` (DEFAULT 'Ativa'), `db_host` (VARCHAR), `db_port` (INT DEFAULT 5432), `db_user` (VARCHAR), `db_pass` (VARCHAR), `db_name` (VARCHAR), `criado_em` (TIMESTAMP). Chave estrangeira `empresa_id` em `usuarios` e `chaves_licenca`.
 
-E. Seleção no Campo Cargo / Função (CBO):
+E. Seleção e Validação Estrita no Campo Cargo / Função (CBO):
 - Permite pesquisar os cargos oficiais da CBO por nome ou pelo código numérico CBO.
 - O campo utiliza a técnica de controle de foco via useRef e handleClickOutside, permitindo clicar e arrastar o cursor para selecionar o texto normalmente.
+- REGRA 158: Validação Estrita de Cargo/Função contra o Catálogo Oficial CBO (MTE/Brasil):
+  - É proibido cadastrar ou atualizar colaboradores com cargos arbitrários ou que não existam na base oficial da CBO.
+  - No Frontend (`Colaboradores.tsx`), o formulário valida o valor digitado contra `cargosList`. Se o cargo digitado não pertencer à CBO, exibe alerta visual imediato ("⚠️ Cargo não consta na lista CBO") e bloqueia a submissão via `handleSubmit` com a mensagem `"O cargo/função informado não consta na lista oficial da CBO. Selecione uma ocupação válida da lista."`.
+  - No Backend (`backend/src/index.ts`), os endpoints `POST /api/colaboradores` e `PUT /api/colaboradores/:id` validam o campo `cargo` contra a tabela `cargos` no banco de dados. Caso o cargo informado não exista, a requisição é rejeitada com erro HTTP 400. Se for válido, armazena o nome canônico oficial registrado no catálogo da CBO.
 
 F. Design e Temas Visuais:
 - O sistema possui 3 temas distintos:

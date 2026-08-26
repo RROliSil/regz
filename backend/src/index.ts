@@ -2521,6 +2521,19 @@ app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Req
       return res.status(400).json({ error: 'Este CPF já está cadastrado' });
     }
 
+    let cargoOficial: string | null = null;
+    if (cargo && typeof cargo === 'string' && cargo.trim()) {
+      const cargoTrimmed = cargo.trim();
+      const cargoDb = await targetPool.query(
+        'SELECT nome, codigo_cbo FROM cargos WHERE LOWER(nome) = LOWER($1) OR LOWER(codigo_cbo) = LOWER($1)',
+        [cargoTrimmed]
+      );
+      if (cargoDb.rows.length === 0) {
+        return res.status(400).json({ error: 'O cargo/função informado não consta na lista oficial da CBO. Selecione uma ocupação válida da lista.' });
+      }
+      cargoOficial = cargoDb.rows[0].nome;
+    }
+
     let finalLat = latitude;
     let finalLon = longitude;
     if (!finalLat && (logradouro || cidade || cep)) {
@@ -2534,7 +2547,7 @@ app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Req
       (nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, ativo, empresa_id) 
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, true, $14) 
       RETURNING *`,
-      [nome, cpf, cargo || null, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null, empId]
+      [nome, cpf, cargoOficial || null, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null, empId]
     );
 
     const novoColaborador = result.rows[0];
@@ -2590,6 +2603,19 @@ app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: 
       return res.status(400).json({ error: 'Este CPF pertence a outro colaborador' });
     }
 
+    let cargoOficial: string | null = null;
+    if (cargo && typeof cargo === 'string' && cargo.trim()) {
+      const cargoTrimmed = cargo.trim();
+      const cargoDb = await targetPool.query(
+        'SELECT nome, codigo_cbo FROM cargos WHERE LOWER(nome) = LOWER($1) OR LOWER(codigo_cbo) = LOWER($1)',
+        [cargoTrimmed]
+      );
+      if (cargoDb.rows.length === 0) {
+        return res.status(400).json({ error: 'O cargo/função informado não consta na lista oficial da CBO. Selecione uma ocupação válida da lista.' });
+      }
+      cargoOficial = cargoDb.rows[0].nome;
+    }
+
     let finalLat = latitude;
     let finalLon = longitude;
     if (!finalLat && (logradouro || cidade || cep)) {
@@ -2603,7 +2629,7 @@ app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: 
        SET nome = $1, cpf = $2, cargo = $3, cep = $4, logradouro = $5, numero = $6, complemento = $7, bairro = $8, cidade = $9, estado = $10, latitude = $11, longitude = $12, foto_url = $13 
        WHERE id = $14 
        RETURNING *`,
-      [nome, cpf, cargo || null, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null, id]
+      [nome, cpf, cargoOficial || null, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null, id]
     );
 
     if (result.rows.length === 0) {
