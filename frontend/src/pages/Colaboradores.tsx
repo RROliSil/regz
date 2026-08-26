@@ -712,9 +712,9 @@ export const Colaboradores: React.FC = () => {
       cargoParaSalvar = cboValido.nome;
     }
 
-    // Validação de regras para Campos Customizados (min/max e dígitos numéricos)
+    // Validação de regras para Campos Customizados ativos (min/max e dígitos numéricos)
     for (const campo of camposCustomizadosList) {
-      if (!campo.id) continue;
+      if (!campo.id || campo.ativo === false) continue;
       const val = (valoresCustomizados[campo.id] || '').trim();
 
       if (campo.obrigatorio && !val) {
@@ -1796,15 +1796,9 @@ export const Colaboradores: React.FC = () => {
                 </div>
               </div>
 
-              {/* Seção de Campos Personalizados */}
-              {/* Seção de Campos Personalizados */}
+              {/* Seção de Campos Personalizados (Apenas Ativos) */}
               {(() => {
-                const camposVisiveis = camposCustomizadosList.filter((campo) => {
-                  if (campo.ativo !== false) return true;
-                  // Se o campo estiver inativo, só exibe caso o colaborador que está sendo editado já possua valor salvo previamente
-                  const valorGravado = campo.id ? valoresCustomizados[campo.id] : '';
-                  return !!(editingId && valorGravado && String(valorGravado).trim());
-                });
+                const camposVisiveis = camposCustomizadosList.filter((campo) => campo.ativo !== false);
 
                 if (camposVisiveis.length === 0) return null;
 
@@ -1822,19 +1816,12 @@ export const Colaboradores: React.FC = () => {
                           setValoresCustomizados(prev => ({ ...prev, [campo.id!]: val }));
                         };
 
-                        const isCampoInativo = campo.ativo === false;
-
                         if (campo.tipo === 'selecao' && campo.opcoes) {
                           const opcoesArr = campo.opcoes.split(',').map(o => o.trim()).filter(Boolean);
                           return (
                             <div key={campo.id} className="form-group">
                               <label>
                                 {campo.nome} {campo.obrigatorio && '*'}
-                                {isCampoInativo && (
-                                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginLeft: '6px', fontWeight: 'normal' }}>
-                                    (Campo Inativado)
-                                  </span>
-                                )}
                               </label>
                               <select
                                 value={valorAtual}
@@ -1856,11 +1843,6 @@ export const Colaboradores: React.FC = () => {
                             <div key={campo.id} className="form-group">
                               <label>
                                 {campo.nome} {campo.obrigatorio && '*'}
-                                {isCampoInativo && (
-                                  <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginLeft: '6px', fontWeight: 'normal' }}>
-                                    (Campo Inativado)
-                                  </span>
-                                )}
                               </label>
                               <div className="boolean-field-box">
                                 <label className="checkbox-label" style={{ cursor: 'pointer', margin: 0 }}>
@@ -1888,11 +1870,6 @@ export const Colaboradores: React.FC = () => {
                           <div key={campo.id} className="form-group">
                             <label>
                               {campo.nome} {campo.obrigatorio && '*'}
-                              {isCampoInativo && (
-                                <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginLeft: '6px', fontWeight: 'normal' }}>
-                                  (Campo Inativado)
-                                </span>
-                              )}
                             </label>
                             <input
                               type={campo.tipo === 'data' ? 'date' : 'text'}

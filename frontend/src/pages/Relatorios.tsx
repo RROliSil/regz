@@ -53,6 +53,7 @@ interface CampoCustomizado {
   tipo: string;
   opcoes?: string | null;
   obrigatorio?: boolean;
+  ativo?: boolean;
 }
 
 interface PerfilAcesso {
@@ -267,7 +268,7 @@ export const Relatorios: React.FC = () => {
       if (camposRes.ok) {
         const data = await camposRes.json();
         const listaCampos: CampoCustomizado[] = Array.isArray(data) ? data : [];
-        setCampos(listaCampos);
+        setCampos(listaCampos.filter(c => c.ativo !== false));
       }
       if (userRes.ok) {
         const data = await userRes.json();
