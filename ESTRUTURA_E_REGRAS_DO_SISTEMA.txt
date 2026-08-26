@@ -311,6 +311,7 @@ J. Logs de Auditoria e Rastreabilidade de Usuários:
 10. Página de Campos Personalizados com layout estrito 2x2 (2 cards por linha) para garantir simetria visual permanente mesmo com a barra lateral recolhida.
 11. Coluna de Ações na tabela de Colaboradores com largura ajustada (195px) garantindo visibilidade total e sem cortes de todos os botões (QR Code, Mapa e Reativar) na aba de Inativados.
 12. Visualizador Lightbox de Foto Ampliada: ao clicar na foto do colaborador no modal de gerenciamento de fotos, a imagem é exibida em alta resolução com backdrop escurecido e efeito blur.
+13. Isolamento de Cabeçalhos Ngrok: o header 'ngrok-skip-browser-warning' é injetado exclusivamente em rotas internas do próprio domínio da aplicação, garantindo compatibilidade total sem bloqueio CORS em APIs externas públicas (ViaCEP, BrasilAPI, Google Maps).
 
 ===============================================================================
 FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO

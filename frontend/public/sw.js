@@ -45,8 +45,8 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Requisições de API sempre passam direto pela rede
-  if (url.pathname.startsWith('/api') || request.method !== 'GET') {
+  // Requisições externas (como viacep.com.br) ou rotas /api/ passam direto pela rede
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api') || request.method !== 'GET') {
     return;
   }
 

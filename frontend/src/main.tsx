@@ -3,16 +3,39 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 
-// Interceptor global para fetch injetando o header ngrok-skip-browser-warning
+// Interceptor global para fetch injetando o header ngrok-skip-browser-warning exclusivamente em rotas internas
 const originalFetch = window.fetch;
 window.fetch = async (input, init) => {
-  const customInit: RequestInit = init ? { ...init } : {};
-  const headers = new Headers(customInit.headers || {});
-  if (!headers.has('ngrok-skip-browser-warning')) {
-    headers.set('ngrok-skip-browser-warning', 'true');
+  let isInternal = false;
+  try {
+    if (typeof input === 'string') {
+      if (input.startsWith('/') || input.startsWith(window.location.origin)) {
+        isInternal = true;
+      }
+    } else if (input instanceof URL) {
+      if (input.origin === window.location.origin) {
+        isInternal = true;
+      }
+    } else if (input instanceof Request) {
+      if (input.url.startsWith('/') || input.url.startsWith(window.location.origin)) {
+        isInternal = true;
+      }
+    }
+  } catch {
+    isInternal = false;
   }
-  customInit.headers = headers;
-  return originalFetch(input, customInit);
+
+  if (isInternal) {
+    const customInit: RequestInit = init ? { ...init } : {};
+    const headers = new Headers(customInit.headers || (input instanceof Request ? input.headers : {}));
+    if (!headers.has('ngrok-skip-browser-warning')) {
+      headers.set('ngrok-skip-browser-warning', 'true');
+    }
+    customInit.headers = headers;
+    return originalFetch(input, customInit);
+  }
+
+  return originalFetch(input, init);
 };
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
