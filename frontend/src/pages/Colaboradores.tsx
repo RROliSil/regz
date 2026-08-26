@@ -1364,53 +1364,49 @@ export const Colaboradores: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            cursor: 'zoom-out'
+            cursor: 'zoom-out',
+            padding: '24px'
           }}
           onClick={() => setExpandedPhotoUrl(null)}
         >
           <div
             style={{
               position: 'relative',
-              maxWidth: '90vw',
-              maxHeight: '90vh',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center'
+              display: 'inline-flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              cursor: 'default'
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setExpandedPhotoUrl(null)}
+              className="btn-close"
               style={{
                 position: 'absolute',
-                top: '-45px',
-                right: '0',
-                background: 'rgba(255, 255, 255, 0.2)',
-                border: 'none',
-                color: '#ffffff',
-                width: '38px',
-                height: '38px',
-                borderRadius: '50%',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transition: 'background 0.2s ease'
+                top: '-16px',
+                right: '-16px',
+                zIndex: 20,
+                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.5)'
               }}
               title="Fechar visualização ampliada"
             >
-              <X size={22} />
+              <X size={20} />
             </button>
             <img
               src={expandedPhotoUrl}
               alt="Foto do Colaborador Ampliada"
               style={{
-                maxWidth: 'min(500px, 85vw)',
-                maxHeight: '75vh',
-                borderRadius: '16px',
+                width: 'auto',
+                height: 'auto',
+                maxWidth: 'min(850px, 90vw)',
+                maxHeight: '86vh',
+                minWidth: 'min(580px, 85vw)',
+                borderRadius: '20px',
                 border: '3px solid rgba(255, 255, 255, 0.25)',
-                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.8)',
-                objectFit: 'contain'
+                boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9), 0 0 35px rgba(99, 102, 241, 0.25)',
+                objectFit: 'contain',
+                display: 'block'
               }}
             />
           </div>
