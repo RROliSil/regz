@@ -3068,7 +3068,33 @@ if (fs.existsSync(publicPath)) {
     if (req.path.startsWith('/api')) {
       return res.status(404).json({ error: 'Rota de API não encontrada' });
     }
-    res.sendFile(path.join(publicPath, 'index.html'));
+
+    const indexPath = path.join(publicPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      try {
+        let html = fs.readFileSync(indexPath, 'utf-8');
+        const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+        const host = req.get('host') || 'dining-product-giggle.ngrok-free.dev';
+        const fullBaseUrl = `${proto}://${host}`;
+        const logoAbsoluteUrl = `${fullBaseUrl}/logo.png`;
+        const canonicalUrl = `${fullBaseUrl}${req.originalUrl || ''}`;
+
+        // Injetar URLs absolutas dinamicamente nas tags Open Graph, Schema.org e Twitter Cards
+        html = html
+          .replace(/content="\/logo\.png"/g, `content="${logoAbsoluteUrl}"`)
+          .replace(/<meta property="og:url" content="[^"]*"/g, `<meta property="og:url" content="${canonicalUrl}"`);
+
+        if (!html.includes('property="og:url"')) {
+          html = html.replace('</head>', `  <meta property="og:url" content="${canonicalUrl}" />\n</head>`);
+        }
+
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.send(html);
+      } catch (err) {
+        return res.sendFile(indexPath);
+      }
+    }
+    res.sendFile(indexPath);
   });
 } else {
   // Rota de recepção padrão para desenvolvimento isolado do backend

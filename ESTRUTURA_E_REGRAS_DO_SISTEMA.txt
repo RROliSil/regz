@@ -336,6 +336,7 @@ J. Logs de Auditoria e Rastreabilidade de Usuários:
 17. Ocultação Estrita de Campos Personalizados Inativos: campos marcados como inativos são totalmente omitidos dos formulários de cadastro e edição de colaboradores e da listagem do construtor de relatórios, não exigindo validações e mantendo os formulários 100% limpos.
 18. Cabeçalho de Impressão Puro e Ocultação de Notificações: na impressão de relatórios, o cabeçalho da tabela é forçado a permanecer 100% branco com texto preto (#000000) em qualquer tema ativo (Dark, Padrão ou Claro), e o sistema de notificações flutuantes (snackbars) é completamente ocultado da folha.
 19. Contraste Máximo de Impressão (Linhas e Letras Pretas): todas as linhas divisórias da tabela e do cabeçalho bem como os textos descritivos, subtítulos, traços e indicadores são renderizados em preto puro (#000000), garantindo legibilidade e nitidez absolutas no papel.
+20. Prévia de Compartilhamento Completa com Logo (Open Graph & Twitter Cards): tags og:image, og:image:secure_url, twitter:image e microdados Schema.org configurados com resolução 512x512, e injeção dinâmica de URLs absolutas baseadas no host pelo Express, garantindo que a miniatura oficial com o logo 3D do Regz apareça perfeitamente ao enviar o link no WhatsApp, Telegram, LinkedIn, Discord, Teams e Slack.
 
 ===============================================================================
 FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO
