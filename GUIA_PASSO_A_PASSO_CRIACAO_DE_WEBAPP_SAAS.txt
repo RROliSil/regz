@@ -65,6 +65,46 @@ Este guia prático descreve detalhadamente cada etapa necessária para criar um 
     git branch -M main
     git remote add origin https://github.com/SEU_USUARIO/meu-novo-webapp.git
 
+2.3. Configuração do `.gitignore` (Proteção de Segredos e Arquivos de Build):
+  - Crie o arquivo `.gitignore` na raiz do projeto e dentro das pastas `frontend/` e `backend/` para impedir o versionamento de dependências pesadas, arquivos de variáveis de ambiente com senhas e pastas de build.
+  
+  Exemplo de `.gitignore` recomendado para o Projeto:
+    # Dependências pesadas
+    node_modules/
+    npm-debug.log*
+    yarn-debug.log*
+    yarn-error.log*
+
+    # Código compilado e bundles de produção
+    dist/
+    build/
+    .out/
+    .vite/
+
+    # Variáveis de ambiente e segredos de produção (NUNCA ENVIAR PARA O GIT)
+    .env
+    .env.local
+    .env.production
+    .env.development.local
+
+    # Arquivos do sistema operacional e IDEs
+    .DS_Store
+    Thumbs.db
+    .idea/
+    .vscode/
+    *.suo
+    *.swp
+
+    # Logs e arquivos de cobertura de teste
+    *.log
+    logs/
+    coverage/
+
+  - Se algum arquivo sensível ou pasta pesada for enviado por engano antes do `.gitignore`, remova-o do rastreamento sem apagar do disco local:
+    git rm -r --cached .env
+    git rm -r --cached node_modules/
+    git commit -m "chore: remover arquivos sensíveis do rastreamento do Git"
+
 
 3. FASE 3: DESENVOLVIMENTO DO FRONTEND (REACT 18 + VITE + TYPESCRIPT + VANILLA CSS)
 -------------------------------------------------------------------------------
