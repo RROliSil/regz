@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Sliders, ShieldCheck, Briefcase, FileBarChart, Settings, ChevronLeft, ChevronRight, LogOut, User, Sun, Moon, Palette } from 'lucide-react';
+import { Home, Users, Sliders, ShieldCheck, FileBarChart, Settings, ChevronLeft, ChevronRight, LogOut, User, Sun, Moon, Palette } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
@@ -127,14 +127,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
           </NavLink>
         )}
 
-        {/* Espaços para Futuras Abas */}
-        <div className="nav-section-label" style={{ marginTop: '24px' }}>Módulos Futuros</div>
-
-        <div className="nav-item disabled" title="Departamentos (Em breve)">
-          <Briefcase size={20} style={{ flexShrink: 0 }} />
-          <span>Departamentos</span>
-          <span className="badge-soon">Em breve</span>
-        </div>
       </nav>
 
       {/* Footer com Perfil do Usuário e Botão de Logout */}
