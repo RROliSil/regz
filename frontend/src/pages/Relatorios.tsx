@@ -1427,7 +1427,7 @@ export const Relatorios: React.FC = () => {
       {/* ÁREA DE IMPRESSÃO / PRÉ-VISUALIZAÇÃO DO RELATÓRIO */}
       <div className="printable-report-area glass-panel" style={{ padding: '32px', borderRadius: '20px' }}>
         {/* Cabeçalho exclusivo para a impressão em PDF */}
-        <div className="pdf-header-only" style={{ marginBottom: '20px', borderBottom: '2px solid #0f172a', paddingBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="pdf-header-only">
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <img 
               src="/logo.png" 

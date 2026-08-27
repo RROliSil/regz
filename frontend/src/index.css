@@ -2665,7 +2665,8 @@ select option,
 /* MÓDULO DE RELATÓRIOS & SUPORTE A IMPRESSÃO / PDF (A4) */
 /* ======================================================== */
 .pdf-header-only {
-  display: none;
+  display: none !important;
+  visibility: hidden !important;
 }
 
 @media print {
@@ -2747,6 +2748,7 @@ select option,
 
   .pdf-header-only {
     display: flex !important;
+    visibility: visible !important;
     align-items: center !important;
     justify-content: space-between !important;
     margin-bottom: 14px !important;
@@ -4585,7 +4587,8 @@ input[type="checkbox"]:disabled,
 /* MÓDULO DE RELATÓRIOS & SUPORTE A IMPRESSÃO / PDF (A4) */
 /* ======================================================== */
 .pdf-header-only {
-  display: none;
+  display: none !important;
+  visibility: hidden !important;
 }
 
 /* ======================================================== */
