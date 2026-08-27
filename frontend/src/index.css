@@ -50,9 +50,11 @@
 }
 
 /* ======================================================== */
-/* BARRAS DE ROLAGEM VERTICAIS E GLOBAIS MULTI-TEMA */
+/* PADRÃO ARQUITETURAL UNIVERSAL DE BARRAS DE ROLAGEM (REGZ) */
+/* REGRA PERPÉTUA: Vertical 8px | Horizontal 4px | Sem Setas | Cores Multi-Tema */
 /* ======================================================== */
-::-webkit-scrollbar-button {
+::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
@@ -60,22 +62,26 @@
 
 :root,
 html,
-body {
+body,
+* {
   scrollbar-width: thin;
 }
 
-::-webkit-scrollbar {
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
   width: 8px !important;
   height: 4px !important;
 }
 
-::-webkit-scrollbar-corner {
+::-webkit-scrollbar-corner,
+*::-webkit-scrollbar-corner {
   background: transparent !important;
 }
 
 /* 1. Tema Dark (Escuro) */
 html[data-theme="dark"],
-html[data-theme="dark"] body {
+html[data-theme="dark"] body,
+html[data-theme="dark"] * {
   color-scheme: dark !important;
   scrollbar-color: #3f3f46 #09090b !important;
 }
@@ -105,7 +111,8 @@ html[data-theme="dark"] *::-webkit-scrollbar-thumb:hover,
 /* 2. Tema Padrão (Default) */
 html[data-theme="padrao"],
 html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]),
-html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) body {
+html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) body,
+html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) * {
   color-scheme: dark !important;
   scrollbar-color: #334155 #020617 !important;
 }
@@ -134,7 +141,8 @@ html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast=
 
 /* 3. Tema Claro (Light) */
 html[data-theme="light"],
-html[data-theme="light"] body {
+html[data-theme="light"] body,
+html[data-theme="light"] * {
   color-scheme: light !important;
   scrollbar-color: #cbd5e1 #f8fafc !important;
 }
@@ -163,7 +171,8 @@ html[data-theme="light"] *::-webkit-scrollbar-thumb:hover,
 
 /* 4. Modo Alto Contraste */
 html[data-high-contrast="true"],
-html[data-high-contrast="true"] body {
+html[data-high-contrast="true"] body,
+html[data-high-contrast="true"] * {
   color-scheme: dark !important;
   scrollbar-color: #00ff00 #000000 !important;
 }
