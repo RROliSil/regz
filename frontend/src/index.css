@@ -588,8 +588,11 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 480px;
 }
 
-/* Table Wrapper Flexível com Rolagem Horizontal Discreta e Fina */
-.table-flex-wrapper {
+/* Table Wrapper & Containers com Rolagem Horizontal Discreta e Ultra-Fina (4px) */
+.table-flex-wrapper,
+.table-sticky-wrapper,
+.panel-builder-container,
+.custom-scrollbar {
   flex: 1;
   width: 100%;
   max-width: 100%;
@@ -598,34 +601,55 @@ h1, h2, h3, h4, h5, h6 {
   scrollbar-color: rgba(148, 163, 184, 0.28) transparent;
 }
 
-.table-flex-wrapper::-webkit-scrollbar {
+.table-flex-wrapper::-webkit-scrollbar,
+.table-sticky-wrapper::-webkit-scrollbar,
+.panel-builder-container::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar {
   height: 4px;
 }
 
-.table-flex-wrapper::-webkit-scrollbar-track {
+.table-flex-wrapper::-webkit-scrollbar-track,
+.table-sticky-wrapper::-webkit-scrollbar-track,
+.panel-builder-container::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.table-flex-wrapper::-webkit-scrollbar-thumb {
+.table-flex-wrapper::-webkit-scrollbar-thumb,
+.table-sticky-wrapper::-webkit-scrollbar-thumb,
+.panel-builder-container::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.28);
   border-radius: 6px;
 }
 
-.table-flex-wrapper::-webkit-scrollbar-thumb:hover {
+.table-flex-wrapper::-webkit-scrollbar-thumb:hover,
+.table-sticky-wrapper::-webkit-scrollbar-thumb:hover,
+.panel-builder-container::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.5);
 }
 
-[data-theme="dark"] .table-flex-wrapper {
+[data-theme="dark"] .table-flex-wrapper,
+[data-theme="dark"] .table-sticky-wrapper,
+[data-theme="dark"] .panel-builder-container,
+[data-theme="dark"] .custom-scrollbar {
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-[data-theme="dark"] .table-flex-wrapper::-webkit-scrollbar-thumb {
+[data-theme="dark"] .table-flex-wrapper::-webkit-scrollbar-thumb,
+[data-theme="dark"] .table-sticky-wrapper::-webkit-scrollbar-thumb,
+[data-theme="dark"] .panel-builder-container::-webkit-scrollbar-thumb,
+[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2) !important;
   border-radius: 6px !important;
   border: none !important;
 }
 
-[data-theme="dark"] .table-flex-wrapper::-webkit-scrollbar-thumb:hover {
+[data-theme="dark"] .table-flex-wrapper::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .table-sticky-wrapper::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .panel-builder-container::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.38) !important;
 }
 
@@ -656,22 +680,49 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 12px rgba(255, 255, 255, 0.3) !important;
 }
 
-[data-theme="light"] .table-flex-wrapper {
+[data-theme="light"] .table-flex-wrapper,
+[data-theme="light"] .table-sticky-wrapper,
+[data-theme="light"] .panel-builder-container,
+[data-theme="light"] .custom-scrollbar {
   scrollbar-color: rgba(203, 213, 225, 0.8) transparent;
 }
 
-[data-theme="light"] .table-flex-wrapper::-webkit-scrollbar-track {
+[data-theme="light"] .table-flex-wrapper::-webkit-scrollbar-track,
+[data-theme="light"] .table-sticky-wrapper::-webkit-scrollbar-track,
+[data-theme="light"] .panel-builder-container::-webkit-scrollbar-track,
+[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 
-[data-theme="light"] .table-flex-wrapper::-webkit-scrollbar-thumb {
+[data-theme="light"] .table-flex-wrapper::-webkit-scrollbar-thumb,
+[data-theme="light"] .table-sticky-wrapper::-webkit-scrollbar-thumb,
+[data-theme="light"] .panel-builder-container::-webkit-scrollbar-thumb,
+[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb {
   background: rgba(203, 213, 225, 0.7);
   border-radius: 4px;
   border: none !important;
 }
 
-[data-theme="light"] .table-flex-wrapper::-webkit-scrollbar-thumb:hover {
+[data-theme="light"] .table-flex-wrapper::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] .table-sticky-wrapper::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] .panel-builder-container::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+[data-high-contrast="true"] .table-flex-wrapper,
+[data-high-contrast="true"] .table-sticky-wrapper,
+[data-high-contrast="true"] .panel-builder-container,
+[data-high-contrast="true"] .custom-scrollbar {
+  scrollbar-color: #00ff00 transparent !important;
+}
+
+[data-high-contrast="true"] .table-flex-wrapper::-webkit-scrollbar-thumb,
+[data-high-contrast="true"] .table-sticky-wrapper::-webkit-scrollbar-thumb,
+[data-high-contrast="true"] .panel-builder-container::-webkit-scrollbar-thumb,
+[data-high-contrast="true"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #00ff00 !important;
+  border-radius: 4px !important;
 }
 
 /* Custom Table Fluida (Sem Min-Width) com Suporte a Colunas Redimensionáveis */
@@ -2303,33 +2354,31 @@ th.col-acoes .col-resizer {
   border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
-/* Barra de Rolagem (Scrollbar) Padronizada e Fina no Modo Dark */
-[data-theme="dark"] * {
+/* Barra de Rolagem Horizontal no Modo Dark para Containers */
+[data-theme="dark"] .modal-content,
+[data-theme="dark"] .campos-modal-body,
+[data-theme="dark"] .relatorio-table-wrapper {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar,
-[data-theme="dark"] *::-webkit-scrollbar {
-  width: 6px !important;
-  height: 6px !important;
+[data-theme="dark"] .modal-content::-webkit-scrollbar,
+[data-theme="dark"] .campos-modal-body::-webkit-scrollbar,
+[data-theme="dark"] .relatorio-table-wrapper::-webkit-scrollbar {
+  height: 4px;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb,
-[data-theme="dark"] *::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.22) !important;
-  border-radius: 8px !important;
-  transition: background 0.2s ease !important;
+[data-theme="dark"] .modal-content::-webkit-scrollbar-thumb,
+[data-theme="dark"] .campos-modal-body::-webkit-scrollbar-thumb,
+[data-theme="dark"] .relatorio-table-wrapper::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover,
-[data-theme="dark"] *::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.45) !important;
-}
-
-[data-theme="dark"] ::-webkit-scrollbar-track,
-[data-theme="dark"] *::-webkit-scrollbar-track {
-  background: transparent !important;
+[data-theme="dark"] .modal-content::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .campos-modal-body::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .relatorio-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.38) !important;
 }
 
 /* Ajustes de fundo da página Colaboradores (Apenas no Modo Dark) */
