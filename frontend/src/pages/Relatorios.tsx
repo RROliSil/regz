@@ -629,6 +629,7 @@ export const Relatorios: React.FC = () => {
         const matchCpf = (c.cpf || '').includes(q);
         const matchEmail = (c.email || '').toLowerCase().includes(q);
         const matchCargo = (c.cargo || '').toLowerCase().includes(q);
+        const matchCbo = (c.cbo_codigo || '').toLowerCase().includes(q);
         const matchCidade = (c.cidade || '').toLowerCase().includes(q);
         const matchLogradouro = (c.logradouro || '').toLowerCase().includes(q);
         const matchBairro = (c.bairro || '').toLowerCase().includes(q);
@@ -641,7 +642,7 @@ export const Relatorios: React.FC = () => {
           );
         }
 
-        if (!matchNome && !matchCpf && !matchEmail && !matchCargo && !matchCidade && !matchLogradouro && !matchBairro && !matchCustom) {
+        if (!matchNome && !matchCpf && !matchEmail && !matchCargo && !matchCbo && !matchCidade && !matchLogradouro && !matchBairro && !matchCustom) {
           return false;
         }
       }

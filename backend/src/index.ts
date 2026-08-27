@@ -2507,6 +2507,7 @@ app.get('/api/colaboradores', async (req: Request, res: Response) => {
     let query = `
       SELECT 
         c.*,
+        cg.codigo_cbo as cbo_codigo,
         COALESCE(
           (
             SELECT jsonb_object_agg(cc.nome, v.valor)
@@ -2525,6 +2526,7 @@ app.get('/api/colaboradores', async (req: Request, res: Response) => {
           '{}'::jsonb
         ) as valores_customizados
       FROM colaboradores c
+      LEFT JOIN cargos cg ON LOWER(cg.nome) = LOWER(c.cargo)
     `;
     const values: any[] = [];
 
@@ -2561,6 +2563,7 @@ app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
     const query = `
       SELECT 
         c.*,
+        cg.codigo_cbo as cbo_codigo,
         COALESCE(
           (
             SELECT jsonb_object_agg(cc.nome, v.valor)
@@ -2579,6 +2582,7 @@ app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
           '{}'::jsonb
         ) as valores_customizados
       FROM colaboradores c
+      LEFT JOIN cargos cg ON LOWER(cg.nome) = LOWER(c.cargo)
       WHERE c.id = $1
     `;
     const result = await targetPool.query(query, [id]);
