@@ -341,7 +341,7 @@ J. Logs de Auditoria e Rastreabilidade de Usuários:
 22. Modal Integrado de Pré-visualização e Geração de PDF Real (.pdf) com Logo Oficial do Regz: ao clicar em 'Visualizar / Imprimir PDF', um modal interno em tela cheia (94vw x 92vh) abre sobre a própria página (sem abrir novas abas nem disparar downloads/impressões automáticas), permitindo pré-visualizar o PDF vetorial em tempo real, alternar dinamicamente entre Retrato e Paisagem com botões estilizados (.pdf-orientation-toggle) e integrados aos 3 temas (Padrão, Claro, Dark e Alto Contraste com #00ff00), efetuar o download sob demanda (.pdf) e disparar a impressão nativa diretamente sobre o frame do documento sem gerar novas abas ou janelas pop-up. O documento contém o logotipo oficial 3D em alta resolução (/logo.png), cabeçalho executivo 'REGZ GESTÃO DE PESSOAS', metadados de emissão, tabela zebrada nítida, tags coloridas de Sim/Ativo (verde #059669) e Não/Inativo (vermelho #dc2626) e paginação no rodapé.
 
 ===============================================================================
-FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO
+FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO (REVISÃO: 27/08/2026)
 ===============================================================================
 
 
