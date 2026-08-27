@@ -1039,14 +1039,43 @@ export const Relatorios: React.FC = () => {
   };
 
   const imprimirPDFDoModal = () => {
-    if (pdfIframeRef.current && pdfIframeRef.current.contentWindow) {
-      pdfIframeRef.current.contentWindow.print();
-    } else if (pdfPreviewBlobUrl) {
-      const win = window.open(pdfPreviewBlobUrl, '_blank');
-      if (win) {
-        win.focus();
-        win.print();
+    try {
+      const iframe = pdfIframeRef.current;
+      if (iframe && iframe.contentWindow) {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        return;
       }
+    } catch (e) {
+      console.warn('Tentativa direta de print via iframe do modal:', e);
+    }
+
+    // Impressão limpa via frame oculto sem abertura de guias/janelas
+    if (pdfPreviewBlobUrl) {
+      let printFrame = document.getElementById('hidden-pdf-print-frame') as HTMLIFrameElement;
+      if (!printFrame) {
+        printFrame = document.createElement('iframe');
+        printFrame.id = 'hidden-pdf-print-frame';
+        printFrame.style.position = 'fixed';
+        printFrame.style.top = '-9999px';
+        printFrame.style.left = '-9999px';
+        printFrame.style.width = '1px';
+        printFrame.style.height = '1px';
+        printFrame.style.border = 'none';
+        printFrame.style.opacity = '0';
+        document.body.appendChild(printFrame);
+      }
+      printFrame.src = pdfPreviewBlobUrl;
+      printFrame.onload = () => {
+        setTimeout(() => {
+          try {
+            printFrame.contentWindow?.focus();
+            printFrame.contentWindow?.print();
+          } catch (err) {
+            console.error('Erro ao acionar impressora:', err);
+          }
+        }, 200);
+      };
     }
   };
 
@@ -2159,7 +2188,7 @@ export const Relatorios: React.FC = () => {
 
               {/* Controles: Retrato / Paisagem + Download + Imprimir + Fechar */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                <div className="orientation-selector" style={{ margin: 0 }}>
+                <div className="pdf-orientation-toggle" style={{ margin: 0 }}>
                   <button
                     type="button"
                     onClick={() => alternarOrientacaoNoModal('portrait')}
