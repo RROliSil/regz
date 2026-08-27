@@ -1427,16 +1427,34 @@ export const Relatorios: React.FC = () => {
       {/* ÁREA DE IMPRESSÃO / PRÉ-VISUALIZAÇÃO DO RELATÓRIO */}
       <div className="printable-report-area glass-panel" style={{ padding: '32px', borderRadius: '20px' }}>
         {/* Cabeçalho exclusivo para a impressão em PDF */}
-        <div className="pdf-header-only" style={{ marginBottom: '20px', borderBottom: '2px solid #6366f1', paddingBottom: '12px' }}>
-          <h2 style={{ fontSize: '1.6rem', color: '#0f172a', margin: 0 }}>REGZ GESTÃO DE PESSOAS</h2>
-          <p style={{ fontSize: '0.9rem', color: '#475569', margin: '4px 0' }}>
-            {modo === 'construtor' && 'Relatório Personalizado de Colaboradores & Campos'}
-            {modo === 'geo' && 'Relatório de Distribuição Geográfica'}
-            {modo === 'rbac' && 'Relatório de Usuários e Permissões (RBAC)'}
-          </p>
-          <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
-            Gerado em: {new Date().toLocaleString('pt-BR')} • {modo === 'construtor' ? `${colunasAtivasConstrutor.length} colunas exibidas` : ''}
-          </span>
+        <div className="pdf-header-only" style={{ marginBottom: '20px', borderBottom: '2px solid #0f172a', paddingBottom: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <img 
+              src="/logo.png" 
+              alt="Logo Regz" 
+              style={{ width: '48px', height: '48px', objectFit: 'contain', flexShrink: 0 }} 
+            />
+            <div>
+              <h2 style={{ fontSize: '1.45rem', color: '#000000', margin: 0, fontWeight: 800, letterSpacing: '-0.02em' }}>
+                REGZ GESTÃO DE PESSOAS
+              </h2>
+              <p style={{ fontSize: '0.88rem', color: '#000000', margin: '2px 0' }}>
+                {modo === 'construtor' && 'Relatório Personalizado de Colaboradores & Campos'}
+                {modo === 'geo' && 'Relatório de Distribuição Geográfica'}
+                {modo === 'rbac' && 'Relatório de Usuários e Permissões (RBAC)'}
+              </p>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ fontSize: '0.78rem', color: '#000000', display: 'block', fontWeight: 600 }}>
+              Gerado em: {new Date().toLocaleString('pt-BR')}
+            </span>
+            {modo === 'construtor' && (
+              <span style={{ fontSize: '0.78rem', color: '#000000', display: 'block' }}>
+                {colunasAtivasConstrutor.length} colunas exibidas
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Resumo e Indicadores do Relatório */}
@@ -1455,10 +1473,10 @@ export const Relatorios: React.FC = () => {
           <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem' }}>
             {modo === 'construtor' && (
               <>
-                <span style={{ color: '#34d399', fontWeight: 600 }}>
+                <span className="tag-status-ativo" style={{ color: '#10b981', fontWeight: 600 }}>
                   ● {colaboradoresFiltrados.filter(c => c.ativo !== false).length} Ativos
                 </span>
-                <span style={{ color: '#fb7185', fontWeight: 600 }}>
+                <span className="tag-status-inativo" style={{ color: '#ef4444', fontWeight: 600 }}>
                   ● {colaboradoresFiltrados.filter(c => c.ativo === false).length} Inativos
                 </span>
               </>
@@ -1559,8 +1577,8 @@ export const Relatorios: React.FC = () => {
                               if (col.key === 'status') {
                                 return (
                                   <td key={col.key} style={{ width: `${colW}px` }}>
-                                    <span style={{
-                                      color: c.ativo !== false ? '#34d399' : '#fb7185',
+                                    <span className={c.ativo !== false ? 'tag-status-ativo' : 'tag-status-inativo'} style={{
+                                      color: c.ativo !== false ? '#10b981' : '#ef4444',
                                       fontWeight: 700,
                                       fontSize: '0.78rem'
                                     }}>
@@ -1586,9 +1604,9 @@ export const Relatorios: React.FC = () => {
                               return (
                                 <td key={col.key} style={{ width: `${colW}px`, ...(col.key === 'nome' ? { fontWeight: 600 } : {}) }}>
                                   {val === 'Sim' ? (
-                                    <span style={{ color: '#34d399', fontWeight: 600 }}>✓ Sim</span>
+                                    <span className="tag-boolean-sim" style={{ color: '#10b981', fontWeight: 700 }}>✓ Sim</span>
                                   ) : val === 'Não' ? (
-                                    <span style={{ color: '#fb7185' }}>✗ Não</span>
+                                    <span className="tag-boolean-nao" style={{ color: '#ef4444', fontWeight: 700 }}>✗ Não</span>
                                   ) : (
                                     val
                                   )}

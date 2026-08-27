@@ -2746,15 +2746,26 @@ select option,
   }
 
   .pdf-header-only {
-    display: block !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
     margin-bottom: 14px !important;
     border-bottom: 2px solid #000000 !important;
     padding-bottom: 8px !important;
     width: 100% !important;
   }
 
+  .pdf-header-only img {
+    display: block !important;
+    width: 44px !important;
+    height: 44px !important;
+    object-fit: contain !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
   .pdf-header-only h2 {
-    font-size: 15pt !important;
+    font-size: 14pt !important;
     color: #000000 !important;
     font-weight: 800 !important;
     margin: 0 !important;
@@ -2762,7 +2773,7 @@ select option,
   }
 
   .pdf-header-only p {
-    font-size: 9pt !important;
+    font-size: 8.5pt !important;
     color: #000000 !important;
     margin: 2px 0 !important;
   }
@@ -2772,7 +2783,24 @@ select option,
     color: #000000 !important;
   }
 
-  .printable-report-area span:not([style*="color: #34d399"]):not([style*="color: #fb7185"]),
+  /* Tags de Correto (Sim / Ativo) e Errado (Não / Inativo) Coloridas e Nítidas na Impressão */
+  .tag-boolean-sim,
+  .tag-status-ativo {
+    color: #059669 !important;
+    font-weight: 700 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .tag-boolean-nao,
+  .tag-status-inativo {
+    color: #dc2626 !important;
+    font-weight: 700 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .printable-report-area span:not(.tag-boolean-sim):not(.tag-boolean-nao):not(.tag-status-ativo):not(.tag-status-inativo),
   .printable-report-area p,
   .printable-report-area strong,
   .printable-report-area h2 {
@@ -2844,7 +2872,7 @@ select option,
     background: transparent !important;
   }
 
-  .custom-table td *:not([style*="color: #34d399"]):not([style*="color: #fb7185"]) {
+  .custom-table td *:not(.tag-boolean-sim):not(.tag-boolean-nao):not(.tag-status-ativo):not(.tag-status-inativo) {
     color: #000000 !important;
   }
 
