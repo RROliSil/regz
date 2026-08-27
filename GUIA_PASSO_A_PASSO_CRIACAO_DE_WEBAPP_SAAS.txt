@@ -1,0 +1,320 @@
+===============================================================================
+GUIA DEFINITIVO PASSO A PASSO: PASSO A PASSO COMPLETO PARA CRIAR, CONFIGURAR
+E DEPLOYAR UM WEBAPP SAAS FULL-STACK DO ZERO
+(FRONTEND REACT/VITE + BACKEND NODE/EXPRESS + POSTGRESQL + DOCKER + PORTAINER + NGROK)
+===============================================================================
+
+Este guia prático descreve detalhadamente cada etapa necessária para criar um sistema WebApp SaaS corporativo completo (como o Regz), desde o provisionamento da Máquina Virtual (VM), configuração de rede e IP, até o deploy em produção via Portainer.io com acesso público HTTPS via Ngrok.
+
+
+1. FASE 1: PREPARAÇÃO DA MÁQUINA VIRTUAL / SERVIDOR LINUX (UBUNTU / DEBIAN)
+-------------------------------------------------------------------------------
+1.1. Provisionamento da VM:
+  - Escolha um provedor de nuvem (DigitalOcean, AWS, Google Cloud, Hetzner) ou ambiente On-Premise (Proxmox, VMware, VirtualBox).
+  - Recomendação de hardware mínimo: 2 vCPUs, 4 GB de RAM, 40 GB de SSD, Sistema Operacional Ubuntu 22.04 LTS ou Debian 12 64-bit.
+
+1.2. Primeiro Acesso SSH & Atualização do Sistema:
+  - Abra o terminal e conecte-se via SSH:
+    ssh usuario@SEU_IP_SERVIDOREX: ssh root@192.168.2.72
+  - Atualize os pacotes do sistema operacional:
+    sudo apt update && sudo apt upgrade -y
+
+1.3. Instalação de Utilitários Fundamentais e Git:
+  - Instale ferramentas essenciais de rede e desenvolvimento:
+    sudo apt install -y curl wget git htop ufw net-tools ca-certificates gnupg lsb-release
+
+1.4. Instalação Oficial do Docker & Docker Compose:
+  - Adicione a chave GPG oficial do Docker:
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+  - Configure o repositório estável:
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  - Instale a engine do Docker e o plugin do Compose:
+    sudo apt update
+    sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+  - Habilite e inicie o serviço do Docker:
+    sudo systemctl enable docker
+    sudo systemctl start docker
+
+1.5. Configuração do Firewall (UFW) e Regras de Portas:
+  - Libere as portas essenciais no Firewall do Linux:
+    sudo ufw allow 22/tcp     # SSH (Acesso ao servidor)
+    sudo ufw allow 80/tcp     # HTTP padrão
+    sudo ufw allow 443/tcp    # HTTPS padrão
+    sudo ufw allow 8280/tcp   # Porta do Frontend Web (Docker regz-app)
+    sudo ufw allow 5434/tcp   # Porta do PostgreSQL (Mapeada para porta interna 5432)
+    sudo ufw allow 9443/tcp   # Porta de Gerenciamento do Portainer.io (HTTPS)
+  - Ative o firewall:
+    sudo ufw enable
+  - Verifique o status das portas:
+    sudo ufw status verbose
+
+
+2. FASE 2: CONFIGURAÇÃO DE REPOSITÓRIO GITHUB & CHAVES DE ACESSO
+-------------------------------------------------------------------------------
+2.1. Criação do Repositório no GitHub:
+  - Acesse o GitHub (https://github.com) e crie um novo repositório (ex: `meu-novo-webapp`).
+  - Defina a branch principal como `main`.
+
+2.2. Autenticação e Vínculo do Git na Máquina de Desenvolvimento:
+  - Configure o usuário global do Git:
+    git config --global user.name "Seu Nome"
+    git config --global user.email "seuemail@exemplo.com"
+  - Inicialize o repositório local:
+    git init
+    git branch -M main
+    git remote add origin https://github.com/SEU_USUARIO/meu-novo-webapp.git
+
+
+3. FASE 3: DESENVOLVIMENTO DO FRONTEND (REACT 18 + VITE + TYPESCRIPT + VANILLA CSS)
+-------------------------------------------------------------------------------
+3.1. Inicialização do Projeto React com Vite:
+  - No terminal da máquina de desenvolvimento, execute:
+    npx create-vite@latest frontend --template react-ts
+    cd frontend
+    npm install
+
+3.2. Instalação das Bibliotecas Recomendadas:
+  - Instale os ícones da Lucide, utilitários de PDF, QR Code e alertas:
+    npm install lucide-react jspdf jspdf-autotable qrcode.react dompurify html2canvas
+    npm install --save-dev @types/dompurify
+
+3.3. Configuração da Arquitetura de Temas (Vanilla CSS Semântico):
+  - No arquivo `src/index.css`, declare as variáveis CSS raiz (`:root`) e seletores `[data-theme="light"]`, `[data-theme="dark"]` e `[data-theme="padrao"]`.
+  - Exemplo de variáveis semânticas para padronização visual:
+    :root {
+      --bg-main: #020617;
+      --card-bg: #0f172a;
+      --text-main: #ffffff;
+      --text-muted: #94a3b8;
+      --primary-purple: #6366f1;
+      --card-border: rgba(255, 255, 255, 0.08);
+    }
+  - Configure regras de Scrollbars Globais elegantes (verticais 8px e horizontais 4px sem setas).
+
+3.4. Suporte a PWA & Web Manifest:
+  - Crie o arquivo `public/manifest.json` com nome, descrição, ícones 192x192 / 512x512, cores de fundo e `display: standalone`.
+  - Crie o Service Worker `public/sw.js` para cache estático e funcionamento offline parcial.
+  - No `index.html`, insira os favicons, meta tags Open Graph (`og:image`) e o script de registro do Service Worker.
+
+3.5. Configuração do Dockerfile & Nginx no Frontend:
+  - Crie o arquivo `frontend/nginx.conf` para redirecionamento SPA (Single Page Application):
+    server {
+      listen 4000;
+      server_name localhost;
+      location / {
+        root /usr/share/nginx/html;
+        index index.html index.htm;
+        try_files $uri $uri/ /index.html;
+      }
+    }
+  - Crie o arquivo `frontend/Dockerfile`:
+    # Estágio 1: Build da aplicação React/Vite
+    FROM node:20-alpine AS build
+    WORKDIR /app
+    COPY package*.json ./
+    RUN npm ci
+    COPY . .
+    RUN npm run build
+
+    # Estágio 2: Nginx ultraleve para servir os estáticos em produção
+    FROM nginx:alpine
+    COPY --from=build /app/dist /usr/share/nginx/html
+    COPY nginx.conf /etc/nginx/conf.d/default.conf
+    EXPOSE 4000
+    CMD ["nginx", "-g", "daemon off;"]
+
+
+4. FASE 4: DESENVOLVIMENTO DO BACKEND (NODE.JS + EXPRESS + TYPESCRIPT + POSTGRESQL)
+-------------------------------------------------------------------------------
+4.1. Inicialização do Projeto Backend:
+  - Crie e acesse a pasta do backend:
+    mkdir backend && cd backend
+    npm init -y
+    npm install express cors dotenv pg bcryptjs jsonwebtoken
+    npm install --save-dev typescript @types/node @types/express @types/cors @types/pg @types/bcryptjs @types/jsonwebtoken ts-node-dev
+
+4.2. Estruturação do `tsconfig.json`:
+  - Crie a configuração do compilador TypeScript:
+    {
+      "compilerOptions": {
+        "target": "ES2022",
+        "module": "CommonJS",
+        "moduleResolution": "node",
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true
+      },
+      "include": ["src/**/*"]
+    }
+
+4.3. Implementação dos Módulos Principais (`src/index.ts`):
+  - **Conexão com PostgreSQL (`pg.Pool`)**: Pool de conexões otimizado com suporte a Multi-Tenancy dinâmico por empresa (`getPoolForEmpresa`).
+  - **Autenticação JWT & Criptografia BCrypt**: Geração de tokens de sessão de 7 dias e hash de senhas de usuários com custo 10.
+  - **Defesa Contra Força Bruta (Rate Limiter)**: Bloqueio automático de IP/E-mail por 15 minutos após 5 tentativas incorretas consecutivas no login.
+  - **Matriz de Permissões RBAC**: Middleware `checkPermission(modulo)` que valida permissões de leitura/escrita antes de executar operações REST.
+  - **Validação de CBO & Geocodificação**: Enriquecimento de cargos com códigos oficiais CBO e coordenadas de latitude/longitude via OpenStreetMap Nominatim API.
+
+4.4. Configuração do Dockerfile no Backend:
+  - Crie o arquivo `backend/Dockerfile`:
+    FROM node:20-alpine
+    WORKDIR /app
+    COPY package*.json ./
+    RUN npm ci
+    COPY . .
+    RUN npm run build
+    EXPOSE 4000
+    CMD ["node", "dist/index.js"]
+
+
+5. FASE 5: ORQUESTRAÇÃO DOCKER & DOCKER COMPOSE (`docker-compose.yml`)
+-------------------------------------------------------------------------------
+5.1. Criação do arquivo `docker-compose.yml` na raiz do projeto:
+  - Estrutura completa de orquestração dos containers:
+
+version: '3.8'
+
+services:
+  # Serviço 1: Banco de Dados PostgreSQL 15
+  postgres:
+    image: postgres:15-alpine
+    container_name: regz-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: regz_user
+      POSTGRES_PASSWORD: regz_password
+      POSTGRES_DB: regz_db
+    ports:
+      - "5434:5432" # Exposto na porta 5434 externa
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - regz-network
+
+  # Serviço 2: API Backend Node.js / Express
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: regz-backend
+    restart: always
+    environment:
+      PORT: 4000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: regz_user
+      DB_PASSWORD: regz_password
+      DB_NAME: regz_db
+      JWT_SECRET: regz_jwt_super_secret_key_2026
+    depends_on:
+      - postgres
+    networks:
+      - regz-network
+
+  # Serviço 3: Frontend Web React / Vite / Nginx
+  app:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: regz-app
+    restart: always
+    ports:
+      - "8280:4000" # Exposto na porta 8280 externa do servidor
+    depends_on:
+      - backend
+    networks:
+      - regz-network
+
+  # Serviço 4: Túnel Ngrok para Acesso Público HTTPS com SSL
+  ngrok:
+    image: ngrok/ngrok:latest
+    container_name: regz-ngrok-tunnel
+    restart: always
+    command:
+      - "http"
+      - "--domain=dining-product-giggle.ngrok-free.dev"
+      - "--region=sa"
+      - "regz-app:4000"
+    environment:
+      NGROK_AUTHTOKEN: "SEU_NGROK_AUTHTOKEN_AQUI"
+    depends_on:
+      - app
+    networks:
+      - regz-network
+
+networks:
+  regz-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+
+
+6. FASE 6: INSTALAÇÃO E GERENCIAMENTO VIA PORTAINER.IO
+-------------------------------------------------------------------------------
+6.1. Instalação do Portainer Community Edition (CE) no Servidor Linux:
+  - Crie o volume persistente do Portainer:
+    docker volume create portainer_data
+  - Execute o container do Portainer na porta HTTPS 9443:
+    docker run -d -p 8000:8000 -p 9443:9443 --name portainer --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v portainer_data:/data portainer/portainer-ce:latest
+
+6.2. Configuração Inicial do Portainer:
+  - Acesse no navegador: `https://SEU_IP_SERVIDO:9443` (ex: `https://192.168.2.72:9443`).
+  - Crie a conta do Administrador (senha forte com no mínimo 12 caracteres).
+  - Selecione o ambiente **Local**.
+
+6.3. Implantação da Stack no Portainer (GitOps / Deploy Continuo):
+  - No menu lateral do Portainer, vá em **Stacks** -> **+ Add stack**.
+  - Informe o Nome da Stack: `regz`.
+  - Em **Build method**, escolha **Repository**.
+  - Cole a URL do Repositório Git: `https://github.com/SEU_USUARIO/meu-novo-webapp.git`.
+  - Defina a branch: `refs/heads/main`.
+  - Clique no botão **Deploy the stack**.
+
+6.4. Regra Importante para Redeploy no Portainer (Pull and Redeploy):
+  - Ao fazer alterações no código e dar `git push`, acesse a Stack no Portainer.
+  - Clique no botão **Pull and redeploy**.
+  - **IMPORTANTE**: Mantenha a opção *"Re-pull image"* **DESMARCADA / DESATIVADA** no modal de confirmação para evitar erros de tempo limite (TLS handshake timeout) com o Docker Hub.
+
+
+7. FASE 7: TÚNEL DE ACESSO SEGURO (NGROK / CLOUDFLARE TUNNEL / SSL)
+-------------------------------------------------------------------------------
+7.1. Configuração do Ngrok com Domínio Estático Gratuito:
+  - Crie uma conta no Ngrok (https://ngrok.com).
+  - Obtenha o seu `NGROK_AUTHTOKEN` no painel.
+  - Reivindique o seu subdomínio gratuito (ex: `seu-subdominio.ngrok-free.dev`).
+  - No `docker-compose.yml`, configure a região América do Sul (`--region=sa`) para menor latência de rede no Brasil.
+
+7.2. Injeção de Cabeçalho contra Aviso do Ngrok no Client Fetch (Frontend):
+  - Em todas as chamadas `fetch` no React, insira o cabeçalho:
+    'ngrok-skip-browser-warning': 'true'
+  - Isso impede que o Ngrok exiba a página intermediária de aviso ("You are about to visit..."), permitindo que a API e o PWA funcionem diretamente sem interrupção.
+
+
+8. FASE 8: MANUTENÇÃO, REGRAS DE NEGÓCIO E DOCUMENTAÇÃO OBRIGATÓRIA (.TXT)
+-------------------------------------------------------------------------------
+8.1. Criação do Arquivo de Regras `ESTRUTURA_E_REGRAS_DO_SISTEMA.txt`:
+  - Crie sempre um arquivo `.txt` na raiz do repositório documentando:
+    1. Visão geral do projeto e stack tecnológica.
+    2. Estrutura completa de todas as tabelas do PostgreSQL e tipos de colunas.
+    3. Regras de negócio, RBAC, formulários e tratamentos de erros.
+    4. Instruções de execução e redeploy.
+  - Mantenha este arquivo sempre atualizado a cada nova funcionalidade desenvolvida.
+
+8.2. Fluxo de Trabalho de Desenvolvimento sem Remendos (Regra de Ouro):
+  - **Modificação Direta no Código**: NUNCA crie arquivos de fix, patch ou reparos temporários. Toda alteração deve ser feita diretamente nos arquivos originais do projeto.
+  - **Testes Locais de Build**: Antes de commitar, valide sempre a compilação localmente:
+    No frontend: `npm run build`
+    No backend: `npm run build`
+  - **Sincronização com Git**:
+    git add .
+    git commit -m "Descrição clara da nova funcionalidade"
+    git push origin main
+  - **Redeploy**: Solicite ou execute o Pull and Redeploy na Stack do Portainer.io.
+
+===============================================================================
+FIM DO GUIA PASSO A PASSO DE CRIAÇÃO E DEPLOY DE WEBAPP SAAS
+===============================================================================
