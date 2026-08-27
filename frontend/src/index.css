@@ -58,30 +58,15 @@
   height: 0 !important;
 }
 
+:root,
 html,
-body,
-* {
+body {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
 }
 
 ::-webkit-scrollbar {
   width: 8px !important;
   height: 4px !important;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent !important;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35) !important;
-  border-radius: 8px !important;
-  transition: background 0.2s ease !important;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6) !important;
 }
 
 ::-webkit-scrollbar-corner {
@@ -90,17 +75,23 @@ body,
 
 /* 1. Tema Dark (Escuro) */
 html[data-theme="dark"],
-[data-theme="dark"],
-[data-theme="dark"] body,
-[data-theme="dark"] * {
-  scrollbar-color: rgba(255, 255, 255, 0.25) transparent !important;
+html[data-theme="dark"] body {
+  color-scheme: dark !important;
+  scrollbar-color: #3f3f46 #09090b !important;
+}
+
+html[data-theme="dark"]::-webkit-scrollbar-track,
+html[data-theme="dark"] *::-webkit-scrollbar-track,
+[data-theme="dark"]::-webkit-scrollbar-track,
+[data-theme="dark"] *::-webkit-scrollbar-track {
+  background: #09090b !important;
 }
 
 html[data-theme="dark"]::-webkit-scrollbar-thumb,
 html[data-theme="dark"] *::-webkit-scrollbar-thumb,
 [data-theme="dark"]::-webkit-scrollbar-thumb,
 [data-theme="dark"] *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.25) !important;
+  background: #3f3f46 !important;
   border-radius: 8px !important;
 }
 
@@ -108,21 +99,29 @@ html[data-theme="dark"]::-webkit-scrollbar-thumb:hover,
 html[data-theme="dark"] *::-webkit-scrollbar-thumb:hover,
 [data-theme="dark"]::-webkit-scrollbar-thumb:hover,
 [data-theme="dark"] *::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.45) !important;
+  background: #71717a !important;
 }
 
 /* 2. Tema Padrão (Default) */
 html[data-theme="padrao"],
 html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]),
-[data-theme="padrao"] {
-  scrollbar-color: rgba(148, 163, 184, 0.35) transparent !important;
+html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) body {
+  color-scheme: dark !important;
+  scrollbar-color: #334155 #020617 !important;
+}
+
+html[data-theme="padrao"]::-webkit-scrollbar-track,
+html[data-theme="padrao"] *::-webkit-scrollbar-track,
+html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"])::-webkit-scrollbar-track,
+html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) *::-webkit-scrollbar-track {
+  background: #020617 !important;
 }
 
 html[data-theme="padrao"]::-webkit-scrollbar-thumb,
 html[data-theme="padrao"] *::-webkit-scrollbar-thumb,
 html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"])::-webkit-scrollbar-thumb,
 html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) *::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35) !important;
+  background: #334155 !important;
   border-radius: 8px !important;
 }
 
@@ -130,22 +129,28 @@ html[data-theme="padrao"]::-webkit-scrollbar-thumb:hover,
 html[data-theme="padrao"] *::-webkit-scrollbar-thumb:hover,
 html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"])::-webkit-scrollbar-thumb:hover,
 html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) *::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6) !important;
+  background: #64748b !important;
 }
 
 /* 3. Tema Claro (Light) */
 html[data-theme="light"],
-[data-theme="light"],
-[data-theme="light"] body,
-[data-theme="light"] * {
-  scrollbar-color: rgba(203, 213, 225, 0.85) transparent !important;
+html[data-theme="light"] body {
+  color-scheme: light !important;
+  scrollbar-color: #cbd5e1 #f8fafc !important;
+}
+
+html[data-theme="light"]::-webkit-scrollbar-track,
+html[data-theme="light"] *::-webkit-scrollbar-track,
+[data-theme="light"]::-webkit-scrollbar-track,
+[data-theme="light"] *::-webkit-scrollbar-track {
+  background: #f8fafc !important;
 }
 
 html[data-theme="light"]::-webkit-scrollbar-thumb,
 html[data-theme="light"] *::-webkit-scrollbar-thumb,
 [data-theme="light"]::-webkit-scrollbar-thumb,
 [data-theme="light"] *::-webkit-scrollbar-thumb {
-  background: rgba(203, 213, 225, 0.85) !important;
+  background: #cbd5e1 !important;
   border-radius: 8px !important;
 }
 
@@ -158,19 +163,20 @@ html[data-theme="light"] *::-webkit-scrollbar-thumb:hover,
 
 /* 4. Modo Alto Contraste */
 html[data-high-contrast="true"],
-[data-high-contrast="true"],
-[data-high-contrast="true"] body,
-[data-high-contrast="true"] * {
+html[data-high-contrast="true"] body {
+  color-scheme: dark !important;
   scrollbar-color: #00ff00 #000000 !important;
 }
 
 html[data-high-contrast="true"]::-webkit-scrollbar-track,
+html[data-high-contrast="true"] *::-webkit-scrollbar-track,
 [data-high-contrast="true"]::-webkit-scrollbar-track,
 [data-high-contrast="true"] *::-webkit-scrollbar-track {
   background: #000000 !important;
 }
 
 html[data-high-contrast="true"]::-webkit-scrollbar-thumb,
+html[data-high-contrast="true"] *::-webkit-scrollbar-thumb,
 [data-high-contrast="true"]::-webkit-scrollbar-thumb,
 [data-high-contrast="true"] *::-webkit-scrollbar-thumb {
   background: #00ff00 !important;
@@ -178,6 +184,7 @@ html[data-high-contrast="true"]::-webkit-scrollbar-thumb,
 }
 
 html[data-high-contrast="true"]::-webkit-scrollbar-thumb:hover,
+html[data-high-contrast="true"] *::-webkit-scrollbar-thumb:hover,
 [data-high-contrast="true"]::-webkit-scrollbar-thumb:hover,
 [data-high-contrast="true"] *::-webkit-scrollbar-thumb:hover {
   background: #00ff00 !important;
