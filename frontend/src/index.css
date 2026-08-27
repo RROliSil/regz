@@ -52,77 +52,134 @@
 /* ======================================================== */
 /* BARRAS DE ROLAGEM VERTICAIS E GLOBAIS MULTI-TEMA */
 /* ======================================================== */
-html, body {
+::-webkit-scrollbar-button {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+html,
+body,
+* {
   scrollbar-width: thin;
   scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 4px;
+  width: 8px !important;
+  height: 4px !important;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: transparent !important;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
-  border-radius: 8px;
-  transition: background 0.2s ease;
+  background: rgba(148, 163, 184, 0.35) !important;
+  border-radius: 8px !important;
+  transition: background 0.2s ease !important;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
+  background: rgba(148, 163, 184, 0.6) !important;
 }
 
 ::-webkit-scrollbar-corner {
-  background: transparent;
+  background: transparent !important;
 }
 
-/* Tema Dark (Escuro) */
+/* 1. Tema Dark (Escuro) */
+html[data-theme="dark"],
 [data-theme="dark"],
-[data-theme="dark"] body {
-  scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+[data-theme="dark"] body,
+[data-theme="dark"] * {
+  scrollbar-color: rgba(255, 255, 255, 0.25) transparent !important;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.25);
+html[data-theme="dark"]::-webkit-scrollbar-thumb,
+html[data-theme="dark"] *::-webkit-scrollbar-thumb,
+[data-theme="dark"]::-webkit-scrollbar-thumb,
+[data-theme="dark"] *::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-radius: 8px !important;
 }
 
-[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.45);
+html[data-theme="dark"]::-webkit-scrollbar-thumb:hover,
+html[data-theme="dark"] *::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"]::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] *::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.45) !important;
 }
 
-/* Tema Claro (Light) */
+/* 2. Tema Padrão (Default) */
+html[data-theme="padrao"],
+html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]),
+[data-theme="padrao"] {
+  scrollbar-color: rgba(148, 163, 184, 0.35) transparent !important;
+}
+
+html[data-theme="padrao"]::-webkit-scrollbar-thumb,
+html[data-theme="padrao"] *::-webkit-scrollbar-thumb,
+html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"])::-webkit-scrollbar-thumb,
+html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) *::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35) !important;
+  border-radius: 8px !important;
+}
+
+html[data-theme="padrao"]::-webkit-scrollbar-thumb:hover,
+html[data-theme="padrao"] *::-webkit-scrollbar-thumb:hover,
+html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"])::-webkit-scrollbar-thumb:hover,
+html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) *::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6) !important;
+}
+
+/* 3. Tema Claro (Light) */
+html[data-theme="light"],
 [data-theme="light"],
-[data-theme="light"] body {
-  scrollbar-color: rgba(203, 213, 225, 0.9) transparent;
+[data-theme="light"] body,
+[data-theme="light"] * {
+  scrollbar-color: rgba(203, 213, 225, 0.85) transparent !important;
 }
 
-[data-theme="light"] ::-webkit-scrollbar-thumb {
-  background: rgba(203, 213, 225, 0.85);
+html[data-theme="light"]::-webkit-scrollbar-thumb,
+html[data-theme="light"] *::-webkit-scrollbar-thumb,
+[data-theme="light"]::-webkit-scrollbar-thumb,
+[data-theme="light"] *::-webkit-scrollbar-thumb {
+  background: rgba(203, 213, 225, 0.85) !important;
+  border-radius: 8px !important;
 }
 
-[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+html[data-theme="light"]::-webkit-scrollbar-thumb:hover,
+html[data-theme="light"] *::-webkit-scrollbar-thumb:hover,
+[data-theme="light"]::-webkit-scrollbar-thumb:hover,
+[data-theme="light"] *::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
 }
 
-/* Modo Alto Contraste */
+/* 4. Modo Alto Contraste */
+html[data-high-contrast="true"],
 [data-high-contrast="true"],
-[data-high-contrast="true"] body {
+[data-high-contrast="true"] body,
+[data-high-contrast="true"] * {
   scrollbar-color: #00ff00 #000000 !important;
 }
 
-[data-high-contrast="true"] ::-webkit-scrollbar-track {
+html[data-high-contrast="true"]::-webkit-scrollbar-track,
+[data-high-contrast="true"]::-webkit-scrollbar-track,
+[data-high-contrast="true"] *::-webkit-scrollbar-track {
   background: #000000 !important;
 }
 
-[data-high-contrast="true"] ::-webkit-scrollbar-thumb {
+html[data-high-contrast="true"]::-webkit-scrollbar-thumb,
+[data-high-contrast="true"]::-webkit-scrollbar-thumb,
+[data-high-contrast="true"] *::-webkit-scrollbar-thumb {
   background: #00ff00 !important;
+  border-radius: 4px !important;
 }
 
-[data-high-contrast="true"] ::-webkit-scrollbar-thumb:hover {
+html[data-high-contrast="true"]::-webkit-scrollbar-thumb:hover,
+[data-high-contrast="true"]::-webkit-scrollbar-thumb:hover,
+[data-high-contrast="true"] *::-webkit-scrollbar-thumb:hover {
   background: #00ff00 !important;
 }
 
