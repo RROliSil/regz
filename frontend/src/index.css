@@ -4921,6 +4921,91 @@ svg.lucide, svg {
   margin: 0 !important;
 }
 
+/* ======================================================== */
+/* MODAL DE PRÉ-VISUALIZAÇÃO DE PDF EMBUTIDO NA PÁGINA */
+/* ======================================================== */
+.pdf-preview-modal-overlay {
+  z-index: 99999 !important;
+  background: rgba(2, 6, 23, 0.85) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  padding: 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.pdf-preview-modal-container {
+  width: 94vw !important;
+  max-width: 1280px !important;
+  height: 92vh !important;
+  max-height: 940px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.65) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.pdf-preview-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 16px 24px !important;
+  border-bottom: 1px solid var(--card-border) !important;
+  flex-shrink: 0 !important;
+  flex-wrap: wrap !important;
+  gap: 14px !important;
+  background: var(--bg-card) !important;
+  position: static !important;
+  margin: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.pdf-preview-header .btn-close {
+  position: static !important;
+  top: auto !important;
+  right: auto !important;
+  margin: 0 !important;
+}
+
+.pdf-preview-body {
+  flex: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: #0f172a !important;
+  overflow: hidden !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.pdf-preview-iframe {
+  width: 100% !important;
+  flex: 1 !important;
+  height: 100% !important;
+  border: none !important;
+  display: block !important;
+  background: transparent !important;
+}
+
+[data-theme="light"] .pdf-preview-modal-container {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .pdf-preview-body {
+  background: #e2e8f0 !important;
+}
+
+[data-high-contrast="true"] .pdf-preview-modal-container {
+  background: #000000 !important;
+  border: 2px solid #00ff00 !important;
+}
+
 
 
 

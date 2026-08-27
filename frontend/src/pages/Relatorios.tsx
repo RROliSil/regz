@@ -24,7 +24,9 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
-  Eraser
+  Eraser,
+  Download,
+  FileText
 } from 'lucide-react';
 
 interface Colaborador {
@@ -832,6 +834,14 @@ export const Relatorios: React.FC = () => {
     showSnackbar('Relatório exportado para Excel (CSV) com sucesso!', 'success');
   };
 
+  // Estados da Pré-visualização do PDF Integrada (Modal na própria página)
+  const [modalPreviewPDF, setModalPreviewPDF] = useState(false);
+  const [pdfPreviewBlobUrl, setPdfPreviewBlobUrl] = useState<string | null>(null);
+  const [pdfDocInstance, setPdfDocInstance] = useState<jsPDF | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string>('relatorio_regz.pdf');
+  const [gerandoPDF, setGerandoPDF] = useState<boolean>(false);
+  const pdfIframeRef = React.useRef<HTMLIFrameElement | null>(null);
+
   const getLogoBase64 = async (): Promise<string | null> => {
     try {
       const res = await fetch('/logo.png');
@@ -848,165 +858,205 @@ export const Relatorios: React.FC = () => {
     }
   };
 
-  const imprimirPDF = async () => {
+  const gerarDocumentoPDF = async (orientacao: 'portrait' | 'landscape') => {
+    const isLandscape = orientacao === 'landscape';
+    const doc = new jsPDF({
+      orientation: isLandscape ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: 'a4',
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+
+    // Inserir Logotipo do Regz
+    const logoBase64 = await getLogoBase64();
+    if (logoBase64) {
+      doc.addImage(logoBase64, 'PNG', 14, 10, 15, 15);
+    }
+
+    // Título e Cabeçalho Corporativo
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(15, 23, 42);
+    doc.text('REGZ GESTÃO DE PESSOAS', logoBase64 ? 32 : 14, 16);
+
+    // Subtítulo do modo
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(71, 85, 105);
+    const sub = modo === 'construtor' 
+      ? 'Relatório Personalizado de Colaboradores & Campos'
+      : modo === 'geo'
+      ? 'Relatório de Distribuição Geográfica'
+      : 'Relatório de Usuários e Permissões (RBAC)';
+    doc.text(sub, logoBase64 ? 32 : 14, 21.5);
+
+    // Metadados à Direita
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    const dataEmissao = `Gerado em: ${new Date().toLocaleString('pt-BR')}`;
+    doc.text(dataEmissao, pageWidth - 14, 16, { align: 'right' });
+
+    const totalRegistros = modo === 'rbac' ? usuarios.length : modo === 'geo' ? dadosGeo.length : colaboradoresFiltrados.length;
+    doc.text(`Total: ${totalRegistros} registros`, pageWidth - 14, 21.5, { align: 'right' });
+
+    // Linha divisória estética
+    doc.setDrawColor(99, 102, 241);
+    doc.setLineWidth(0.4);
+    doc.line(14, 28, pageWidth - 14, 28);
+
+    // Preparação dos dados para o AutoTable
+    let head: string[][] = [];
+    let body: string[][] = [];
+
+    if (modo === 'construtor') {
+      head = [colunasAtivasConstrutor.map(col => col.label)];
+      body = colaboradoresFiltrados.map(c => {
+        return colunasAtivasConstrutor.map(col => {
+          if (col.key === 'foto') return c.foto_url ? '[FOTO]' : '-';
+          if (col.key === 'status') return c.ativo !== false ? 'ATIVO' : 'INATIVO';
+          if (col.key === 'cargo') return c.cargo || 'Não definido';
+          return String(getValorCelula(c, col) || '-');
+        });
+      });
+    } else if (modo === 'geo') {
+      const cols: string[] = [];
+      if (geoCols.estado) cols.push('Estado (UF)');
+      if (geoCols.cidade) cols.push('Cidade / Município');
+      if (geoCols.ativos) cols.push('Colaboradores Ativos');
+      head = [cols];
+      body = dadosGeo.map(g => {
+        const row: string[] = [];
+        if (geoCols.estado) row.push(g.estado || '-');
+        if (geoCols.cidade) row.push(g.cidade || '-');
+        if (geoCols.ativos) row.push(String(g.ativos));
+        return row;
+      });
+    } else if (modo === 'rbac') {
+      head = [['Nome do Usuário', 'E-mail Corporativo', 'Perfil de Acesso', 'Status']];
+      body = usuarios.map(u => [
+        u.nome,
+        u.email,
+        u.perfil?.nome || 'Sem Perfil',
+        u.ativo ? 'ATIVO' : 'INATIVO'
+      ]);
+    }
+
+    autoTable(doc, {
+      startY: 31,
+      head: head,
+      body: body,
+      theme: 'grid',
+      styles: {
+        font: 'helvetica',
+        fontSize: 7.5,
+        cellPadding: 2,
+        textColor: [15, 23, 42],
+        lineColor: [203, 213, 225],
+        lineWidth: 0.1,
+        overflow: 'linebreak',
+      },
+      headStyles: {
+        fillColor: [15, 23, 42],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 8,
+        halign: 'left',
+      },
+      alternateRowStyles: {
+        fillColor: [248, 250, 252],
+      },
+      didParseCell: function(data) {
+        if (data.section === 'body') {
+          const cellText = String(data.cell.raw || '');
+          if (cellText === 'Sim' || cellText === '✓ Sim' || cellText === 'ATIVO') {
+            data.cell.styles.textColor = [5, 150, 105]; // Verde #059669
+            data.cell.styles.fontStyle = 'bold';
+          } else if (cellText === 'Não' || cellText === '✗ Não' || cellText === 'INATIVO') {
+            data.cell.styles.textColor = [220, 38, 38]; // Vermelho #dc2626
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      },
+      didDrawPage: function(data) {
+        // Rodapé com numeração de páginas
+        const totalPages = (doc as any).internal.getNumberOfPages();
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7.5);
+        doc.setTextColor(148, 163, 184);
+        doc.text(
+          `Regz Gestão de Pessoas • Página ${data.pageNumber} de ${totalPages}`,
+          pageWidth / 2,
+          pageHeight - 6,
+          { align: 'center' }
+        );
+      },
+      margin: { left: 14, right: 14, top: 31, bottom: 12 },
+    });
+
+    const fileName = `relatorio_regz_${modo}_${new Date().toISOString().slice(0, 10)}.pdf`;
+    const blob = doc.output('blob');
+    const blobUrl = URL.createObjectURL(blob);
+
+    return { doc, fileName, blobUrl };
+  };
+
+  const abrirPreviaPDF = async (orientacao: 'portrait' | 'landscape' = orientacaoPDF) => {
     if (modo === 'construtor' && colunasAtivasConstrutor.length === 0) {
-      showSnackbar('Selecione ao menos 1 coluna para gerar o PDF!', 'error');
+      showSnackbar('Selecione ao menos 1 coluna para visualizar o relatório em PDF!', 'error');
       return;
     }
 
     try {
-      showSnackbar('Gerando documento PDF oficial...', 'info');
-
-      const isLandscape = orientacaoPDF === 'landscape';
-      const doc = new jsPDF({
-        orientation: isLandscape ? 'landscape' : 'portrait',
-        unit: 'mm',
-        format: 'a4',
-      });
-
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-
-      // Inserir Logotipo do Regz
-      const logoBase64 = await getLogoBase64();
-      if (logoBase64) {
-        doc.addImage(logoBase64, 'PNG', 14, 10, 15, 15);
+      setGerandoPDF(true);
+      if (pdfPreviewBlobUrl) {
+        URL.revokeObjectURL(pdfPreviewBlobUrl);
       }
 
-      // Título e Cabeçalho Corporativo
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(14);
-      doc.setTextColor(15, 23, 42);
-      doc.text('REGZ GESTÃO DE PESSOAS', logoBase64 ? 32 : 14, 16);
-
-      // Subtítulo do modo
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8.5);
-      doc.setTextColor(71, 85, 105);
-      const sub = modo === 'construtor' 
-        ? 'Relatório Personalizado de Colaboradores & Campos'
-        : modo === 'geo'
-        ? 'Relatório de Distribuição Geográfica'
-        : 'Relatório de Usuários e Permissões (RBAC)';
-      doc.text(sub, logoBase64 ? 32 : 14, 21.5);
-
-      // Metadados à Direita
-      doc.setFontSize(7.5);
-      doc.setTextColor(100, 116, 139);
-      const dataEmissao = `Gerado em: ${new Date().toLocaleString('pt-BR')}`;
-      doc.text(dataEmissao, pageWidth - 14, 16, { align: 'right' });
-
-      const totalRegistros = modo === 'rbac' ? usuarios.length : modo === 'geo' ? dadosGeo.length : colaboradoresFiltrados.length;
-      doc.text(`Total: ${totalRegistros} registros`, pageWidth - 14, 21.5, { align: 'right' });
-
-      // Linha divisória estética
-      doc.setDrawColor(99, 102, 241);
-      doc.setLineWidth(0.4);
-      doc.line(14, 28, pageWidth - 14, 28);
-
-      // Preparação dos dados para o AutoTable
-      let head: string[][] = [];
-      let body: string[][] = [];
-
-      if (modo === 'construtor') {
-        head = [colunasAtivasConstrutor.map(col => col.label)];
-        body = colaboradoresFiltrados.map(c => {
-          return colunasAtivasConstrutor.map(col => {
-            if (col.key === 'foto') return c.foto_url ? '[FOTO]' : '-';
-            if (col.key === 'status') return c.ativo !== false ? 'ATIVO' : 'INATIVO';
-            if (col.key === 'cargo') return c.cargo || 'Não definido';
-            return String(getValorCelula(c, col) || '-');
-          });
-        });
-      } else if (modo === 'geo') {
-        const cols: string[] = [];
-        if (geoCols.estado) cols.push('Estado (UF)');
-        if (geoCols.cidade) cols.push('Cidade / Município');
-        if (geoCols.ativos) cols.push('Colaboradores Ativos');
-        head = [cols];
-        body = dadosGeo.map(g => {
-          const row: string[] = [];
-          if (geoCols.estado) row.push(g.estado || '-');
-          if (geoCols.cidade) row.push(g.cidade || '-');
-          if (geoCols.ativos) row.push(String(g.ativos));
-          return row;
-        });
-      } else if (modo === 'rbac') {
-        head = [['Nome do Usuário', 'E-mail Corporativo', 'Perfil de Acesso', 'Status']];
-        body = usuarios.map(u => [
-          u.nome,
-          u.email,
-          u.perfil?.nome || 'Sem Perfil',
-          u.ativo ? 'ATIVO' : 'INATIVO'
-        ]);
-      }
-
-      autoTable(doc, {
-        startY: 31,
-        head: head,
-        body: body,
-        theme: 'grid',
-        styles: {
-          font: 'helvetica',
-          fontSize: 7.5,
-          cellPadding: 2,
-          textColor: [15, 23, 42],
-          lineColor: [203, 213, 225],
-          lineWidth: 0.1,
-          overflow: 'linebreak',
-        },
-        headStyles: {
-          fillColor: [15, 23, 42],
-          textColor: [255, 255, 255],
-          fontStyle: 'bold',
-          fontSize: 8,
-          halign: 'left',
-        },
-        alternateRowStyles: {
-          fillColor: [248, 250, 252],
-        },
-        didParseCell: function(data) {
-          if (data.section === 'body') {
-            const cellText = String(data.cell.raw || '');
-            if (cellText === 'Sim' || cellText === '✓ Sim' || cellText === 'ATIVO') {
-              data.cell.styles.textColor = [5, 150, 105]; // Verde #059669
-              data.cell.styles.fontStyle = 'bold';
-            } else if (cellText === 'Não' || cellText === '✗ Não' || cellText === 'INATIVO') {
-              data.cell.styles.textColor = [220, 38, 38]; // Vermelho #dc2626
-              data.cell.styles.fontStyle = 'bold';
-            }
-          }
-        },
-        didDrawPage: function(data) {
-          // Rodapé com numeração de páginas
-          const totalPages = (doc as any).internal.getNumberOfPages();
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(7.5);
-          doc.setTextColor(148, 163, 184);
-          doc.text(
-            `Regz Gestão de Pessoas • Página ${data.pageNumber} de ${totalPages}`,
-            pageWidth / 2,
-            pageHeight - 6,
-            { align: 'center' }
-          );
-        },
-        margin: { left: 14, right: 14, top: 31, bottom: 12 },
-      });
-
-      const fileName = `relatorio_regz_${modo}_${new Date().toISOString().slice(0, 10)}.pdf`;
-      
-      // Abrir em nova aba para visualização e impressão nativa do PDF
-      const blobUrl = doc.output('bloburl');
-      window.open(blobUrl, '_blank');
-
-      // Também efetuar o download direto do .pdf
-      doc.save(fileName);
-
-      showSnackbar('Documento PDF gerado e baixado com sucesso!', 'success');
+      const { doc, fileName, blobUrl } = await gerarDocumentoPDF(orientacao);
+      setPdfDocInstance(doc);
+      setPdfFileName(fileName);
+      setPdfPreviewBlobUrl(blobUrl);
+      setModalPreviewPDF(true);
     } catch (err) {
-      console.error('Erro ao gerar PDF:', err);
+      console.error('Erro ao gerar prévia do PDF:', err);
       showSnackbar('Erro ao gerar documento PDF.', 'error');
+    } finally {
+      setGerandoPDF(false);
     }
+  };
+
+  const alternarOrientacaoNoModal = async (novaOrientacao: 'portrait' | 'landscape') => {
+    handleSetOrientacaoPDF(novaOrientacao);
+    await abrirPreviaPDF(novaOrientacao);
+  };
+
+  const baixarPDF = () => {
+    if (!pdfDocInstance) return;
+    pdfDocInstance.save(pdfFileName);
+    showSnackbar('Documento PDF baixado com sucesso!', 'success');
+  };
+
+  const imprimirPDFDoModal = () => {
+    if (pdfIframeRef.current && pdfIframeRef.current.contentWindow) {
+      pdfIframeRef.current.contentWindow.print();
+    } else if (pdfPreviewBlobUrl) {
+      const win = window.open(pdfPreviewBlobUrl, '_blank');
+      if (win) {
+        win.focus();
+        win.print();
+      }
+    }
+  };
+
+  const fecharModalPreviewPDF = () => {
+    setModalPreviewPDF(false);
+    if (pdfPreviewBlobUrl) {
+      URL.revokeObjectURL(pdfPreviewBlobUrl);
+      setPdfPreviewBlobUrl(null);
+    }
+    setPdfDocInstance(null);
   };
 
   return (
@@ -1074,8 +1124,14 @@ export const Relatorios: React.FC = () => {
             </button>
           </div>
 
-          <button onClick={imprimirPDF} className="btn-primary btn-relatorio-primary" title={`Imprimir ou Salvar em PDF A4 (${orientacaoPDF === 'landscape' ? 'Paisagem' : 'Retrato'})`}>
-            <Printer size={16} /> PDF / Imprimir
+          <button 
+            type="button"
+            onClick={() => abrirPreviaPDF()} 
+            disabled={gerandoPDF}
+            className="btn-primary btn-relatorio-primary" 
+            title="Visualizar e Imprimir Relatório em PDF A4"
+          >
+            {gerandoPDF ? <RefreshCw size={16} className="spin" /> : <Printer size={16} />} Visualizar / Imprimir PDF
           </button>
         </div>
       </div>
@@ -2076,6 +2132,100 @@ export const Relatorios: React.FC = () => {
                 </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* MODAL DE PRÉ-VISUALIZAÇÃO DE PDF NA PRÓPRIA PÁGINA */}
+      {modalPreviewPDF && pdfPreviewBlobUrl && (
+        <div className="modal-overlay pdf-preview-modal-overlay" onClick={fecharModalPreviewPDF}>
+          <div 
+            className="modal-container pdf-preview-modal-container glass-panel" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header pdf-preview-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ padding: '8px', background: 'rgba(99, 102, 241, 0.15)', borderRadius: '10px', color: '#818cf8' }}>
+                  <FileText size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800 }}>
+                    Pré-visualização do Relatório em PDF
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    Formato Oficial A4 • Documento vetorial pronto para impressão e download
+                  </p>
+                </div>
+              </div>
+
+              {/* Controles: Retrato / Paisagem + Download + Imprimir + Fechar */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <div className="orientation-selector" style={{ margin: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => alternarOrientacaoNoModal('portrait')}
+                    className={`orientation-btn ${orientacaoPDF === 'portrait' ? 'active' : ''}`}
+                    disabled={gerandoPDF}
+                    title="Alternar para Formato A4 Retrato (Vertical)"
+                  >
+                    Retrato
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => alternarOrientacaoNoModal('landscape')}
+                    className={`orientation-btn ${orientacaoPDF === 'landscape' ? 'active' : ''}`}
+                    disabled={gerandoPDF}
+                    title="Alternar para Formato A4 Paisagem (Horizontal)"
+                  >
+                    Paisagem
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={baixarPDF}
+                  className="btn-secondary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.85rem' }}
+                  title="Baixar arquivo .PDF no seu dispositivo"
+                >
+                  <Download size={16} /> Baixar PDF
+                </button>
+
+                <button
+                  type="button"
+                  onClick={imprimirPDFDoModal}
+                  className="btn-primary"
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', fontSize: '0.85rem' }}
+                  title="Enviar documento para a impressora"
+                >
+                  <Printer size={16} /> Imprimir
+                </button>
+
+                <button
+                  type="button"
+                  onClick={fecharModalPreviewPDF}
+                  className="btn-close"
+                  title="Fechar pré-visualização"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            <div className="pdf-preview-body">
+              {gerandoPDF ? (
+                <div style={{ height: '72vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '14px' }}>
+                  <RefreshCw size={36} className="spin" color="#6366f1" />
+                  <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}>Renderizando documento PDF...</span>
+                </div>
+              ) : (
+                <iframe
+                  ref={pdfIframeRef}
+                  src={`${pdfPreviewBlobUrl}#toolbar=1&navpanes=0&scrollbar=1`}
+                  title="Pré-visualização do Relatório PDF"
+                  className="pdf-preview-iframe"
+                />
+              )}
+            </div>
           </div>
         </div>
       )}
