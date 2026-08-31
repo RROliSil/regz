@@ -2,6 +2,9 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { Pool } from 'pg';
+import mysql from 'mysql2/promise';
+import { MongoClient } from 'mongodb';
+import sql from 'mssql';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import path from 'path';
@@ -289,6 +292,8 @@ const initDb = async () => {
         cor_secundaria VARCHAR(7) DEFAULT '#38bdf8',
         cor_destaque VARCHAR(7) DEFAULT '#34d399',
         status VARCHAR(20) DEFAULT 'Ativa',
+        db_tipo VARCHAR(50) DEFAULT 'postgres',
+        db_uri TEXT,
         db_host VARCHAR(255),
         db_port INT DEFAULT 5432,
         db_user VARCHAR(100),
@@ -296,6 +301,8 @@ const initDb = async () => {
         db_name VARCHAR(100),
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_tipo VARCHAR(50) DEFAULT 'postgres';
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_uri TEXT;
       ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_host VARCHAR(255);
       ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_port INT DEFAULT 5432;
       ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_user VARCHAR(100);
@@ -1767,7 +1774,7 @@ app.post('/api/empresas', async (req: Request, res: Response) => {
     razao_social, nome_fantasia, cnpj,
     cep, logradouro, numero, complemento, bairro, cidade, estado,
     logo_url, cor_primaria, cor_secundaria, cor_destaque, status,
-    db_host, db_port, db_user, db_pass, db_name
+    db_tipo, db_uri, db_host, db_port, db_user, db_pass, db_name
   } = req.body;
 
   if (!razao_social || !nome_fantasia || !cnpj) {
@@ -1780,9 +1787,9 @@ app.post('/api/empresas', async (req: Request, res: Response) => {
         razao_social, nome_fantasia, cnpj,
         cep, logradouro, numero, complemento, bairro, cidade, estado,
         logo_url, cor_primaria, cor_secundaria, cor_destaque, status,
-        db_host, db_port, db_user, db_pass, db_name
+        db_tipo, db_uri, db_host, db_port, db_user, db_pass, db_name
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
       RETURNING *
     `;
     const result = await pool.query(query, [
@@ -1793,8 +1800,10 @@ app.post('/api/empresas', async (req: Request, res: Response) => {
       cor_secundaria || '#38bdf8',
       cor_destaque || '#34d399',
       status || 'Ativa',
+      db_tipo || 'postgres',
+      db_uri || null,
       db_host || 'localhost',
-      db_port ? parseInt(String(db_port), 10) : 5432,
+      db_port ? parseInt(String(db_port), 10) : (db_tipo === 'mysql' ? 3306 : db_tipo === 'mongo' ? 27017 : db_tipo === 'mssql' ? 1433 : 5432),
       db_user || 'postgres',
       db_pass || null,
       db_name || 'regz_db'
@@ -1824,7 +1833,7 @@ app.put('/api/empresas/:id', async (req: Request, res: Response) => {
     razao_social, nome_fantasia, cnpj,
     cep, logradouro, numero, complemento, bairro, cidade, estado,
     logo_url, cor_primaria, cor_secundaria, cor_destaque, status,
-    db_host, db_port, db_user, db_pass, db_name
+    db_tipo, db_uri, db_host, db_port, db_user, db_pass, db_name
   } = req.body;
 
   try {
@@ -1833,8 +1842,8 @@ app.put('/api/empresas/:id', async (req: Request, res: Response) => {
       SET razao_social = $1, nome_fantasia = $2, cnpj = $3,
           cep = $4, logradouro = $5, numero = $6, complemento = $7, bairro = $8, cidade = $9, estado = $10,
           logo_url = $11, cor_primaria = $12, cor_secundaria = $13, cor_destaque = $14, status = $15,
-          db_host = $16, db_port = $17, db_user = $18, db_pass = $19, db_name = $20
-      WHERE id = $21
+          db_tipo = $16, db_uri = $17, db_host = $18, db_port = $19, db_user = $20, db_pass = $21, db_name = $22
+      WHERE id = $23
       RETURNING *
     `;
     const result = await pool.query(query, [
@@ -1845,8 +1854,10 @@ app.put('/api/empresas/:id', async (req: Request, res: Response) => {
       cor_secundaria || '#38bdf8',
       cor_destaque || '#34d399',
       status || 'Ativa',
+      db_tipo || 'postgres',
+      db_uri || null,
       db_host || 'localhost',
-      db_port ? parseInt(String(db_port), 10) : 5432,
+      db_port ? parseInt(String(db_port), 10) : (db_tipo === 'mysql' ? 3306 : db_tipo === 'mongo' ? 27017 : db_tipo === 'mssql' ? 1433 : 5432),
       db_user || 'postgres',
       db_pass || null,
       db_name || 'regz_db',
@@ -1876,15 +1887,204 @@ app.delete('/api/empresas/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Testar Conexão & Inicializar Estrutura de Banco DB Próprio de uma Empresa (com Resolução Inteligente Docker/Portainer)
+// Testar Conexão & Inicializar Estrutura de Banco DB Próprio de uma Empresa (Suporte a PostgreSQL, MySQL, MongoDB, MSSQL)
 app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
-  const { db_host, db_port, db_user, db_pass, db_name } = req.body;
+  const { db_tipo = 'postgres', db_uri, db_host, db_port, db_user, db_pass, db_name } = req.body;
 
+  const targetDbName = db_name ? String(db_name).trim() : 'regz_db';
+  const tipo = String(db_tipo || 'postgres').toLowerCase().trim();
+
+  // ==========================================
+  // 1. CONEXÃO & TESTE: MONGODB
+  // ==========================================
+  if (tipo === 'mongo' || tipo === 'mongodb') {
+    let mongoUri = (db_uri || '').trim();
+    if (!mongoUri) {
+      const mHost = (db_host || 'localhost').trim();
+      const mPort = db_port ? parseInt(String(db_port), 10) : 27017;
+      const mUser = (db_user || '').trim();
+      const mPass = (db_pass || '').trim();
+      const mDb = targetDbName || 'regz_db';
+      if (mUser && mPass) {
+        mongoUri = `mongodb://${encodeURIComponent(mUser)}:${encodeURIComponent(mPass)}@${mHost}:${mPort}/${mDb}?authSource=admin`;
+      } else {
+        mongoUri = `mongodb://${mHost}:${mPort}/${mDb}`;
+      }
+    }
+
+    let client: MongoClient | null = null;
+    try {
+      client = new MongoClient(mongoUri, { serverSelectionTimeoutMS: 4500, connectTimeoutMS: 4500 });
+      await client.connect();
+      await client.db(targetDbName).command({ ping: 1 });
+
+      const db = client.db(targetDbName);
+      const cols = await db.listCollections({ name: 'usuarios' }).toArray();
+      if (cols.length === 0) {
+        await db.createCollection('usuarios');
+      }
+
+      await client.close();
+      return res.json({
+        success: true,
+        message: `Conexão com MongoDB estabelecida com sucesso! Banco "${targetDbName}" está online e coleção 'usuarios' inicializada.`,
+        resolvedHost: db_host || 'mongodb',
+        resolvedUser: db_user || 'admin'
+      });
+    } catch (mongoErr: any) {
+      if (client) await client.close().catch(() => {});
+      return res.status(500).json({
+        error: `Falha ao conectar no MongoDB: ${mongoErr.message || 'Verifique URI/Host/Porta e credenciais'}`
+      });
+    }
+  }
+
+  // ==========================================
+  // 2. CONEXÃO & TESTE: MYSQL / MARIADB
+  // ==========================================
+  if (tipo === 'mysql' || tipo === 'mariadb') {
+    const mHost = (db_host || 'localhost').trim();
+    const mPort = db_port ? parseInt(String(db_port), 10) : 3306;
+    const mUser = (db_user || 'root').trim();
+    const mPass = db_pass !== undefined ? String(db_pass) : '';
+
+    let adminConn: mysql.Connection | null = null;
+    let dbCreatedNow = false;
+    try {
+      adminConn = await mysql.createConnection({
+        host: mHost,
+        port: mPort,
+        user: mUser,
+        password: mPass,
+        connectTimeout: 4000
+      });
+
+      const [dbs]: any = await adminConn.query(`SHOW DATABASES LIKE '${targetDbName.replace(/'/g, "''")}'`);
+      if (!Array.isArray(dbs) || dbs.length === 0) {
+        await adminConn.query(`CREATE DATABASE IF NOT EXISTS \`${targetDbName.replace(/`/g, '``')}\``);
+        dbCreatedNow = true;
+      }
+      await adminConn.end();
+    } catch (adminErr: any) {
+      if (adminConn) await adminConn.end().catch(() => {});
+    }
+
+    let targetConn: mysql.Connection | null = null;
+    try {
+      targetConn = await mysql.createConnection({
+        host: mHost,
+        port: mPort,
+        user: mUser,
+        password: mPass,
+        database: targetDbName,
+        connectTimeout: 4000
+      });
+
+      await targetConn.query('SELECT 1');
+      await targetConn.query(`
+        CREATE TABLE IF NOT EXISTS usuarios (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          nome VARCHAR(255) NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          ativo BOOLEAN DEFAULT true,
+          criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await targetConn.end();
+
+      return res.json({
+        success: true,
+        message: dbCreatedNow
+          ? `Novo banco MySQL "${targetDbName}" criado com sucesso no host ${mHost}:${mPort} (Usuário: ${mUser})!`
+          : `Conexão MySQL/MariaDB estabelecida com sucesso! Banco "${targetDbName}" no host ${mHost}:${mPort} está online e pronto.`,
+        resolvedHost: mHost,
+        resolvedUser: mUser
+      });
+    } catch (mysqlErr: any) {
+      if (targetConn) await targetConn.end().catch(() => {});
+      return res.status(500).json({
+        error: `Falha ao conectar no MySQL (${mHost}:${mPort}): ${mysqlErr.message || 'Host, porta ou credenciais inválidas'}`
+      });
+    }
+  }
+
+  // ==========================================
+  // 3. CONEXÃO & TESTE: MICROSOFT SQL SERVER (MSSQL)
+  // ==========================================
+  if (tipo === 'mssql' || tipo === 'sqlserver' || tipo === 'sql') {
+    const sHost = (db_host || 'localhost').trim();
+    const sPort = db_port ? parseInt(String(db_port), 10) : 1433;
+    const sUser = (db_user || 'sa').trim();
+    const sPass = db_pass !== undefined ? String(db_pass) : '';
+
+    const mssqlConfig: sql.config = {
+      user: sUser,
+      password: sPass,
+      server: sHost,
+      port: sPort,
+      database: targetDbName,
+      options: {
+        encrypt: false,
+        trustServerCertificate: true,
+        connectTimeout: 4500
+      }
+    };
+
+    try {
+      const poolMssql = await sql.connect(mssqlConfig);
+      await poolMssql.request().query('SELECT 1');
+      await poolMssql.request().query(`
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='usuarios' AND xtype='U')
+        CREATE TABLE usuarios (
+          id INT IDENTITY(1,1) PRIMARY KEY,
+          nome NVARCHAR(255) NOT NULL,
+          email NVARCHAR(255) UNIQUE NOT NULL,
+          ativo BIT DEFAULT 1,
+          criado_em DATETIME DEFAULT GETDATE()
+        )
+      `);
+      await poolMssql.close();
+
+      return res.json({
+        success: true,
+        message: `Conexão com Microsoft SQL Server estabelecida com sucesso! Banco "${targetDbName}" no host ${sHost}:${sPort} está online.`,
+        resolvedHost: sHost,
+        resolvedUser: sUser
+      });
+    } catch (mssqlErr: any) {
+      try {
+        const masterConfig: sql.config = {
+          ...mssqlConfig,
+          database: 'master'
+        };
+        const masterPool = await sql.connect(masterConfig);
+        await masterPool.request().query(`
+          IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'${targetDbName.replace(/'/g, "''")}')
+          CREATE DATABASE [${targetDbName.replace(/]/g, ']]')}];
+        `);
+        await masterPool.close();
+
+        return res.json({
+          success: true,
+          message: `Conexão estabelecida e Banco "${targetDbName}" provisionado com sucesso no Microsoft SQL Server (${sHost}:${sPort})!`,
+          resolvedHost: sHost,
+          resolvedUser: sUser
+        });
+      } catch (masterErr: any) {
+        return res.status(500).json({
+          error: `Falha na conexão com SQL Server (${sHost}:${sPort}): ${mssqlErr.message || masterErr.message}`
+        });
+      }
+    }
+  }
+
+  // ==========================================
+  // 4. CONEXÃO & TESTE: POSTGRESQL (PADRÃO)
+  // ==========================================
   if (!db_name) {
     return res.status(400).json({ error: 'Nome do Banco de Dados é obrigatório' });
   }
 
-  const targetDbName = String(db_name).trim();
   const port = db_port ? parseInt(String(db_port), 10) : parseInt(process.env.DB_PORT || '5432', 10);
 
   // Lista de hosts candidatos a tentar (ordenada por preferência)
@@ -2003,8 +2203,8 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
     return res.json({
       success: true,
       message: dbCreatedNow 
-        ? `Novo banco "${targetDbName}" criado com sucesso no host ${successfulHost}:${port} (Usuário: ${successfulUser})!`
-        : `Conexão estabelecida com sucesso! Banco "${targetDbName}" no host ${successfulHost}:${port} está online e pronto.`,
+        ? `Novo banco PostgreSQL "${targetDbName}" criado com sucesso no host ${successfulHost}:${port} (Usuário: ${successfulUser})!`
+        : `Conexão estabelecida com sucesso! Banco PostgreSQL "${targetDbName}" no host ${successfulHost}:${port} está online e pronto.`,
       resolvedHost: successfulHost,
       resolvedUser: successfulUser,
       resolvedPass: successfulPass
@@ -2012,7 +2212,7 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
   }
 
   res.status(500).json({
-    error: `Falha na conexão DB (${reqHost || 'localhost'}:${port}): ${lastErrorMessage}. Dica: No ambiente Docker/Portainer use o host "db" ou IP e o usuário "${process.env.DB_USER || 'regz_user'}".`
+    error: `Falha na conexão PostgreSQL (${reqHost || 'localhost'}:${port}): ${lastErrorMessage}. Dica: No ambiente Docker/Portainer use o host "db" ou IP e o usuário "${process.env.DB_USER || 'regz_user'}".`
   });
 });
 

@@ -35,7 +35,9 @@ export const SuperAdmin: React.FC = () => {
   const [empresaLogoUrl, setEmpresaLogoUrl] = useState('');
   const [empresaStatus, setEmpresaStatus] = useState('Ativa');
 
-  // Campos de Banco Próprio (On-Premise)
+  // Campos de Banco Próprio (On-Premise Multi-Bancos: PostgreSQL, MySQL, MongoDB, MSSQL)
+  const [dbTipo, setDbTipo] = useState<'postgres' | 'mysql' | 'mongo' | 'mssql'>('postgres');
+  const [dbUri, setDbUri] = useState('');
   const [dbHost, setDbHost] = useState('localhost');
   const [dbPort, setDbPort] = useState(5432);
   const [dbUser, setDbUser] = useState('postgres');
@@ -193,12 +195,15 @@ export const SuperAdmin: React.FC = () => {
     setEmpresaEstado('');
     setEmpresaLogoUrl('');
     setEmpresaStatus('Ativa');
+    setDbTipo('postgres');
+    setDbUri('');
     setDbHost('localhost');
     setDbPort(5432);
     setDbUser('postgres');
     setDbPass('');
     setDbName('regz_db');
     setCepErrorEmpresa('');
+    setTestingDbResult(null);
     setModalEmpresaOpen(true);
   };
 
@@ -216,13 +221,35 @@ export const SuperAdmin: React.FC = () => {
     setEmpresaEstado(emp.estado || '');
     setEmpresaLogoUrl(emp.logo_url || '');
     setEmpresaStatus(emp.status || 'Ativa');
+    const tipo = (emp.db_tipo || 'postgres') as 'postgres' | 'mysql' | 'mongo' | 'mssql';
+    setDbTipo(tipo);
+    setDbUri(emp.db_uri || '');
     setDbHost(emp.db_host || 'localhost');
-    setDbPort(emp.db_port || 5432);
-    setDbUser(emp.db_user || 'postgres');
+    setDbPort(emp.db_port || (tipo === 'mysql' ? 3306 : tipo === 'mongo' ? 27017 : tipo === 'mssql' ? 1433 : 5432));
+    setDbUser(emp.db_user || (tipo === 'mysql' ? 'root' : tipo === 'mongo' ? 'admin' : tipo === 'mssql' ? 'sa' : 'postgres'));
     setDbPass(emp.db_pass || '');
     setDbName(emp.db_name || 'regz_db');
     setCepErrorEmpresa('');
+    setTestingDbResult(null);
     setModalEmpresaOpen(true);
+  };
+
+  const handleDbTipoChange = (newTipo: 'postgres' | 'mysql' | 'mongo' | 'mssql') => {
+    setDbTipo(newTipo);
+    setTestingDbResult(null);
+    if (newTipo === 'postgres') {
+      if (dbPort === 3306 || dbPort === 27017 || dbPort === 1433) setDbPort(5432);
+      if (dbUser === 'root' || dbUser === 'admin' || dbUser === 'sa') setDbUser('postgres');
+    } else if (newTipo === 'mysql') {
+      if (dbPort === 5432 || dbPort === 27017 || dbPort === 1433) setDbPort(3306);
+      if (dbUser === 'postgres' || dbUser === 'admin' || dbUser === 'sa') setDbUser('root');
+    } else if (newTipo === 'mongo') {
+      if (dbPort === 5432 || dbPort === 3306 || dbPort === 1433) setDbPort(27017);
+      if (dbUser === 'postgres' || dbUser === 'root' || dbUser === 'sa') setDbUser('admin');
+    } else if (newTipo === 'mssql') {
+      if (dbPort === 5432 || dbPort === 3306 || dbPort === 27017) setDbPort(1433);
+      if (dbUser === 'postgres' || dbUser === 'root' || dbUser === 'admin') setDbUser('sa');
+    }
   };
 
   const handleCepEmpresaChange = async (val: string) => {
@@ -278,15 +305,36 @@ export const SuperAdmin: React.FC = () => {
   };
 
   const handleAutoFillDbCredentials = () => {
-    setDbHost('localhost');
-    setDbPort(5432);
-    setDbUser('regz_user');
-    setDbPass('regz_password');
-    if (!dbName) setDbName('regz_db');
+    if (dbTipo === 'postgres') {
+      setDbHost('localhost');
+      setDbPort(5432);
+      setDbUser('regz_user');
+      setDbPass('regz_password');
+      if (!dbName) setDbName('regz_db');
+    } else if (dbTipo === 'mysql') {
+      setDbHost('localhost');
+      setDbPort(3306);
+      setDbUser('root');
+      setDbPass('regz_password');
+      if (!dbName) setDbName('regz_db');
+    } else if (dbTipo === 'mongo') {
+      setDbHost('localhost');
+      setDbPort(27017);
+      setDbUser('admin');
+      setDbPass('regz_password');
+      setDbUri('mongodb://localhost:27017/regz_db');
+      if (!dbName) setDbName('regz_db');
+    } else if (dbTipo === 'mssql') {
+      setDbHost('localhost');
+      setDbPort(1433);
+      setDbUser('sa');
+      setDbPass('Regz@2026Secure!');
+      if (!dbName) setDbName('regz_db');
+    }
   };
 
   const handleTestDbConnection = async () => {
-    if (!dbName) {
+    if (!dbName && dbTipo !== 'mongo') {
       alert('Preencha o Nome do Banco de Dados para testar a conexão.');
       return;
     }
@@ -299,6 +347,8 @@ export const SuperAdmin: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          db_tipo: dbTipo,
+          db_uri: dbUri,
           db_host: dbHost,
           db_port: dbPort,
           db_user: dbUser,
@@ -340,6 +390,8 @@ export const SuperAdmin: React.FC = () => {
         estado: empresaEstado,
         logo_url: empresaLogoUrl,
         status: empresaStatus,
+        db_tipo: dbTipo,
+        db_uri: dbUri,
         db_host: dbHost,
         db_port: dbPort,
         db_user: dbUser,
@@ -854,11 +906,24 @@ export const SuperAdmin: React.FC = () => {
                 <div className="empresa-card-body">
                   <div className="empresa-card-row">
                     <span className="empresa-card-label">
-                      <Database size={14} color="#38bdf8" /> Banco DB Local:
+                      <Database size={14} color="#38bdf8" /> Banco DB:
                     </span>
-                    <span className="empresa-card-val" style={{ fontFamily: 'monospace', color: '#38bdf8', fontSize: '0.8rem' }}>
-                      {emp.db_host || 'localhost'}:{emp.db_port || 5432}/{emp.db_name || 'regz_db'}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontSize: '0.72rem',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        background: emp.db_tipo === 'mongo' ? 'rgba(52, 211, 153, 0.15)' : emp.db_tipo === 'mysql' ? 'rgba(56, 189, 248, 0.15)' : emp.db_tipo === 'mssql' ? 'rgba(251, 146, 60, 0.15)' : 'rgba(99, 102, 241, 0.15)',
+                        color: emp.db_tipo === 'mongo' ? '#34d399' : emp.db_tipo === 'mysql' ? '#38bdf8' : emp.db_tipo === 'mssql' ? '#fb923c' : '#818cf8',
+                        border: `1px solid ${emp.db_tipo === 'mongo' ? 'rgba(52, 211, 153, 0.3)' : emp.db_tipo === 'mysql' ? 'rgba(56, 189, 248, 0.3)' : emp.db_tipo === 'mssql' ? 'rgba(251, 146, 60, 0.3)' : 'rgba(99, 102, 241, 0.3)'}`
+                      }}>
+                        {emp.db_tipo === 'mongo' ? '🍃 MongoDB' : emp.db_tipo === 'mysql' ? '🐬 MySQL' : emp.db_tipo === 'mssql' ? '🗄️ SQL Server' : '🐘 PostgreSQL'}
+                      </span>
+                      <span className="empresa-card-val" style={{ fontFamily: 'monospace', color: '#38bdf8', fontSize: '0.8rem' }}>
+                        {emp.db_host || 'localhost'}:{emp.db_port || (emp.db_tipo === 'mysql' ? 3306 : emp.db_tipo === 'mongo' ? 27017 : emp.db_tipo === 'mssql' ? 1433 : 5432)}/{emp.db_name || 'regz_db'}
+                      </span>
+                    </div>
                   </div>
 
                   <div className="empresa-card-row">
@@ -1336,11 +1401,11 @@ export const SuperAdmin: React.FC = () => {
                 </div>
               </div>
 
-              {/* Seção Banco de Dados Próprio (On-Premise) */}
+              {/* Seção Banco de Dados Próprio (On-Premise Multi-Bancos) */}
               <div className="superadmin-modal-innerbox" style={{ background: 'rgba(30, 41, 59, 0.8)', padding: '14px 16px', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 700, fontSize: '0.9rem', color: '#38bdf8' }}>
-                    <Database size={16} /> Parâmetros do Banco de Dados Próprio da Empresa (PostgreSQL)
+                    <Database size={16} /> Parâmetros de Conexão DB Próprio da Empresa
                   </div>
                   <button
                     type="button"
@@ -1358,11 +1423,118 @@ export const SuperAdmin: React.FC = () => {
                       alignItems: 'center',
                       gap: '4px'
                     }}
-                    title="Preencher com os dados padrão do container PostgreSQL (regz_user)"
+                    title="Preencher com as credenciais padrão do motor de banco selecionado"
                   >
                     ⚡ Preencher com Credenciais Padrão
                   </button>
                 </div>
+
+                {/* Seletor do Tipo de Banco de Dados */}
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ display: 'block', fontSize: '0.78rem', color: '#94a3b8', marginBottom: '6px', fontWeight: 600 }}>
+                    Motor / Tipo de Banco de Dados:
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleDbTipoChange('postgres')}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        background: dbTipo === 'postgres' ? 'rgba(99, 102, 241, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                        color: dbTipo === 'postgres' ? '#818cf8' : '#94a3b8',
+                        border: dbTipo === 'postgres' ? '1px solid #818cf8' : '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      🐘 PostgreSQL
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDbTipoChange('mysql')}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        background: dbTipo === 'mysql' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                        color: dbTipo === 'mysql' ? '#38bdf8' : '#94a3b8',
+                        border: dbTipo === 'mysql' ? '1px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      🐬 MySQL / MariaDB
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDbTipoChange('mongo')}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        background: dbTipo === 'mongo' ? 'rgba(52, 211, 153, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                        color: dbTipo === 'mongo' ? '#34d399' : '#94a3b8',
+                        border: dbTipo === 'mongo' ? '1px solid #34d399' : '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      🍃 MongoDB
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDbTipoChange('mssql')}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        background: dbTipo === 'mssql' ? 'rgba(251, 146, 60, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                        color: dbTipo === 'mssql' ? '#fb923c' : '#94a3b8',
+                        border: dbTipo === 'mssql' ? '1px solid #fb923c' : '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      🗄️ SQL Server
+                    </button>
+                  </div>
+                </div>
+
+                {/* Para MongoDB: Opção de URI direta (Atlas / Cloud) */}
+                {dbTipo === 'mongo' && (
+                  <div className="form-group" style={{ marginBottom: '12px' }}>
+                    <label style={{ fontSize: '0.78rem', color: '#34d399' }}>URI / Connection String MongoDB (Opcional - Ex: Atlas Cloud / On-Premise)</label>
+                    <input
+                      type="text"
+                      value={dbUri}
+                      onChange={(e) => setDbUri(e.target.value)}
+                      placeholder="mongodb+srv://user:password@cluster.mongodb.net/regz_db ou mongodb://localhost:27017"
+                      autoComplete="off"
+                      data-lpignore="true"
+                    />
+                  </div>
+                )}
 
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr', gap: '12px', marginBottom: '12px' }}>
                   <div className="form-group" style={{ margin: 0 }}>
@@ -1371,7 +1543,7 @@ export const SuperAdmin: React.FC = () => {
                       type="text"
                       value={dbHost}
                       onChange={(e) => setDbHost(e.target.value)}
-                      placeholder="localhost / 192.168.1.100"
+                      placeholder={dbTipo === 'mongo' ? 'localhost / mongodb' : dbTipo === 'mysql' ? 'localhost / mysql' : dbTipo === 'mssql' ? 'localhost / sqlserver' : 'localhost / 192.168.1.100'}
                       autoComplete="off"
                       data-lpignore="true"
                     />
@@ -1383,14 +1555,14 @@ export const SuperAdmin: React.FC = () => {
                       type="number"
                       value={dbPort}
                       onChange={(e) => setDbPort(Number(e.target.value))}
-                      placeholder="5432"
+                      placeholder={dbTipo === 'mysql' ? '3306' : dbTipo === 'mongo' ? '27017' : dbTipo === 'mssql' ? '1433' : '5432'}
                       autoComplete="off"
                       data-lpignore="true"
                     />
                   </div>
 
                   <div className="form-group" style={{ margin: 0 }}>
-                    <label>Nome do Banco</label>
+                    <label>Nome do Banco {dbTipo === 'mongo' ? '(Database / Collection)' : ''}</label>
                     <input
                       type="text"
                       value={dbName}
@@ -1409,7 +1581,7 @@ export const SuperAdmin: React.FC = () => {
                       type="text"
                       value={dbUser}
                       onChange={(e) => setDbUser(e.target.value)}
-                      placeholder="postgres"
+                      placeholder={dbTipo === 'mysql' ? 'root' : dbTipo === 'mongo' ? 'admin' : dbTipo === 'mssql' ? 'sa' : 'postgres'}
                       autoComplete="off"
                       data-lpignore="true"
                     />
@@ -1449,7 +1621,7 @@ export const SuperAdmin: React.FC = () => {
                     }}
                   >
                     {testingDb ? <Loader2 className="spin" size={14} /> : <Database size={14} />}
-                    🔌 TESTAR CONEXÃO & CRIAR BANCO DB
+                    🔌 TESTAR CONEXÃO & CRIAR BANCO DB ({dbTipo === 'mongo' ? 'MONGODB' : dbTipo === 'mysql' ? 'MYSQL' : dbTipo === 'mssql' ? 'SQL SERVER' : 'POSTGRESQL'})
                   </button>
 
                   {testingDbResult && (

@@ -37,6 +37,13 @@ export interface Empresa {
   cor_secundaria?: string;
   cor_destaque?: string;
   status: string;
+  db_tipo?: string;
+  db_uri?: string;
+  db_host?: string;
+  db_port?: number;
+  db_user?: string;
+  db_pass?: string;
+  db_name?: string;
   total_usuarios?: number;
   licencas_ativas?: number;
   total_licencas?: number;
