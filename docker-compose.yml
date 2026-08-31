@@ -43,6 +43,7 @@ services:
 
   ngrok:
     image: ngrok/ngrok:latest
+    pull_policy: if_not_present
     container_name: regz-ngrok-tunnel
     restart: always
     environment:
