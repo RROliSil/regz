@@ -110,32 +110,32 @@ html[data-theme="dark"] *::-webkit-scrollbar-thumb:hover,
 
 /* 2. Tema Padrão (Default) */
 html[data-theme="padrao"],
-html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]),
-html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) body,
-html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) * {
+html:not([data-theme="dark"]):not([data-theme="light"]),
+html:not([data-theme="dark"]):not([data-theme="light"]) body,
+html:not([data-theme="dark"]):not([data-theme="light"]) * {
   color-scheme: dark !important;
   scrollbar-color: #334155 #020617 !important;
 }
 
 html[data-theme="padrao"]::-webkit-scrollbar-track,
 html[data-theme="padrao"] *::-webkit-scrollbar-track,
-html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"])::-webkit-scrollbar-track,
-html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) *::-webkit-scrollbar-track {
+html:not([data-theme="dark"]):not([data-theme="light"])::-webkit-scrollbar-track,
+html:not([data-theme="dark"]):not([data-theme="light"]) *::-webkit-scrollbar-track {
   background: #020617 !important;
 }
 
 html[data-theme="padrao"]::-webkit-scrollbar-thumb,
 html[data-theme="padrao"] *::-webkit-scrollbar-thumb,
-html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"])::-webkit-scrollbar-thumb,
-html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) *::-webkit-scrollbar-thumb {
+html:not([data-theme="dark"]):not([data-theme="light"])::-webkit-scrollbar-thumb,
+html:not([data-theme="dark"]):not([data-theme="light"]) *::-webkit-scrollbar-thumb {
   background: #334155 !important;
   border-radius: 8px !important;
 }
 
 html[data-theme="padrao"]::-webkit-scrollbar-thumb:hover,
 html[data-theme="padrao"] *::-webkit-scrollbar-thumb:hover,
-html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"])::-webkit-scrollbar-thumb:hover,
-html:not([data-theme="dark"]):not([data-theme="light"]):not([data-high-contrast="true"]) *::-webkit-scrollbar-thumb:hover {
+html:not([data-theme="dark"]):not([data-theme="light"])::-webkit-scrollbar-thumb:hover,
+html:not([data-theme="dark"]):not([data-theme="light"]) *::-webkit-scrollbar-thumb:hover {
   background: #64748b !important;
 }
 
@@ -167,36 +167,6 @@ html[data-theme="light"] *::-webkit-scrollbar-thumb:hover,
 [data-theme="light"]::-webkit-scrollbar-thumb:hover,
 [data-theme="light"] *::-webkit-scrollbar-thumb:hover {
   background: #94a3b8 !important;
-}
-
-/* 4. Modo Alto Contraste */
-html[data-high-contrast="true"],
-html[data-high-contrast="true"] body,
-html[data-high-contrast="true"] * {
-  color-scheme: dark !important;
-  scrollbar-color: #00ff00 #000000 !important;
-}
-
-html[data-high-contrast="true"]::-webkit-scrollbar-track,
-html[data-high-contrast="true"] *::-webkit-scrollbar-track,
-[data-high-contrast="true"]::-webkit-scrollbar-track,
-[data-high-contrast="true"] *::-webkit-scrollbar-track {
-  background: #000000 !important;
-}
-
-html[data-high-contrast="true"]::-webkit-scrollbar-thumb,
-html[data-high-contrast="true"] *::-webkit-scrollbar-thumb,
-[data-high-contrast="true"]::-webkit-scrollbar-thumb,
-[data-high-contrast="true"] *::-webkit-scrollbar-thumb {
-  background: #00ff00 !important;
-  border-radius: 4px !important;
-}
-
-html[data-high-contrast="true"]::-webkit-scrollbar-thumb:hover,
-html[data-high-contrast="true"] *::-webkit-scrollbar-thumb:hover,
-[data-high-contrast="true"]::-webkit-scrollbar-thumb:hover,
-[data-high-contrast="true"] *::-webkit-scrollbar-thumb:hover {
-  background: #00ff00 !important;
 }
 
 * {
@@ -858,21 +828,6 @@ h1, h2, h3, h4, h5, h6 {
 [data-theme="light"] .panel-builder-container::-webkit-scrollbar-thumb:hover,
 [data-theme="light"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
-}
-
-[data-high-contrast="true"] .table-flex-wrapper,
-[data-high-contrast="true"] .table-sticky-wrapper,
-[data-high-contrast="true"] .panel-builder-container,
-[data-high-contrast="true"] .custom-scrollbar {
-  scrollbar-color: #00ff00 transparent !important;
-}
-
-[data-high-contrast="true"] .table-flex-wrapper::-webkit-scrollbar-thumb,
-[data-high-contrast="true"] .table-sticky-wrapper::-webkit-scrollbar-thumb,
-[data-high-contrast="true"] .panel-builder-container::-webkit-scrollbar-thumb,
-[data-high-contrast="true"] .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #00ff00 !important;
-  border-radius: 4px !important;
 }
 
 /* Custom Table Fluida (Sem Min-Width) com Suporte a Colunas Redimensionáveis */
@@ -2860,22 +2815,6 @@ select option,
   color: #ffffff !important;
   font-weight: 700;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
-}
-
-[data-high-contrast="true"] .pdf-orientation-toggle {
-  background: #000000 !important;
-  border: 2px solid #00ff00 !important;
-}
-
-[data-high-contrast="true"] .pdf-orientation-toggle .orientation-btn {
-  color: #ffffff !important;
-  font-weight: 700 !important;
-}
-
-[data-high-contrast="true"] .pdf-orientation-toggle .orientation-btn.active {
-  background: #00ff00 !important;
-  color: #000000 !important;
-  font-weight: 900 !important;
 }
 
 /* ======================================================== */
@@ -4964,125 +4903,20 @@ input[type="checkbox"]:disabled,
   font-size: 130% !important;
 }
 
-/* 2. Modo Alto Contraste Puro para Baixa Visão (Verde Neon #00ff00) */
-[data-high-contrast="true"] {
-  --bg-main: #000000 !important;
-  --bg-secondary: #000000 !important;
-  --bg-card: #000000 !important;
-  --text-main: #ffffff !important;
-  --text-muted: #00ff00 !important;
-  --text-dim: #bbf7d0 !important;
-  --border-color: #00ff00 !important;
-  --primary: #00ff00 !important;
-  --primary-hover: #00dd00 !important;
-}
-
-[data-high-contrast="true"] body,
-[data-high-contrast="true"] .app-layout,
-[data-high-contrast="true"] .main-viewport,
-[data-high-contrast="true"] .glass-panel,
-[data-high-contrast="true"] .sidebar,
-[data-high-contrast="true"] .modal-content {
-  background: #000000 !important;
-  background-color: #000000 !important;
-  color: #ffffff !important;
-  border-color: #00ff00 !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-  box-shadow: none !important;
-}
-
-[data-high-contrast="true"] input,
-[data-high-contrast="true"] select,
-[data-high-contrast="true"] textarea {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border: 2px solid #00ff00 !important;
-}
-
-[data-high-contrast="true"] .btn-primary {
-  background: #00ff00 !important;
-  color: #000000 !important;
-  font-weight: 800 !important;
-  border: 2px solid #00ff00 !important;
-}
-
-[data-high-contrast="true"] .btn-secondary {
-  background: #000000 !important;
-  color: #00ff00 !important;
-  font-weight: 800 !important;
-  border: 2px solid #00ff00 !important;
-}
-
-[data-high-contrast="true"] .custom-table th {
-  background: #000000 !important;
-  color: #00ff00 !important;
-  border-bottom: 2px solid #00ff00 !important;
-}
-
-[data-high-contrast="true"] .custom-table td {
-  background: #000000 !important;
-  color: #ffffff !important;
-  border-bottom: 1px solid #00ff00 !important;
-}
-
-/* 3. Realce de Foco Reforçado */
+/* 2. Realce de Foco Reforçado */
 [data-focus-highlight="true"] *:focus,
 [data-focus-highlight="true"] *:focus-visible {
-  outline: 3.5px solid #00ff00 !important;
+  outline: 3.5px solid #6366f1 !important;
   outline-offset: 3px !important;
-  box-shadow: 0 0 15px rgba(0, 255, 0, 0.8) !important;
+  box-shadow: 0 0 15px rgba(99, 102, 241, 0.8) !important;
 }
 
-/* 4. Ocultação do Botão de Alterar Temas no Modo Alto Contraste */
-[data-high-contrast="true"] .theme-toggle-btn,
-[data-high-contrast="true"] .login-theme-btn,
-[data-high-contrast="true"] [class*="theme-toggle"] {
-  display: none !important;
-  visibility: hidden !important;
-}
-
-/* 5. Proteção e Preservação de Ícones no Modo Acessibilidade e Zoom */
+/* 3. Proteção e Preservação de Ícones no Modo Acessibilidade e Zoom */
 svg.lucide, svg {
   flex-shrink: 0 !important;
 }
 
-[data-high-contrast="true"] .accessibility-trigger-btn {
-  background: #000000 !important;
-  border: 2px solid #00ff00 !important;
-  color: #00ff00 !important;
-}
-
-[data-high-contrast="true"] .accessibility-trigger-btn svg {
-  color: #00ff00 !important;
-  stroke: #00ff00 !important;
-}
-
-[data-high-contrast="true"] .btn-icon-primary {
-  background: #00ff00 !important;
-  color: #000000 !important;
-  border: 2px solid #00ff00 !important;
-}
-
-[data-high-contrast="true"] .btn-icon-primary svg {
-  color: #000000 !important;
-  stroke: #000000 !important;
-}
-
-[data-high-contrast="true"] .btn-icon-secondary,
-[data-high-contrast="true"] .btn-action {
-  border: 1.5px solid #00ff00 !important;
-  color: #00ff00 !important;
-  background: #000000 !important;
-}
-
-[data-high-contrast="true"] .btn-icon-secondary svg,
-[data-high-contrast="true"] .btn-action svg {
-  color: #00ff00 !important;
-  stroke: #00ff00 !important;
-}
-
-/* 6. Áreas de Clique e Ícones Ampliados (Sem esmagar botões de ícone) */
+/* 4. Áreas de Clique e Ícones Ampliados (Sem esmagar botões de ícone) */
 [data-large-clickables="true"] button:not(.btn-icon):not(.btn-icon-primary):not(.btn-icon-secondary):not(.theme-toggle-btn):not(.btn-close):not(.accessibility-trigger-btn):not(.pagination-btn):not(.btn-action) {
   min-height: 48px !important;
   padding-left: 18px !important;
@@ -5217,12 +5051,3 @@ svg.lucide, svg {
 [data-theme="light"] .pdf-preview-body {
   background: #e2e8f0 !important;
 }
-
-[data-high-contrast="true"] .pdf-preview-modal-container {
-  background: #000000 !important;
-  border: 2px solid #00ff00 !important;
-}
-
-
-
-

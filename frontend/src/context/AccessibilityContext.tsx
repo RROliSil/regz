@@ -4,7 +4,6 @@ export type FontScale = 'normal' | 'medium' | 'large' | 'xlarge';
 
 export interface AccessibilitySettings {
   fontScale: FontScale;
-  highContrast: boolean;
   focusHighlight: boolean;
   largeClickables: boolean;
   dyslexicFont: boolean;
@@ -20,7 +19,6 @@ interface AccessibilityContextType {
 
 const DEFAULT_SETTINGS: AccessibilitySettings = {
   fontScale: 'normal',
-  highContrast: false,
   focusHighlight: false,
   largeClickables: false,
   dyslexicFont: false,
@@ -63,12 +61,8 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     // Escala de Fonte
     root.setAttribute('data-font-scale', settings.fontScale);
 
-    // Alto Contraste
-    if (settings.highContrast) {
-      root.setAttribute('data-high-contrast', 'true');
-    } else {
-      root.removeAttribute('data-high-contrast');
-    }
+    // Garantir remoção de alto contraste legado
+    root.removeAttribute('data-high-contrast');
 
     // Foco Reforçado
     if (settings.focusHighlight) {
