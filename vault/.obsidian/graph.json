@@ -1,0 +1,57 @@
+{
+  "collapse-filter": false,
+  "search": "",
+  "showTags": true,
+  "showAttachments": false,
+  "hideUnresolved": false,
+  "showOrphans": true,
+  "colorGroups": [
+    {
+      "query": "tag:#meta",
+      "color": {
+        "a": 1,
+        "rgb": 10181046
+      }
+    },
+    {
+      "query": "tag:#produto",
+      "color": {
+        "a": 1,
+        "rgb": 3067001
+      }
+    },
+    {
+      "query": "tag:#frontend",
+      "color": {
+        "a": 1,
+        "rgb": 3447003
+      }
+    },
+    {
+      "query": "tag:#arquitetura",
+      "color": {
+        "a": 1,
+        "rgb": 15965202
+      }
+    },
+    {
+      "query": "tag:#seguranca",
+      "color": {
+        "a": 1,
+        "rgb": 15158332
+      }
+    },
+    {
+      "query": "tag:#cloud",
+      "color": {
+        "a": 1,
+        "rgb": 1752220
+      }
+    }
+  ],
+  "linkStrength": 1,
+  "linkDistance": 250,
+  "repulsionStrength": 10,
+  "lineThickness": 1,
+  "nodeSize": 1.2
+}

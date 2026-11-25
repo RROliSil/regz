@@ -32,3 +32,9 @@ postgres_data/
 *.njsproj
 *.sln
 *.sw?
+
+# Obsidian local workspace & cache
+.obsidian/workspace*.json
+.obsidian/cache/
+vault/.obsidian/workspace*.json
+vault/.obsidian/cache/

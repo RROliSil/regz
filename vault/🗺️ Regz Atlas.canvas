@@ -1,0 +1,145 @@
+{
+  "nodes": [
+    {
+      "id": "node-hub",
+      "x": 0,
+      "y": 0,
+      "width": 380,
+      "height": 220,
+      "type": "text",
+      "text": "## 🏢 REGZ APP ATLAS\n**Segundo Cérebro & Ecossistema SaaS 24/7**\nCentral de produto, engenharia Full-Stack e nuvem.\n\n[[🏠 Dashboard|Abrir Dashboard Principal]]"
+    },
+    {
+      "id": "node-colabs",
+      "x": -480,
+      "y": -280,
+      "width": 360,
+      "height": 180,
+      "type": "file",
+      "file": "01 - Módulos do Portal (Produto)/Portal de Colaboradores (CRUD & Geolocation).md"
+    },
+    {
+      "id": "node-cbo",
+      "x": -920,
+      "y": -280,
+      "width": 360,
+      "height": 180,
+      "type": "file",
+      "file": "01 - Módulos do Portal (Produto)/Validação CBO & eSocial.md"
+    },
+    {
+      "id": "node-campos",
+      "x": -480,
+      "y": 20,
+      "width": 360,
+      "height": 180,
+      "type": "file",
+      "file": "01 - Módulos do Portal (Produto)/Campos Dinâmicos Customizados (EAV).md"
+    },
+    {
+      "id": "node-qr",
+      "x": -920,
+      "y": 20,
+      "width": 360,
+      "height": 180,
+      "type": "file",
+      "file": "01 - Módulos do Portal (Produto)/Crachá Digital & QR Code 2D.md"
+    },
+    {
+      "id": "node-relatorios",
+      "x": -480,
+      "y": 320,
+      "width": 360,
+      "height": 180,
+      "type": "file",
+      "file": "01 - Módulos do Portal (Produto)/Central de Relatórios, PDF Vetorial & Excel.md"
+    },
+    {
+      "id": "node-superadmin",
+      "x": -920,
+      "y": 320,
+      "width": 360,
+      "height": 180,
+      "type": "file",
+      "file": "01 - Módulos do Portal (Produto)/Portal Super Admin Multi-Tenant.md"
+    },
+    {
+      "id": "node-api",
+      "x": 480,
+      "y": -280,
+      "width": 360,
+      "height": 180,
+      "type": "file",
+      "file": "02 - Arquitetura & Engenharia/API REST & Catálogo de Endpoints.md"
+    },
+    {
+      "id": "node-multidb",
+      "x": 920,
+      "y": -280,
+      "width": 360,
+      "height": 180,
+      "type": "file",
+      "file": "02 - Arquitetura & Engenharia/Multi-Tenancy & Roteamento Multi-Banco.md"
+    },
+    {
+      "id": "node-db",
+      "x": 480,
+      "y": 20,
+      "width": 360,
+      "height": 180,
+      "type": "file",
+      "file": "02 - Arquitetura & Engenharia/Modelagem do Banco de Dados (PostgreSQL).md"
+    },
+    {
+      "id": "node-sec",
+      "x": 920,
+      "y": 20,
+      "width": 360,
+      "height": 180,
+      "type": "file",
+      "file": "02 - Arquitetura & Engenharia/Segurança, Autenticação JWT & Rate Limiting.md"
+    },
+    {
+      "id": "node-a11y",
+      "x": 480,
+      "y": 320,
+      "width": 360,
+      "height": 180,
+      "type": "file",
+      "file": "03 - Design System, UX & Acessibilidade/Central de Acessibilidade Visual & TTS.md"
+    },
+    {
+      "id": "node-cloud",
+      "x": 0,
+      "y": 380,
+      "width": 380,
+      "height": 180,
+      "type": "file",
+      "file": "04 - Infraestrutura, Cloud 24-7 & Deploy/Arquitetura Cloud 24-7 (Render + Supabase).md"
+    },
+    {
+      "id": "node-roadmap",
+      "x": 0,
+      "y": 620,
+      "width": 380,
+      "height": 180,
+      "type": "file",
+      "file": "05 - Roadmap & DevLog/Roadmap & Próximas Features.md"
+    }
+  ],
+  "edges": [
+    { "id": "e1", "fromNode": "node-hub", "fromSide": "left", "toNode": "node-colabs", "toSide": "right" },
+    { "id": "e1-cbo", "fromNode": "node-colabs", "fromSide": "left", "toNode": "node-cbo", "toSide": "right" },
+    { "id": "e1-qr", "fromNode": "node-colabs", "fromSide": "left", "toNode": "node-qr", "toSide": "right" },
+    { "id": "e2", "fromNode": "node-hub", "fromSide": "left", "toNode": "node-campos", "toSide": "right" },
+    { "id": "e3", "fromNode": "node-hub", "fromSide": "left", "toNode": "node-relatorios", "toSide": "right" },
+    { "id": "e3-sa", "fromNode": "node-relatorios", "fromSide": "left", "toNode": "node-superadmin", "toSide": "right" },
+    { "id": "e4", "fromNode": "node-hub", "fromSide": "right", "toNode": "node-api", "toSide": "left" },
+    { "id": "e4-mdb", "fromNode": "node-api", "fromSide": "right", "toNode": "node-multidb", "toSide": "left" },
+    { "id": "e5", "fromNode": "node-hub", "fromSide": "right", "toNode": "node-db", "toSide": "left" },
+    { "id": "e5-sec", "fromNode": "node-db", "fromSide": "right", "toNode": "node-sec", "toSide": "left" },
+    { "id": "e6", "fromNode": "node-hub", "fromSide": "right", "toNode": "node-a11y", "toSide": "left" },
+    { "id": "e7", "fromNode": "node-hub", "fromSide": "bottom", "toNode": "node-cloud", "toSide": "top" },
+    { "id": "e8", "fromNode": "node-cloud", "fromSide": "bottom", "toNode": "node-roadmap", "toSide": "top" }
+  ]
+}
