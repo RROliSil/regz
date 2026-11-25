@@ -13,23 +13,155 @@ import fs from 'fs';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = parseInt(process.env.PORT || '4000', 10);
 const JWT_SECRET = process.env.JWT_SECRET || 'regz_jwt_super_secret_key_2026';
+
+// Confiar em proxies reversos HTTPS em nuvem (Railway, Render, Fly.io, Koyeb, Cloudflare, Nginx)
+app.set('trust proxy', 1);
 
 // Configurar limites de payload para requisições Express
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-// PostgreSQL Connection Pool
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-  user: process.env.DB_USER || 'regz_user',
-  password: process.env.DB_PASSWORD || 'regz_password',
-  database: process.env.DB_NAME || 'regz_db',
-  connectionTimeoutMillis: 5000,
+// Helpers de detecção de ambiente Cloud vs Local e SSL/TLS automático
+const isLocalHost = (host?: string | null): boolean => {
+  const h = (host || '').trim().toLowerCase();
+  return (
+    !h ||
+    h === 'localhost' ||
+    h === '127.0.0.1' ||
+    h === '::1' ||
+    h === 'postgres' ||
+    h === 'db' ||
+    h.endsWith('.railway.internal')
+  );
+};
+
+const resolvePgSslConfig = (connectionString?: string, host?: string): false | { rejectUnauthorized: boolean } => {
+  const envSsl = (process.env.DB_SSL || '').trim().toLowerCase();
+  if (envSsl === 'false' || envSsl === '0' || envSsl === 'disable') {
+    return false;
+  }
+
+  if (connectionString) {
+    const lowerUri = connectionString.toLowerCase();
+    if (lowerUri.includes('sslmode=disable')) {
+      return false;
+    }
+    if (
+      lowerUri.includes('sslmode=require') ||
+      lowerUri.includes('sslmode=verify-ca') ||
+      lowerUri.includes('sslmode=verify-full') ||
+      lowerUri.includes('ssl=true')
+    ) {
+      return { rejectUnauthorized: false };
+    }
+    try {
+      const parsed = new URL(connectionString);
+      if (!isLocalHost(parsed.hostname)) {
+        return { rejectUnauthorized: false };
+      }
+    } catch {
+      // fallback para regras abaixo
+    }
+  }
+
+  if (envSsl === 'true' || envSsl === '1' || envSsl === 'require') {
+    return { rejectUnauthorized: false };
+  }
+
+  if (host && !isLocalHost(host)) {
+    return { rejectUnauthorized: false };
+  }
+
+  return false;
+};
+
+const getCentralDbMeta = () => {
+  const rawUrl = (process.env.DATABASE_URL || '').trim();
+  const sslEnabled = !!resolvePgSslConfig(rawUrl || undefined, process.env.DB_HOST);
+  if (rawUrl) {
+    try {
+      const parsed = new URL(rawUrl);
+      return {
+        mode: isLocalHost(parsed.hostname) ? 'local' : 'cloud',
+        host: parsed.hostname,
+        port: parsed.port || '5432',
+        database: parsed.pathname.replace(/^\//, '') || 'postgres',
+        ssl: sslEnabled,
+        source: 'DATABASE_URL'
+      };
+    } catch {
+      return {
+        mode: 'cloud',
+        host: 'online',
+        port: '5432',
+        database: process.env.DB_NAME || 'regz_db',
+        ssl: sslEnabled,
+        source: 'DATABASE_URL'
+      };
+    }
+  }
+  const host = process.env.DB_HOST || 'localhost';
+  return {
+    mode: isLocalHost(host) ? 'local' : 'cloud',
+    host,
+    port: process.env.DB_PORT || '5432',
+    database: process.env.DB_NAME || 'regz_db',
+    ssl: sslEnabled,
+    source: 'DB_HOST'
+  };
+};
+
+const normalizePgConnectionString = (rawUri: string): string => {
+  try {
+    const parsed = new URL(rawUri);
+    const sslmode = (parsed.searchParams.get('sslmode') || '').toLowerCase();
+    // Remove sslmode=require/prefer/verify-ca da query para evitar que pg-connection-string sobrescreva ssl={ rejectUnauthorized: false }
+    if (sslmode && sslmode !== 'verify-full' && sslmode !== 'disable') {
+      parsed.searchParams.delete('sslmode');
+    }
+    return parsed.toString();
+  } catch {
+    return rawUri;
+  }
+};
+
+// PostgreSQL Connection Pool Central (Suporte nativo a DATABASE_URL + SSL/TLS para Bancos Online 24/7)
+const centralConnectionString = (process.env.DATABASE_URL || '').trim();
+const centralSsl = resolvePgSslConfig(centralConnectionString || undefined, process.env.DB_HOST);
+const centralPoolMax = parseInt(process.env.DB_POOL_MAX || '10', 10);
+
+const pool = new Pool(
+  centralConnectionString
+    ? {
+        connectionString: normalizePgConnectionString(centralConnectionString),
+        ssl: centralSsl,
+        max: centralPoolMax,
+        idleTimeoutMillis: 20000,
+        connectionTimeoutMillis: 10000,
+        keepAlive: true,
+      }
+    : {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '5432', 10),
+        user: process.env.DB_USER || 'regz_user',
+        password: process.env.DB_PASSWORD || 'regz_password',
+        database: process.env.DB_NAME || 'regz_db',
+        ssl: centralSsl,
+        max: centralPoolMax,
+        idleTimeoutMillis: 20000,
+        connectionTimeoutMillis: 10000,
+        keepAlive: true,
+      }
+);
+
+pool.on('error', (err) => {
+  console.error('⚠️ Erro em conexão ociosa do pool PostgreSQL central (reconexão automática):', err.message);
 });
+
+let dbInitialized = false;
 
 // Base Completa de Ocupações Oficiais CBO (Classificação Brasileira de Ocupações - MTE/Brasil) com Sinônimos de Mercado (eSocial)
 const CBO_DATASET = [
@@ -159,121 +291,38 @@ const syncDatabaseLicenses = async () => {
   }
 };
 
-// Inicialização e migrations do banco de dados
-const initDb = async () => {
+// Helper de upsert em lote do catálogo CBO (1 round-trip otimizado para bancos online)
+const upsertCboDataset = async (targetPool: Pool) => {
+  const uniqueMap = new Map<string, { titulo: string; codigo: string; sinonimos: string | null }>();
+  for (const item of CBO_DATASET) {
+    uniqueMap.set(item.titulo, {
+      titulo: item.titulo,
+      codigo: item.codigo,
+      sinonimos: item.sinonimos || null,
+    });
+  }
+  const items = Array.from(uniqueMap.values());
+  const nomes = items.map((i) => i.titulo);
+  const codigos = items.map((i) => i.codigo);
+  const sinonimos = items.map((i) => i.sinonimos);
+
+  await targetPool.query(
+    `INSERT INTO cargos (nome, codigo_cbo, sinonimos)
+     SELECT * FROM UNNEST($1::text[], $2::text[], $3::text[])
+     ON CONFLICT (nome) DO UPDATE SET
+       codigo_cbo = EXCLUDED.codigo_cbo,
+       sinonimos = EXCLUDED.sinonimos`,
+    [nomes, codigos, sinonimos]
+  );
+};
+
+// Inicialização e migrations do banco de dados (ordem segura para bancos online zerados)
+const initDb = async (): Promise<boolean> => {
   try {
     // Remover tabela órfã de testes se existir no PostgreSQL
     await pool.query('DROP TABLE IF EXISTS teste;');
 
-    // 1. Tabela de Perfis de Acesso (RBAC)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS perfis_acesso (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(255) NOT NULL,
-        descricao TEXT,
-        is_admin BOOLEAN DEFAULT false,
-        permissoes JSONB NOT NULL DEFAULT '{}'::jsonb,
-        empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-      ALTER TABLE perfis_acesso ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE;
-    `);
-
-    // Inserir perfis padrão se a tabela estiver vazia
-    const countPerfis = await pool.query('SELECT COUNT(*) FROM perfis_acesso');
-    if (parseInt(countPerfis.rows[0].count, 10) === 0) {
-      await pool.query(`
-        INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes, empresa_id) VALUES
-        ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita"}'::jsonb, 1),
-        ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso"}'::jsonb, 1),
-        ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, 1),
-        ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, 1);
-      `);
-      console.log('✅ Perfis de acesso padrão inicializados!');
-    }
-
-    // 2. Tabela de Usuários do Sistema
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS usuarios (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(255) NOT NULL,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        senha_hash VARCHAR(255) NOT NULL,
-        perfil_id INT REFERENCES perfis_acesso(id) ON DELETE SET NULL,
-        ativo BOOLEAN DEFAULT true,
-        empresa_id INT REFERENCES empresas(id) ON DELETE SET NULL,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Inserir usuário administrador inicial se não houver usuários
-    const countUsuarios = await pool.query('SELECT COUNT(*) FROM usuarios');
-    if (parseInt(countUsuarios.rows[0].count, 10) === 0) {
-      const adminPerfil = await pool.query("SELECT id FROM perfis_acesso WHERE is_admin = true LIMIT 1");
-      const perfilId = adminPerfil.rows[0]?.id || 1;
-      const senhaHash = await bcrypt.hash('admin123', 10);
-
-      await pool.query(
-        `INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo, empresa_id) VALUES ($1, $2, $3, $4, true, 1)`,
-        ['Administrador Regz', 'admin@regz.app', senhaHash, perfilId]
-      );
-      console.log('✅ Usuário administrador inicial (admin@regz.app / admin123) criado com sucesso!');
-    }
-
-    // Migration SQL para corrigir usuários com perfil_id ausente ou órfão
-    await pool.query(`
-      UPDATE usuarios u
-      SET perfil_id = COALESCE(
-        (SELECT p.id FROM perfis_acesso p WHERE LOWER(p.nome) LIKE '%' || LOWER(u.nome) || '%' LIMIT 1),
-        (SELECT p.id FROM perfis_acesso p WHERE p.is_admin = true LIMIT 1)
-      )
-      WHERE u.perfil_id IS NULL OR u.perfil_id NOT IN (SELECT id FROM perfis_acesso);
-    `);
-    console.log('✅ Migração de vínculo de perfis de usuários executada!');
-
-    // Migration SQL: Expiração de Senha (30 dias), Chave de Licença e Super Admin
-    await pool.query(`
-      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_atualizada_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
-      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS chave_licenca VARCHAR(100);
-      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN DEFAULT false;
-      UPDATE usuarios SET is_super_admin = true WHERE LOWER(email) = 'admin@regz.app' OR nome = 'Administrador Regz';
-    `);
-
-    // Tabela de Chaves de Licença (Validade Inicial Padrão = 30 Dias)
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS chaves_licenca (
-        id SERIAL PRIMARY KEY,
-        chave VARCHAR(100) NOT NULL UNIQUE,
-        usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
-        tipo_licenca VARCHAR(50) DEFAULT 'Enterprise',
-        data_ativacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        data_expiracao TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days'),
-        status VARCHAR(20) DEFAULT 'Ativa',
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    // Garantir remoção da coluna max_colaboradores caso ainda exista no banco
-    await pool.query(`
-      ALTER TABLE chaves_licenca DROP COLUMN IF EXISTS max_colaboradores;
-    `);
-
-    // Se a tabela de licenças estiver vazia para algum usuário, criar chaves automáticas (30 dias)
-    await pool.query(`
-      INSERT INTO chaves_licenca (chave, usuario_id, tipo_licenca, data_expiracao, status)
-      SELECT 
-        'REGZ-2026-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)) || '-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)) || '-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)),
-        u.id,
-        'Enterprise',
-        (CURRENT_TIMESTAMP + INTERVAL '30 days'),
-        'Ativa'
-      FROM usuarios u
-      WHERE NOT EXISTS (SELECT 1 FROM chaves_licenca l WHERE l.usuario_id = u.id);
-    `);
-    await syncDatabaseLicenses();
-    console.log('✅ Migração e sincronização estrita de chaves de licença no banco de dados concluída!');
-
-    // 2.1 Tabela de Empresas (Tenants Multi-Empresas & Personalização & Conexão DB Próprio)
+    // 1. Tabela de Empresas (criada PRIMEIRO pois perfis_acesso, usuarios, colaboradores e licenças referenciam empresas)
     await pool.query(`
       CREATE TABLE IF NOT EXISTS empresas (
         id SERIAL PRIMARY KEY,
@@ -308,10 +357,9 @@ const initDb = async () => {
       ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_user VARCHAR(100);
       ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_pass VARCHAR(255);
       ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_name VARCHAR(100);
-      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE SET NULL;
-      ALTER TABLE chaves_licenca ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE SET NULL;
     `);
 
+    let matrizId = 1;
     const countEmpresas = await pool.query('SELECT COUNT(*) FROM empresas');
     if (parseInt(countEmpresas.rows[0].count, 10) === 0) {
       const resultEmpresa = await pool.query(`
@@ -319,15 +367,125 @@ const initDb = async () => {
         VALUES ('Regz Tecnologia da Informação LTDA', 'Regz Gestão de Pessoas', '00.000.000/0001-00', '01001-000', 'Praça da Sé', '100', 'Sé', 'São Paulo', 'SP', '#6366f1', '#38bdf8', '#34d399', 'Ativa')
         RETURNING id
       `);
-      const matrizId = resultEmpresa.rows[0]?.id;
-      if (matrizId) {
-        await pool.query('UPDATE usuarios SET empresa_id = $1 WHERE empresa_id IS NULL', [matrizId]);
-        await pool.query('UPDATE chaves_licenca SET empresa_id = $1 WHERE empresa_id IS NULL', [matrizId]);
-      }
-      console.log('✅ Empresa Matriz inicial criada e vinculada aos usuários!');
+      matrizId = resultEmpresa.rows[0]?.id || 1;
+      console.log(`✅ Empresa Matriz inicial criada (id=${matrizId})!`);
+    } else {
+      const firstEmp = await pool.query('SELECT id FROM empresas ORDER BY id ASC LIMIT 1');
+      matrizId = firstEmp.rows[0]?.id || 1;
     }
 
-    // 3. Tabela de Cargos CBO
+    // 2. Tabela de Perfis de Acesso (RBAC)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS perfis_acesso (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        descricao TEXT,
+        is_admin BOOLEAN DEFAULT false,
+        permissoes JSONB NOT NULL DEFAULT '{}'::jsonb,
+        empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      ALTER TABLE perfis_acesso ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE;
+    `);
+
+    // Inserir perfis padrão se a tabela estiver vazia
+    const countPerfis = await pool.query('SELECT COUNT(*) FROM perfis_acesso');
+    if (parseInt(countPerfis.rows[0].count, 10) === 0) {
+      await pool.query(`
+        INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes, empresa_id) VALUES
+        ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita"}'::jsonb, $1),
+        ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso"}'::jsonb, $1),
+        ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1),
+        ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1);
+      `, [matrizId]);
+      console.log('✅ Perfis de acesso padrão inicializados!');
+    }
+
+    // 3. Tabela de Usuários do Sistema
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS usuarios (
+        id SERIAL PRIMARY KEY,
+        nome VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        senha_hash VARCHAR(255) NOT NULL,
+        perfil_id INT REFERENCES perfis_acesso(id) ON DELETE SET NULL,
+        ativo BOOLEAN DEFAULT true,
+        empresa_id INT REFERENCES empresas(id) ON DELETE SET NULL,
+        senha_atualizada_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        chave_licenca VARCHAR(100),
+        is_super_admin BOOLEAN DEFAULT false,
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE SET NULL;
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS senha_atualizada_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS chave_licenca VARCHAR(100);
+      ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS is_super_admin BOOLEAN DEFAULT false;
+    `);
+
+    // Inserir usuário administrador inicial se não houver usuários
+    const countUsuarios = await pool.query('SELECT COUNT(*) FROM usuarios');
+    if (parseInt(countUsuarios.rows[0].count, 10) === 0) {
+      const adminPerfil = await pool.query("SELECT id FROM perfis_acesso WHERE is_admin = true LIMIT 1");
+      const perfilId = adminPerfil.rows[0]?.id || 1;
+      const senhaHash = await bcrypt.hash('admin123', 10);
+
+      await pool.query(
+        `INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo, empresa_id, is_super_admin) VALUES ($1, $2, $3, $4, true, $5, true)`,
+        ['Administrador Regz', 'admin@regz.app', senhaHash, perfilId, matrizId]
+      );
+      console.log('✅ Usuário administrador inicial (admin@regz.app / admin123) criado com sucesso!');
+    }
+
+    // Migration SQL para corrigir usuários com perfil_id ausente ou órfão e garantir Super Admin
+    await pool.query(`
+      UPDATE usuarios u
+      SET perfil_id = COALESCE(
+        (SELECT p.id FROM perfis_acesso p WHERE LOWER(p.nome) LIKE '%' || LOWER(u.nome) || '%' LIMIT 1),
+        (SELECT p.id FROM perfis_acesso p WHERE p.is_admin = true LIMIT 1)
+      )
+      WHERE u.perfil_id IS NULL OR u.perfil_id NOT IN (SELECT id FROM perfis_acesso);
+      UPDATE usuarios SET is_super_admin = true WHERE LOWER(email) = 'admin@regz.app' OR nome = 'Administrador Regz';
+    `);
+    console.log('✅ Migração de vínculo de perfis de usuários executada!');
+
+    // 4. Tabela de Chaves de Licença (Validade Inicial Padrão = 30 Dias)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chaves_licenca (
+        id SERIAL PRIMARY KEY,
+        chave VARCHAR(100) NOT NULL UNIQUE,
+        usuario_id INT REFERENCES usuarios(id) ON DELETE CASCADE,
+        empresa_id INT REFERENCES empresas(id) ON DELETE SET NULL,
+        tipo_licenca VARCHAR(50) DEFAULT 'Enterprise',
+        data_ativacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        data_expiracao TIMESTAMP DEFAULT (CURRENT_TIMESTAMP + INTERVAL '30 days'),
+        status VARCHAR(20) DEFAULT 'Ativa',
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+      ALTER TABLE chaves_licenca ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE SET NULL;
+      ALTER TABLE chaves_licenca DROP COLUMN IF EXISTS max_colaboradores;
+    `);
+
+    // Vincular registros legados sem empresa_id à Empresa Matriz
+    await pool.query('UPDATE usuarios SET empresa_id = $1 WHERE empresa_id IS NULL', [matrizId]);
+    await pool.query('UPDATE chaves_licenca SET empresa_id = $1 WHERE empresa_id IS NULL', [matrizId]);
+
+    // Se a tabela de licenças estiver vazia para algum usuário, criar chaves automáticas (30 dias)
+    await pool.query(`
+      INSERT INTO chaves_licenca (chave, usuario_id, empresa_id, tipo_licenca, data_expiracao, status)
+      SELECT 
+        'REGZ-2026-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)) || '-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)) || '-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 4)),
+        u.id,
+        COALESCE(u.empresa_id, $1),
+        'Enterprise',
+        (CURRENT_TIMESTAMP + INTERVAL '30 days'),
+        'Ativa'
+      FROM usuarios u
+      WHERE NOT EXISTS (SELECT 1 FROM chaves_licenca l WHERE l.usuario_id = u.id);
+    `, [matrizId]);
+    await syncDatabaseLicenses();
+    console.log('✅ Migração e sincronização estrita de chaves de licença no banco de dados concluída!');
+
+    // 5. Tabela de Cargos CBO
     await pool.query(`
       CREATE TABLE IF NOT EXISTS cargos (
         id SERIAL PRIMARY KEY,
@@ -336,22 +494,14 @@ const initDb = async () => {
         sinonimos TEXT,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-    `);
-
-    await pool.query(`
       ALTER TABLE cargos ADD COLUMN IF NOT EXISTS codigo_cbo VARCHAR(20);
       ALTER TABLE cargos ADD COLUMN IF NOT EXISTS sinonimos TEXT;
     `);
 
-    // Sincronizar/Importar TODOS os cargos da base CBO oficial no PostgreSQL
-    for (const item of CBO_DATASET) {
-      await pool.query(
-        'INSERT INTO cargos (nome, codigo_cbo, sinonimos) VALUES ($1, $2, $3) ON CONFLICT (nome) DO UPDATE SET codigo_cbo = EXCLUDED.codigo_cbo, sinonimos = EXCLUDED.sinonimos',
-        [item.titulo, item.codigo, item.sinonimos || null]
-      );
-    }
+    // Sincronizar/Importar TODOS os cargos da base CBO oficial em lote único
+    await upsertCboDataset(pool);
 
-    // 4. Tabela de Colaboradores
+    // 6. Tabela de Colaboradores
     await pool.query(`
       CREATE TABLE IF NOT EXISTS colaboradores (
         id SERIAL PRIMARY KEY,
@@ -372,9 +522,6 @@ const initDb = async () => {
         empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-    `);
-    
-    await pool.query(`
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true;
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS cargo VARCHAR(255);
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS latitude NUMERIC(10,8);
@@ -382,7 +529,7 @@ const initDb = async () => {
       ALTER TABLE colaboradores ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE;
     `);
 
-    // 5. Tabela de Campos Customizados / Dinâmicos
+    // 7. Tabela de Campos Customizados / Dinâmicos
     await pool.query(`
       CREATE TABLE IF NOT EXISTS campos_customizados (
         id SERIAL PRIMARY KEY,
@@ -396,9 +543,6 @@ const initDb = async () => {
         ativo BOOLEAN DEFAULT true,
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
-    `);
-
-    await pool.query(`
       ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS min_caracteres INT;
       ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS max_caracteres INT;
       ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS empresa_id INT REFERENCES empresas(id) ON DELETE CASCADE;
@@ -406,14 +550,18 @@ const initDb = async () => {
     `);
 
     // Migração de empresa_id para registros legados que ainda possuem empresa_id NULL
-    await pool.query(`
-      UPDATE colaboradores SET empresa_id = 1 WHERE empresa_id IS NULL;
-      UPDATE perfis_acesso SET empresa_id = 1 WHERE empresa_id IS NULL;
-      UPDATE campos_customizados SET empresa_id = 1 WHERE empresa_id IS NULL;
-      UPDATE usuarios SET empresa_id = 1 WHERE empresa_id IS NULL;
+    await pool.query('UPDATE colaboradores SET empresa_id = $1 WHERE empresa_id IS NULL', [matrizId]);
+    await pool.query('UPDATE perfis_acesso SET empresa_id = $1 WHERE empresa_id IS NULL', [matrizId]);
+    await pool.query('UPDATE campos_customizados SET empresa_id = $1 WHERE empresa_id IS NULL', [matrizId]);
+    await pool.query('UPDATE usuarios SET empresa_id = $1 WHERE empresa_id IS NULL', [matrizId]);
 
-      -- Recalibrar perfis de acesso criados na empresa 2 (Rainha Logística) salvos como empresa_id = 1
-      UPDATE perfis_acesso SET empresa_id = 2 WHERE empresa_id = 1 AND LOWER(nome) IN ('relatórios', 'relatorios', 'teste');
+    // Recalibrar perfis legados da empresa 2 apenas se a empresa 2 existir
+    await pool.query(`
+      UPDATE perfis_acesso
+      SET empresa_id = 2
+      WHERE empresa_id = 1
+        AND LOWER(nome) IN ('relatórios', 'relatorios', 'teste')
+        AND EXISTS (SELECT 1 FROM empresas WHERE id = 2);
     `);
 
     // Garantir inicialização dos perfis de acesso RBAC padrão para TODAS as empresas cadastradas
@@ -433,7 +581,7 @@ const initDb = async () => {
       }
     }
 
-    // 6. Tabela de Valores dos Campos Customizados por Colaborador
+    // 8. Tabela de Valores dos Campos Customizados por Colaborador
     await pool.query(`
       CREATE TABLE IF NOT EXISTS colaboradores_valores_customizados (
         id SERIAL PRIMARY KEY,
@@ -457,14 +605,14 @@ const initDb = async () => {
 
       for (const c of camposIniciais) {
         await pool.query(
-          'INSERT INTO campos_customizados (nome, tipo, opcoes, obrigatorio) VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING',
-          [c.nome, c.tipo, c.opcoes, c.obrigatorio]
+          'INSERT INTO campos_customizados (nome, tipo, opcoes, obrigatorio, empresa_id, ativo) VALUES ($1, $2, $3, $4, $5, true) ON CONFLICT DO NOTHING',
+          [c.nome, c.tipo, c.opcoes, c.obrigatorio, matrizId]
         );
       }
       console.log('✅ Campos customizados padrão (Setor, Nome da Mãe, Pai, etc.) inicializados!');
     }
 
-    // 7. Tabela de Modelos Salvos de Relatórios ("Meus Relatórios")
+    // 9. Tabela de Modelos Salvos de Relatórios ("Meus Relatórios")
     await pool.query(`
       CREATE TABLE IF NOT EXISTS relatorios_salvos (
         id SERIAL PRIMARY KEY,
@@ -527,8 +675,8 @@ const initDb = async () => {
       for (const m of modelosPadrao) {
         await pool.query(
           `INSERT INTO relatorios_salvos (empresa_id, nome, descricao, icone, modo, colunas, filtros, is_padrao)
-           VALUES (1, $1, $2, $3, $4, $5, $6, true)`,
-          [m.nome, m.descricao, m.icone, m.modo, JSON.stringify(m.colunas), JSON.stringify(m.filtros)]
+           VALUES ($1, $2, $3, $4, $5, $6, $7, true)`,
+          [matrizId, m.nome, m.descricao, m.icone, m.modo, JSON.stringify(m.colunas), JSON.stringify(m.filtros)]
         );
       }
       console.log('✅ Modelos de relatórios padrão inicializados!');
@@ -539,18 +687,20 @@ const initDb = async () => {
     if (parseInt(countGeo.rows[0].count, 10) === 0) {
       await pool.query(
         `INSERT INTO relatorios_salvos (empresa_id, nome, descricao, icone, modo, colunas, filtros, is_padrao)
-         VALUES (1, 'Visão Geral por Estado e Cidade', 'Distribuição de ativos e total de colaboradores por município', 'map-pin', 'geo', '["estado","cidade","ativos","inativos","total","percentual"]'::jsonb, '{"estado":"todos","cidade":"todos"}'::jsonb, true)`
+         VALUES ($1, 'Visão Geral por Estado e Cidade', 'Distribuição de ativos e total de colaboradores por município', 'map-pin', 'geo', '["estado","cidade","ativos","inativos","total","percentual"]'::jsonb, '{"estado":"todos","cidade":"todos"}'::jsonb, true)`,
+        [matrizId]
       );
     }
     const countRbac = await pool.query("SELECT COUNT(*) FROM relatorios_salvos WHERE modo = 'rbac' AND is_padrao = true");
     if (parseInt(countRbac.rows[0].count, 10) === 0) {
       await pool.query(
         `INSERT INTO relatorios_salvos (empresa_id, nome, descricao, icone, modo, colunas, filtros, is_padrao)
-         VALUES (1, 'Quadro Geral de Acessos & Perfis', 'Relação de todos os usuários com seus respectivos perfis e status', 'shield', 'rbac', '["id","nome","email","perfil","tipo","status"]'::jsonb, '{}'::jsonb, true)`
+         VALUES ($1, 'Quadro Geral de Acessos & Perfis', 'Relação de todos os usuários com seus respectivos perfis e status', 'shield', 'rbac', '["id","nome","email","perfil","tipo","status"]'::jsonb, '{}'::jsonb, true)`,
+        [matrizId]
       );
     }
 
-    // 8. Tabela de Logs de Auditoria de Ações de Usuários
+    // 10. Tabela de Logs de Auditoria de Ações de Usuários
     await pool.query(`
       CREATE TABLE IF NOT EXISTS logs_auditoria (
         id SERIAL PRIMARY KEY,
@@ -569,13 +719,29 @@ const initDb = async () => {
       CREATE INDEX IF NOT EXISTS idx_logs_auditoria_data ON logs_auditoria(criado_em DESC);
     `);
 
+    dbInitialized = true;
     console.log('✅ Tabelas e migrations do PostgreSQL inicializadas com sucesso!');
+    return true;
   } catch (error) {
     console.error('⚠️ Erro ao inicializar o banco de dados:', error);
+    return false;
   }
 };
 
-initDb();
+const initDbWithRetry = async (maxAttempts = 5) => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const ok = await initDb();
+    if (ok) return;
+    if (attempt < maxAttempts) {
+      const delayMs = attempt * 2500;
+      console.warn(`⏳ Tentativa ${attempt}/${maxAttempts} de inicialização do banco falhou. Nova tentativa em ${delayMs / 1000}s...`);
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  console.error('❌ Não foi possível concluir initDb() após todas as tentativas. Verifique DATABASE_URL / credenciais.');
+};
+
+initDbWithRetry();
 
 // Funções auxiliares para gerador nativo de CPF e pessoas brasileiras
 const gerarCpfValido = (): string => {
@@ -665,28 +831,42 @@ const fetchGeocodingHighPrecision = async (logradouro?: string, numeroStr?: stri
   return { lat: null, lon: null };
 };
 
-// Health check endpoint
+// Health check endpoint (usado por plataformas Cloud 24/7 e monitores de uptime)
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({
     status: 'ok',
     service: 'regz-app',
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT,
+    dbInitialized,
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
 });
 
-// Database connectivity status endpoint
+// Database connectivity status endpoint (retorna metadados seguros sem expor credenciais)
 app.get('/api/db-status', async (req: Request, res: Response) => {
+  const meta = getCentralDbMeta();
   try {
     const result = await pool.query('SELECT NOW() as current_time, version() as version');
     res.json({
       connected: true,
+      mode: meta.mode,
+      ssl: meta.ssl,
+      host: meta.host,
+      port: meta.port,
+      database: meta.database,
+      source: meta.source,
       timestamp: result.rows[0].current_time,
       postgresVersion: result.rows[0].version
     });
   } catch (error: any) {
     res.status(500).json({
       connected: false,
+      mode: meta.mode,
+      ssl: meta.ssl,
+      host: meta.host,
+      database: meta.database,
       error: error.message || 'Falha na conexão com o banco de dados'
     });
   }
@@ -808,8 +988,17 @@ const registrarAuditoria = async (params: {
   }
 };
 
-// Gerenciador de conexões dinâmicas multi-tenant (Empresas 1 e 2 no Banco Central; Empresa 3+ em Banco Próprio)
+// Gerenciador de conexões dinâmicas multi-tenant (Suporte a Bancos Online via URI + SSL ou Host/Porta)
 const tenantPoolsMap = new Map<number, Pool>();
+
+const closeTenantPool = async (empresaId: number) => {
+  const existing = tenantPoolsMap.get(empresaId);
+  if (existing) {
+    tenantPoolsMap.delete(empresaId);
+    await existing.end().catch(() => {});
+    console.log(`🔄 Pool em cache encerrado para empresa_id = ${empresaId}`);
+  }
+};
 
 const initTenantDb = async (tenantPool: Pool, empresaId: number) => {
   await tenantPool.query(`
@@ -848,12 +1037,7 @@ const initTenantDb = async (tenantPool: Pool, empresaId: number) => {
     ALTER TABLE cargos ADD COLUMN IF NOT EXISTS sinonimos TEXT;
   `);
 
-  for (const item of CBO_DATASET) {
-    await tenantPool.query(
-      'INSERT INTO cargos (nome, codigo_cbo, sinonimos) VALUES ($1, $2, $3) ON CONFLICT (nome) DO UPDATE SET codigo_cbo = EXCLUDED.codigo_cbo, sinonimos = EXCLUDED.sinonimos',
-      [item.titulo, item.codigo, item.sinonimos || null]
-    );
-  }
+  await upsertCboDataset(tenantPool);
 
   await tenantPool.query(`
     CREATE TABLE IF NOT EXISTS colaboradores (
@@ -892,11 +1076,13 @@ const initTenantDb = async (tenantPool: Pool, empresaId: number) => {
       min_caracteres INT,
       max_caracteres INT,
       empresa_id INT,
+      ativo BOOLEAN DEFAULT true,
       criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS min_caracteres INT;
     ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS max_caracteres INT;
     ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS empresa_id INT;
+    ALTER TABLE campos_customizados ADD COLUMN IF NOT EXISTS ativo BOOLEAN DEFAULT true;
   `);
 
   await tenantPool.query(`
@@ -911,7 +1097,7 @@ const initTenantDb = async (tenantPool: Pool, empresaId: number) => {
 };
 
 const getPoolForEmpresa = async (empresaId: number | null): Promise<Pool> => {
-  if (!empresaId || empresaId === 1 || empresaId === 2) {
+  if (!empresaId || empresaId === 1) {
     return pool;
   }
 
@@ -921,7 +1107,7 @@ const getPoolForEmpresa = async (empresaId: number | null): Promise<Pool> => {
 
   try {
     const res = await pool.query(
-      'SELECT db_host, db_port, db_user, db_pass, db_name FROM empresas WHERE id = $1',
+      'SELECT db_tipo, db_uri, db_host, db_port, db_user, db_pass, db_name FROM empresas WHERE id = $1',
       [empresaId]
     );
 
@@ -930,26 +1116,56 @@ const getPoolForEmpresa = async (empresaId: number | null): Promise<Pool> => {
     }
 
     const emp = res.rows[0];
+    const tipo = String(emp.db_tipo || 'postgres').toLowerCase().trim();
+    const rawUri = (emp.db_uri || '').trim();
     const host = (emp.db_host || '').trim();
     const dbName = (emp.db_name || '').trim();
 
-    if (!host || !dbName || (host === 'localhost' && dbName === 'regz_db')) {
+    // Operações SQL relacionais dinâmicas exigem PostgreSQL (outros motores usam banco central para tabelas operacionais)
+    if (tipo !== 'postgres' && tipo !== 'postgresql') {
       return pool;
     }
 
-    const tenantPool = new Pool({
-      host,
-      port: emp.db_port ? parseInt(String(emp.db_port), 10) : 5432,
-      user: (emp.db_user || 'postgres').trim(),
-      password: emp.db_pass || undefined,
-      database: dbName,
-      max: 10,
-      idleTimeoutMillis: 30000
+    const hasCustomUri = rawUri.startsWith('postgres://') || rawUri.startsWith('postgresql://');
+    const hasCustomHost = !!host && !!dbName && !(isLocalHost(host) && dbName === 'regz_db');
+
+    if (!hasCustomUri && !hasCustomHost) {
+      return pool;
+    }
+
+    const tenantSsl = resolvePgSslConfig(hasCustomUri ? rawUri : undefined, host);
+    const tenantPool = new Pool(
+      hasCustomUri
+        ? {
+            connectionString: normalizePgConnectionString(rawUri),
+            ssl: tenantSsl,
+            max: 10,
+            idleTimeoutMillis: 20000,
+            connectionTimeoutMillis: 10000,
+            keepAlive: true,
+          }
+        : {
+            host,
+            port: emp.db_port ? parseInt(String(emp.db_port), 10) : 5432,
+            user: (emp.db_user || 'postgres').trim(),
+            password: emp.db_pass || undefined,
+            database: dbName,
+            ssl: tenantSsl,
+            max: 10,
+            idleTimeoutMillis: 20000,
+            connectionTimeoutMillis: 10000,
+            keepAlive: true,
+          }
+    );
+
+    tenantPool.on('error', (err) => {
+      console.error(`⚠️ Erro em conexão ociosa do banco próprio da empresa_id = ${empresaId}:`, err.message);
+      tenantPoolsMap.delete(empresaId);
     });
 
     await initTenantDb(tenantPool, empresaId);
     tenantPoolsMap.set(empresaId, tenantPool);
-    console.log(`✅ Conexão dinâmica própria ativada para empresa_id = ${empresaId} (${dbName}@${host})`);
+    console.log(`✅ Conexão dinâmica própria ativada para empresa_id = ${empresaId} (${hasCustomUri ? 'URI Cloud/SSL' : `${dbName}@${host}`})`);
     return tenantPool;
   } catch (err: any) {
     console.error(`⚠️ Erro ao conectar no banco próprio da empresa_id = ${empresaId}, utilizando banco central:`, err.message);
@@ -1867,6 +2083,8 @@ app.put('/api/empresas/:id', async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Empresa não encontrada' });
     }
+    // Invalidar pool em cache para aplicar imediatamente novas configurações de banco online
+    await closeTenantPool(parseInt(id, 10));
     res.json(result.rows[0]);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao atualizar empresa' });
@@ -1881,30 +2099,50 @@ app.delete('/api/empresas/:id', async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Empresa não encontrada' });
     }
+    await closeTenantPool(parseInt(id, 10));
     res.json({ message: 'Empresa removida com sucesso' });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao excluir empresa' });
   }
 });
 
-// Testar Conexão & Inicializar Estrutura de Banco DB Próprio de uma Empresa (Suporte a PostgreSQL, MySQL, MongoDB, MSSQL)
+// Testar Conexão & Inicializar Estrutura de Banco DB Próprio (Cloud SSL/URI ou Local: PostgreSQL, MySQL, MongoDB, MSSQL)
 app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
   const { db_tipo = 'postgres', db_uri, db_host, db_port, db_user, db_pass, db_name } = req.body;
 
+  const rawUri = (db_uri || '').trim();
   const targetDbName = db_name ? String(db_name).trim() : 'regz_db';
   const tipo = String(db_tipo || 'postgres').toLowerCase().trim();
 
   // ==========================================
-  // 1. CONEXÃO & TESTE: MONGODB
+  // 1. CONEXÃO & TESTE: MONGODB (ATLAS CLOUD OU LOCAL)
   // ==========================================
   if (tipo === 'mongo' || tipo === 'mongodb') {
-    let mongoUri = (db_uri || '').trim();
-    if (!mongoUri) {
+    let mongoUri = rawUri;
+    let effectiveDbName = targetDbName;
+    let resolvedHost = (db_host || 'mongodb').trim();
+    let resolvedUser = (db_user || 'admin').trim();
+
+    if (mongoUri) {
+      try {
+        const parsed = new URL(mongoUri);
+        if (parsed.hostname) resolvedHost = parsed.hostname;
+        if (parsed.username) resolvedUser = decodeURIComponent(parsed.username);
+        const pathDb = parsed.pathname.replace(/^\//, '').trim();
+        if (pathDb && (!db_name || !String(db_name).trim())) {
+          effectiveDbName = pathDb;
+        }
+      } catch {
+        // segue com URI informada
+      }
+    } else {
       const mHost = (db_host || 'localhost').trim();
       const mPort = db_port ? parseInt(String(db_port), 10) : 27017;
       const mUser = (db_user || '').trim();
       const mPass = (db_pass || '').trim();
-      const mDb = targetDbName || 'regz_db';
+      const mDb = effectiveDbName || 'regz_db';
+      resolvedHost = mHost;
+      resolvedUser = mUser || 'admin';
       if (mUser && mPass) {
         mongoUri = `mongodb://${encodeURIComponent(mUser)}:${encodeURIComponent(mPass)}@${mHost}:${mPort}/${mDb}?authSource=admin`;
       } else {
@@ -1914,11 +2152,11 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
 
     let client: MongoClient | null = null;
     try {
-      client = new MongoClient(mongoUri, { serverSelectionTimeoutMS: 4500, connectTimeoutMS: 4500 });
+      client = new MongoClient(mongoUri, { serverSelectionTimeoutMS: 8000, connectTimeoutMS: 8000 });
       await client.connect();
-      await client.db(targetDbName).command({ ping: 1 });
+      const db = client.db(effectiveDbName);
+      await db.command({ ping: 1 });
 
-      const db = client.db(targetDbName);
       const cols = await db.listCollections({ name: 'usuarios' }).toArray();
       if (cols.length === 0) {
         await db.createCollection('usuarios');
@@ -1927,9 +2165,9 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
       await client.close();
       return res.json({
         success: true,
-        message: `Conexão com MongoDB estabelecida com sucesso! Banco "${targetDbName}" está online e coleção 'usuarios' inicializada.`,
-        resolvedHost: db_host || 'mongodb',
-        resolvedUser: db_user || 'admin'
+        message: `Conexão com MongoDB estabelecida com sucesso! Banco "${effectiveDbName}" (${resolvedHost}) está online e coleção 'usuarios' inicializada.`,
+        resolvedHost,
+        resolvedUser
       });
     } catch (mongoErr: any) {
       if (client) await client.close().catch(() => {});
@@ -1940,14 +2178,35 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
   }
 
   // ==========================================
-  // 2. CONEXÃO & TESTE: MYSQL / MARIADB
+  // 2. CONEXÃO & TESTE: MYSQL / MARIADB (CLOUD SSL/URI OU LOCAL)
   // ==========================================
   if (tipo === 'mysql' || tipo === 'mariadb') {
-    const mHost = (db_host || 'localhost').trim();
-    const mPort = db_port ? parseInt(String(db_port), 10) : 3306;
-    const mUser = (db_user || 'root').trim();
-    const mPass = db_pass !== undefined ? String(db_pass) : '';
+    let mHost = (db_host || 'localhost').trim();
+    let mPort = db_port ? parseInt(String(db_port), 10) : 3306;
+    let mUser = (db_user || 'root').trim();
+    let mPass = db_pass !== undefined ? String(db_pass) : '';
+    let mDb = targetDbName;
+    let useSsl = !isLocalHost(mHost);
 
+    if (rawUri && (rawUri.startsWith('mysql://') || rawUri.startsWith('mariadb://'))) {
+      try {
+        const parsed = new URL(rawUri);
+        mHost = parsed.hostname || mHost;
+        mPort = parsed.port ? parseInt(parsed.port, 10) : 3306;
+        mUser = parsed.username ? decodeURIComponent(parsed.username) : mUser;
+        mPass = parsed.password ? decodeURIComponent(parsed.password) : mPass;
+        const uriDb = parsed.pathname.replace(/^\//, '').trim();
+        if (uriDb) mDb = uriDb;
+        const lowerUri = rawUri.toLowerCase();
+        useSsl = lowerUri.includes('ssl-mode=disabled') || lowerUri.includes('ssl=false')
+          ? false
+          : !isLocalHost(mHost) || lowerUri.includes('ssl');
+      } catch {
+        return res.status(400).json({ error: 'URI MySQL/MariaDB inválida. Use o formato mysql://usuario:senha@host:porta/banco' });
+      }
+    }
+
+    const sslOpt = useSsl ? { rejectUnauthorized: false } : undefined;
     let adminConn: mysql.Connection | null = null;
     let dbCreatedNow = false;
     try {
@@ -1956,16 +2215,18 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
         port: mPort,
         user: mUser,
         password: mPass,
-        connectTimeout: 4000
+        ssl: sslOpt,
+        connectTimeout: 8000
       });
 
-      const [dbs]: any = await adminConn.query(`SHOW DATABASES LIKE '${targetDbName.replace(/'/g, "''")}'`);
+      const [dbs]: any = await adminConn.query(`SHOW DATABASES LIKE '${mDb.replace(/'/g, "''")}'`);
       if (!Array.isArray(dbs) || dbs.length === 0) {
-        await adminConn.query(`CREATE DATABASE IF NOT EXISTS \`${targetDbName.replace(/`/g, '``')}\``);
+        await adminConn.query(`CREATE DATABASE IF NOT EXISTS \`${mDb.replace(/`/g, '``')}\``);
         dbCreatedNow = true;
       }
       await adminConn.end();
-    } catch (adminErr: any) {
+    } catch {
+      // Em bancos gerenciados na nuvem (Aiven/TiDB/PlanetScale) o banco já vem criado e o usuário pode não ter permissão de CREATE DATABASE
       if (adminConn) await adminConn.end().catch(() => {});
     }
 
@@ -1976,8 +2237,9 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
         port: mPort,
         user: mUser,
         password: mPass,
-        database: targetDbName,
-        connectTimeout: 4000
+        database: mDb,
+        ssl: sslOpt,
+        connectTimeout: 8000
       });
 
       await targetConn.query('SELECT 1');
@@ -1995,8 +2257,8 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
       return res.json({
         success: true,
         message: dbCreatedNow
-          ? `Novo banco MySQL "${targetDbName}" criado com sucesso no host ${mHost}:${mPort} (Usuário: ${mUser})!`
-          : `Conexão MySQL/MariaDB estabelecida com sucesso! Banco "${targetDbName}" no host ${mHost}:${mPort} está online e pronto.`,
+          ? `Novo banco MySQL "${mDb}" criado com sucesso no host ${mHost}:${mPort} (${useSsl ? 'SSL/Cloud' : 'Local'})!`
+          : `Conexão MySQL/MariaDB estabelecida com sucesso! Banco "${mDb}" em ${mHost}:${mPort} (${useSsl ? 'SSL/Cloud' : 'Local'}) está online.`,
         resolvedHost: mHost,
         resolvedUser: mUser
       });
@@ -2009,29 +2271,47 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
   }
 
   // ==========================================
-  // 3. CONEXÃO & TESTE: MICROSOFT SQL SERVER (MSSQL)
+  // 3. CONEXÃO & TESTE: MICROSOFT SQL SERVER (AZURE SQL / RDS / LOCAL)
   // ==========================================
   if (tipo === 'mssql' || tipo === 'sqlserver' || tipo === 'sql') {
-    const sHost = (db_host || 'localhost').trim();
-    const sPort = db_port ? parseInt(String(db_port), 10) : 1433;
-    const sUser = (db_user || 'sa').trim();
-    const sPass = db_pass !== undefined ? String(db_pass) : '';
+    let sHost = (db_host || 'localhost').trim();
+    let sPort = db_port ? parseInt(String(db_port), 10) : 1433;
+    let sUser = (db_user || 'sa').trim();
+    let sPass = db_pass !== undefined ? String(db_pass) : '';
+    let sDb = targetDbName;
 
+    if (rawUri && (rawUri.startsWith('mssql://') || rawUri.startsWith('sqlserver://'))) {
+      try {
+        const parsed = new URL(rawUri);
+        sHost = parsed.hostname || sHost;
+        sPort = parsed.port ? parseInt(parsed.port, 10) : 1433;
+        sUser = parsed.username ? decodeURIComponent(parsed.username) : sUser;
+        sPass = parsed.password ? decodeURIComponent(parsed.password) : sPass;
+        const uriDb = parsed.pathname.replace(/^\//, '').trim();
+        if (uriDb) sDb = uriDb;
+      } catch {
+        return res.status(400).json({ error: 'URI SQL Server inválida. Use o formato mssql://usuario:senha@host:1433/banco' });
+      }
+    }
+
+    const useEncrypt = !isLocalHost(sHost);
     const mssqlConfig: sql.config = {
       user: sUser,
       password: sPass,
       server: sHost,
       port: sPort,
-      database: targetDbName,
+      database: sDb,
+      connectionTimeout: 8000,
+      requestTimeout: 8000,
       options: {
-        encrypt: false,
+        encrypt: useEncrypt,
         trustServerCertificate: true,
-        connectTimeout: 4500
       }
     };
 
+    let poolMssql: sql.ConnectionPool | null = null;
     try {
-      const poolMssql = await sql.connect(mssqlConfig);
+      poolMssql = await new sql.ConnectionPool(mssqlConfig).connect();
       await poolMssql.request().query('SELECT 1');
       await poolMssql.request().query(`
         IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='usuarios' AND xtype='U')
@@ -2047,30 +2327,33 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
 
       return res.json({
         success: true,
-        message: `Conexão com Microsoft SQL Server estabelecida com sucesso! Banco "${targetDbName}" no host ${sHost}:${sPort} está online.`,
+        message: `Conexão com Microsoft SQL Server estabelecida com sucesso! Banco "${sDb}" em ${sHost}:${sPort} (${useEncrypt ? 'TLS/Cloud' : 'Local'}) está online.`,
         resolvedHost: sHost,
         resolvedUser: sUser
       });
     } catch (mssqlErr: any) {
+      if (poolMssql) await poolMssql.close().catch(() => {});
+      let masterPool: sql.ConnectionPool | null = null;
       try {
         const masterConfig: sql.config = {
           ...mssqlConfig,
           database: 'master'
         };
-        const masterPool = await sql.connect(masterConfig);
+        masterPool = await new sql.ConnectionPool(masterConfig).connect();
         await masterPool.request().query(`
-          IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'${targetDbName.replace(/'/g, "''")}')
-          CREATE DATABASE [${targetDbName.replace(/]/g, ']]')}];
+          IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'${sDb.replace(/'/g, "''")}')
+          CREATE DATABASE [${sDb.replace(/]/g, ']]')}];
         `);
         await masterPool.close();
 
         return res.json({
           success: true,
-          message: `Conexão estabelecida e Banco "${targetDbName}" provisionado com sucesso no Microsoft SQL Server (${sHost}:${sPort})!`,
+          message: `Conexão estabelecida e Banco "${sDb}" provisionado com sucesso no Microsoft SQL Server (${sHost}:${sPort})!`,
           resolvedHost: sHost,
           resolvedUser: sUser
         });
       } catch (masterErr: any) {
+        if (masterPool) await masterPool.close().catch(() => {});
         return res.status(500).json({
           error: `Falha na conexão com SQL Server (${sHost}:${sPort}): ${mssqlErr.message || masterErr.message}`
         });
@@ -2079,16 +2362,130 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
   }
 
   // ==========================================
-  // 4. CONEXÃO & TESTE: POSTGRESQL (PADRÃO)
+  // 4. CONEXÃO & TESTE: POSTGRESQL (CLOUD URI/SSL OU LOCAL)
   // ==========================================
+  if (rawUri && (rawUri.startsWith('postgres://') || rawUri.startsWith('postgresql://'))) {
+    let parsedHost = db_host || 'cloud-postgres';
+    let parsedUser = db_user || 'postgres';
+    let parsedDb = targetDbName;
+    try {
+      const parsed = new URL(rawUri);
+      if (parsed.hostname) parsedHost = parsed.hostname;
+      if (parsed.username) parsedUser = decodeURIComponent(parsed.username);
+      const uriDb = parsed.pathname.replace(/^\//, '').trim();
+      if (uriDb) parsedDb = uriDb;
+    } catch {
+      return res.status(400).json({ error: 'URI PostgreSQL inválida. Use postgresql://usuario:senha@host:5432/banco?sslmode=require' });
+    }
+
+    const pgSsl = resolvePgSslConfig(rawUri);
+    const uriPool = new Pool({
+      connectionString: normalizePgConnectionString(rawUri),
+      ssl: pgSsl,
+      connectionTimeoutMillis: 8000,
+    });
+    try {
+      await uriPool.query('SELECT 1');
+      await uriPool.query(`
+        CREATE TABLE IF NOT EXISTS usuarios (
+          id SERIAL PRIMARY KEY,
+          nome VARCHAR(255) NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          ativo BOOLEAN DEFAULT true,
+          criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await uriPool.end().catch(() => {});
+      return res.json({
+        success: true,
+        message: `Conexão PostgreSQL Online estabelecida com sucesso! Banco "${parsedDb}" em ${parsedHost} (${pgSsl ? 'SSL/TLS ativo' : 'Sem SSL'}) está pronto.`,
+        resolvedHost: parsedHost,
+        resolvedUser: parsedUser
+      });
+    } catch (pgUriErr: any) {
+      await uriPool.end().catch(() => {});
+      return res.status(500).json({
+        error: `Falha na conexão PostgreSQL Online (${parsedHost}): ${pgUriErr.message || 'Verifique a Connection String e permissões de rede'}`
+      });
+    }
+  }
+
   if (!db_name) {
-    return res.status(400).json({ error: 'Nome do Banco de Dados é obrigatório' });
+    return res.status(400).json({ error: 'Informe a Connection String (URI) ou o Nome do Banco de Dados' });
   }
 
   const port = db_port ? parseInt(String(db_port), 10) : parseInt(process.env.DB_PORT || '5432', 10);
-
-  // Lista de hosts candidatos a tentar (ordenada por preferência)
   const reqHost = db_host ? String(db_host).trim() : '';
+  const reqUser = db_user ? String(db_user).trim() : '';
+  const reqPass = db_pass !== undefined ? String(db_pass) : '';
+
+  // Se o host informado for remoto/online (ex: Neon, Supabase, Aiven, RDS), testa diretamente com SSL sem brute-force local
+  if (reqHost && !isLocalHost(reqHost)) {
+    const remoteSsl = resolvePgSslConfig(undefined, reqHost);
+    const directPool = new Pool({
+      host: reqHost,
+      port,
+      user: reqUser || 'postgres',
+      password: reqPass,
+      database: targetDbName,
+      ssl: remoteSsl,
+      connectionTimeoutMillis: 8000,
+    });
+
+    try {
+      await directPool.query('SELECT 1');
+      await directPool.query(`
+        CREATE TABLE IF NOT EXISTS usuarios (
+          id SERIAL PRIMARY KEY,
+          nome VARCHAR(255) NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          ativo BOOLEAN DEFAULT true,
+          criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await directPool.end().catch(() => {});
+      return res.json({
+        success: true,
+        message: `Conexão PostgreSQL Online estabelecida com sucesso! Banco "${targetDbName}" em ${reqHost}:${port} (SSL/TLS) está pronto.`,
+        resolvedHost: reqHost,
+        resolvedUser: reqUser || 'postgres'
+      });
+    } catch (directErr: any) {
+      await directPool.end().catch(() => {});
+      // Se o banco ainda não existir (código 3D000), tenta criar via banco 'postgres'
+      if (directErr?.code === '3D000') {
+        const adminRemotePool = new Pool({
+          host: reqHost,
+          port,
+          user: reqUser || 'postgres',
+          password: reqPass,
+          database: 'postgres',
+          ssl: remoteSsl,
+          connectionTimeoutMillis: 8000,
+        });
+        try {
+          await adminRemotePool.query(`CREATE DATABASE "${targetDbName.replace(/"/g, '""')}"`);
+          await adminRemotePool.end().catch(() => {});
+          return res.json({
+            success: true,
+            message: `Novo banco PostgreSQL "${targetDbName}" criado com sucesso em ${reqHost}:${port} (SSL/TLS)!`,
+            resolvedHost: reqHost,
+            resolvedUser: reqUser || 'postgres'
+          });
+        } catch (createErr: any) {
+          await adminRemotePool.end().catch(() => {});
+          return res.status(500).json({
+            error: `Banco "${targetDbName}" não existe em ${reqHost}:${port} e não foi possível criá-lo automaticamente: ${createErr.message}`
+          });
+        }
+      }
+      return res.status(500).json({
+        error: `Falha na conexão PostgreSQL Online (${reqHost}:${port}): ${directErr.message || 'Verifique host, porta, usuário e senha'}`
+      });
+    }
+  }
+
+  // Modo Local / Docker: lista de hosts, usuários e senhas candidatos
   const envHost = process.env.DB_HOST || '';
   const hostsToTry: string[] = Array.from(new Set([
     reqHost,
@@ -2099,8 +2496,6 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
     '127.0.0.1'
   ].filter(Boolean)));
 
-  // Lista de usuários candidatos a tentar
-  const reqUser = db_user ? String(db_user).trim() : '';
   const envUser = process.env.DB_USER || 'regz_user';
   const usersToTry: string[] = Array.from(new Set([
     reqUser,
@@ -2109,8 +2504,6 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
     'postgres'
   ].filter(Boolean)));
 
-  // Lista de senhas candidatas a tentar
-  const reqPass = db_pass !== undefined ? String(db_pass) : '';
   const envPass = process.env.DB_PASSWORD || 'regz_password';
   const passwordsToTry: string[] = Array.from(new Set([
     reqPass,
@@ -2127,11 +2520,9 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
   let connectionEstablished = false;
   let lastErrorMessage = '';
 
-  // Loop de busca por uma combinação válida de Conexão no PostgreSQL
   outerLoop: for (const h of hostsToTry) {
     for (const u of usersToTry) {
       for (const p of passwordsToTry) {
-        // 1. Tentar conectar ao banco genérico para administrar (postgres, template1, regz_db)
         const adminDbsToTry = ['postgres', 'template1', process.env.DB_NAME || 'regz_db', 'regz_db'];
 
         for (const adminDb of adminDbsToTry) {
@@ -2148,7 +2539,6 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
             const checkDb = await adminPool.query('SELECT 1 FROM pg_database WHERE datname = $1', [targetDbName]);
 
             if (checkDb.rows.length === 0) {
-              // Criar o banco de dados se não existir
               await adminPool.query(`CREATE DATABASE "${targetDbName.replace(/"/g, '""')}"`);
               dbCreatedNow = true;
               console.log(`✅ Banco de dados "${targetDbName}" criado com sucesso no host PostgreSQL ${h}:${port}!`);
@@ -2161,7 +2551,6 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
           }
         }
 
-        // 2. Conectar diretamente ao banco alvo da empresa
         const targetPool = new Pool({
           host: h,
           port,
@@ -2174,7 +2563,6 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
         try {
           await targetPool.query('SELECT 1');
 
-          // Garantir estrutura mínima de tabelas no banco da empresa
           await targetPool.query(`
             CREATE TABLE IF NOT EXISTS usuarios (
               id SERIAL PRIMARY KEY,
@@ -2212,7 +2600,7 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
   }
 
   res.status(500).json({
-    error: `Falha na conexão PostgreSQL (${reqHost || 'localhost'}:${port}): ${lastErrorMessage}. Dica: No ambiente Docker/Portainer use o host "db" ou IP e o usuário "${process.env.DB_USER || 'regz_user'}".`
+    error: `Falha na conexão PostgreSQL (${reqHost || 'localhost'}:${port}): ${lastErrorMessage}. Dica: Para bancos online (Neon, Supabase, Railway), cole a Connection String no campo URI acima.`
   });
 });
 
@@ -3277,9 +3665,11 @@ if (fs.existsSync(publicPath)) {
     if (fs.existsSync(indexPath)) {
       try {
         let html = fs.readFileSync(indexPath, 'utf-8');
-        const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
-        const host = req.get('host') || 'dining-product-giggle.ngrok-free.dev';
-        const fullBaseUrl = `${proto}://${host}`;
+        const configuredBase = (process.env.APP_URL || '').trim().replace(/\/$/, '');
+        const protoHeader = ((req.headers['x-forwarded-proto'] as string) || '').split(',')[0].trim();
+        const proto = protoHeader || req.protocol || 'https';
+        const host = req.get('host') || `localhost:${PORT}`;
+        const fullBaseUrl = configuredBase || `${proto}://${host}`;
         const logoAbsoluteUrl = `${fullBaseUrl}/logo.png`;
         const canonicalUrl = `${fullBaseUrl}${req.originalUrl || ''}`;
 
@@ -3321,9 +3711,11 @@ if (fs.existsSync(publicPath)) {
   });
 }
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
+  const dbMeta = getCentralDbMeta();
   console.log(`========================================`);
-  console.log(`⚡️ Servidor Regz Backend rodando na porta ${PORT}`);
+  console.log(`⚡️ Servidor Regz rodando na porta ${PORT} (0.0.0.0)`);
   console.log(`📡 Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🗄️ Banco Central: ${dbMeta.mode.toUpperCase()} (${dbMeta.host}/${dbMeta.database}) | SSL: ${dbMeta.ssl ? 'ON' : 'OFF'}`);
   console.log(`========================================`);
 });

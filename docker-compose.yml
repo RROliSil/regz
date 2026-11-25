@@ -1,60 +1,55 @@
-version: '3.8'
+# Docker Compose preparado para Cloud 24/7 com Banco Online (DATABASE_URL)
+# - Modo Cloud / Banco Online (padrão): docker compose up -d
+#   Configure DATABASE_URL, DB_SSL=true e JWT_SECRET no arquivo .env ou no Portainer
+# - Modo Desenvolvimento com PostgreSQL local opcional: docker compose --profile local-db up -d
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    pull_policy: if_not_present
-    container_name: regz-postgres
-    restart: always
-    environment:
-      POSTGRES_USER: regz_user
-      POSTGRES_PASSWORD: regz_password
-      POSTGRES_DB: regz_db
-    ports:
-      - "${POSTGRES_PORT:-5434}:5432"
-    volumes:
-      - regz_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U regz_user -d regz_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  frontend:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: regz-app
     restart: always
     environment:
-      PORT: 4000
-      NODE_ENV: production
-      DATABASE_URL: postgres://regz_user:regz_password@postgres:5432/regz_db
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_USER: regz_user
-      DB_PASSWORD: regz_password
-      DB_NAME: regz_db
+      PORT: ${PORT:-4000}
+      NODE_ENV: ${NODE_ENV:-production}
+      DATABASE_URL: ${DATABASE_URL:-}
+      DB_SSL: ${DB_SSL:-true}
+      DB_HOST: ${DB_HOST:-postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      DB_USER: ${DB_USER:-regz_user}
+      DB_PASSWORD: ${DB_PASSWORD:-regz_password}
+      DB_NAME: ${DB_NAME:-regz_db}
+      JWT_SECRET: ${JWT_SECRET:-regz_jwt_super_secret_key_2026}
+      APP_URL: ${APP_URL:-}
     ports:
       - "${FRONTEND_PORT:-8280}:4000"
-    depends_on:
-      postgres:
-        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:4000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
-  ngrok:
-    image: ngrok/ngrok:latest
+  # Serviço opcional apenas para desenvolvimento offline local (use --profile local-db)
+  postgres:
+    profiles: ["local-db"]
+    image: postgres:15-alpine
     pull_policy: if_not_present
-    container_name: regz-ngrok-tunnel
+    container_name: regz-postgres
     restart: always
     environment:
-      - NGROK_AUTHTOKEN=3IQ56JVfEXPsOXQK1Cvrwq07L4c_x9L953LsceNkFmEFSBoe
-    command:
-      - "http"
-      - "frontend:4000"
-      - "--url=https://dining-product-giggle.ngrok-free.dev"
-      - "--region=sa"
-    depends_on:
-      - frontend
+      POSTGRES_USER: ${DB_USER:-regz_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-regz_password}
+      POSTGRES_DB: ${DB_NAME:-regz_db}
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - regz_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-regz_user} -d ${DB_NAME:-regz_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   regz_postgres_data:

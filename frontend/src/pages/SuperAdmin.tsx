@@ -334,8 +334,8 @@ export const SuperAdmin: React.FC = () => {
   };
 
   const handleTestDbConnection = async () => {
-    if (!dbName && dbTipo !== 'mongo') {
-      alert('Preencha o Nome do Banco de Dados para testar a conexão.');
+    if (!dbUri.trim() && !dbName && dbTipo !== 'mongo') {
+      alert('Preencha a URI Online (Connection String) ou o Nome do Banco de Dados para testar a conexão.');
       return;
     }
 
@@ -921,7 +921,25 @@ export const SuperAdmin: React.FC = () => {
                         {emp.db_tipo === 'mongo' ? '🍃 MongoDB' : emp.db_tipo === 'mysql' ? '🐬 MySQL' : emp.db_tipo === 'mssql' ? '🗄️ SQL Server' : '🐘 PostgreSQL'}
                       </span>
                       <span className="empresa-card-val" style={{ fontFamily: 'monospace', color: '#38bdf8', fontSize: '0.8rem' }}>
-                        {emp.db_host || 'localhost'}:{emp.db_port || (emp.db_tipo === 'mysql' ? 3306 : emp.db_tipo === 'mongo' ? 27017 : emp.db_tipo === 'mssql' ? 1433 : 5432)}/{emp.db_name || 'regz_db'}
+                        {(() => {
+                          const rawUri = (emp.db_uri || '').trim();
+                          if (rawUri) {
+                            try {
+                              const parsed = new URL(rawUri);
+                              const uriDb = parsed.pathname.replace(/^\//, '') || emp.db_name || 'db';
+                              return `☁️ ${parsed.hostname}/${uriDb}`;
+                            } catch {
+                              return `☁️ URI Cloud/${emp.db_name || 'regz_db'}`;
+                            }
+                          }
+                          const host = emp.db_host || 'Banco Central';
+                          const isDefaultLocal = host === 'localhost' && (!emp.db_name || emp.db_name === 'regz_db');
+                          if (isDefaultLocal && emp.id <= 2) {
+                            return '☁️ Banco Central Online';
+                          }
+                          const port = emp.db_port || (emp.db_tipo === 'mysql' ? 3306 : emp.db_tipo === 'mongo' ? 27017 : emp.db_tipo === 'mssql' ? 1433 : 5432);
+                          return `${host}:${port}/${emp.db_name || 'regz_db'}`;
+                        })()}
                       </span>
                     </div>
                   </div>
@@ -1521,20 +1539,28 @@ export const SuperAdmin: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Para MongoDB: Opção de URI direta (Atlas / Cloud) */}
-                {dbTipo === 'mongo' && (
-                  <div className="form-group" style={{ marginBottom: '12px' }}>
-                    <label style={{ fontSize: '0.78rem', color: '#34d399' }}>URI / Connection String MongoDB (Opcional - Ex: Atlas Cloud / On-Premise)</label>
-                    <input
-                      type="text"
-                      value={dbUri}
-                      onChange={(e) => setDbUri(e.target.value)}
-                      placeholder="mongodb+srv://user:password@cluster.mongodb.net/regz_db ou mongodb://localhost:27017"
-                      autoComplete="off"
-                      data-lpignore="true"
-                    />
-                  </div>
-                )}
+                {/* Opção de URI / Connection String Online (Cloud) para TODOS os motores */}
+                <div className="form-group" style={{ marginBottom: '12px' }}>
+                  <label style={{ fontSize: '0.78rem', color: '#34d399' }}>
+                    URI / Connection String Online (Cloud 24/7 com SSL automático — Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={dbUri}
+                    onChange={(e) => setDbUri(e.target.value)}
+                    placeholder={
+                      dbTipo === 'mongo'
+                        ? 'mongodb+srv://user:password@cluster.mongodb.net/regz_db'
+                        : dbTipo === 'mysql'
+                        ? 'mysql://user:password@host-cloud.aivencloud.com:3306/regz_db?ssl-mode=REQUIRED'
+                        : dbTipo === 'mssql'
+                        ? 'mssql://user:password@servidor.database.windows.net:1433/regz_db'
+                        : 'postgresql://user:password@ep-exemplo.neon.tech/regz_db?sslmode=require'
+                    }
+                    autoComplete="off"
+                    data-lpignore="true"
+                  />
+                </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr', gap: '12px', marginBottom: '12px' }}>
                   <div className="form-group" style={{ margin: 0 }}>

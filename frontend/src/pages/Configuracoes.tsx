@@ -6,6 +6,15 @@ export const Configuracoes: React.FC = () => {
   const { usuario } = useAuth();
   const [backendStatus, setBackendStatus] = useState<boolean | null>(null);
   const [dbStatus, setDbStatus] = useState<boolean | null>(null);
+  const [backendInfo, setBackendInfo] = useState<{ environment?: string; port?: number } | null>(null);
+  const [dbInfo, setDbInfo] = useState<{
+    mode?: 'cloud' | 'local';
+    ssl?: boolean;
+    host?: string;
+    port?: string;
+    database?: string;
+    postgresVersion?: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const checkStatus = async () => {
@@ -13,12 +22,23 @@ export const Configuracoes: React.FC = () => {
     try {
       const hRes = await fetch('/api/health');
       setBackendStatus(hRes.ok);
+      if (hRes.ok) {
+        const hData = await hRes.json();
+        setBackendInfo(hData);
+      }
 
       const dRes = await fetch('/api/db-status');
       setDbStatus(dRes.ok);
+      try {
+        const dData = await dRes.json();
+        setDbInfo(dData);
+      } catch {
+        setDbInfo(null);
+      }
     } catch {
       setBackendStatus(false);
       setDbStatus(false);
+      setDbInfo(null);
     } finally {
       setLoading(false);
     }
@@ -27,6 +47,14 @@ export const Configuracoes: React.FC = () => {
   useEffect(() => {
     checkStatus();
   }, []);
+
+  const isCloudDb = dbInfo?.mode === 'cloud';
+  const pgVersionLabel = dbInfo?.postgresVersion
+    ? dbInfo.postgresVersion.split(' ').slice(0, 2).join(' ')
+    : 'PostgreSQL';
+  const dbSubtitle = dbInfo?.database
+    ? `${dbInfo.database} (${isCloudDb ? 'Cloud 24/7' : 'Local'}${dbInfo.ssl ? ' • SSL/TLS' : ''})`
+    : 'Aguardando diagnóstico do banco';
 
   return (
     <div className="page-content">
@@ -55,7 +83,7 @@ export const Configuracoes: React.FC = () => {
             <span className="status-badge online"><span className="pulse-dot"></span> Online</span>
           </div>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginTop: '12px', marginBottom: '4px' }}>Frontend React + Vite</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Servidor Nginx na porta 8180</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>{window.location.host}</p>
         </div>
 
         {/* Card Backend */}
@@ -69,7 +97,9 @@ export const Configuracoes: React.FC = () => {
             )}
           </div>
           <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginTop: '12px', marginBottom: '4px' }}>Backend Express API</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Node.js na porta 4001</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+            Node.js ({backendInfo?.environment || 'production'}) • Porta {backendInfo?.port || 4000}
+          </p>
         </div>
 
         {/* Card Banco de Dados */}
@@ -82,8 +112,8 @@ export const Configuracoes: React.FC = () => {
               <span className="status-badge offline"><span className="pulse-dot"></span> Desconectado</span>
             )}
           </div>
-          <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginTop: '12px', marginBottom: '4px' }}>PostgreSQL 15</h3>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>Banco regz_db na porta 5434</p>
+          <h3 style={{ fontSize: '1.15rem', fontWeight: 700, marginTop: '12px', marginBottom: '4px' }}>{pgVersionLabel}</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>{dbSubtitle}</p>
         </div>
       </div>
 
@@ -102,7 +132,9 @@ export const Configuracoes: React.FC = () => {
 
           <div className="info-box-ambiente" style={{ padding: '16px 20px', borderRadius: '12px' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Ambiente de Implantação</span>
-            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#5e5eee' }}>Docker / Portainer.io</span>
+            <span style={{ fontSize: '1rem', fontWeight: 700, color: '#5e5eee' }}>
+              {isCloudDb ? 'Cloud 24/7 + Banco Online (SSL)' : 'Docker / Ambiente Local'}
+            </span>
           </div>
 
           <div className="info-box-ambiente" style={{ padding: '16px 20px', borderRadius: '12px' }}>

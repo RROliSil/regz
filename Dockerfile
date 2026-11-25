@@ -24,7 +24,7 @@ ENV NODE_ENV=production
 ENV PORT=4000
 
 COPY backend/package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copiar build do backend
 COPY --from=backend-builder /app/backend/dist ./dist
