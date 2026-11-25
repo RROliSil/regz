@@ -1,4 +1,8 @@
 <div align="center">
+  <p>
+    <strong>🇧🇷 Português</strong> &nbsp;|&nbsp; <a href="./README.en.md">🇺🇸 English</a>
+  </p>
+
   <img src="./frontend/public/logo.png" alt="Regz Gestão de Pessoas" width="110" />
   <h1>Regz — Plataforma SaaS de Gestão de Pessoas & Portal de Colaboradores</h1>
   <p>
