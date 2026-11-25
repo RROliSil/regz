@@ -27,6 +27,7 @@ O Design System do **Regz** é construído em CSS customizado com tokens semânt
 - **Blindagem contra Autofill do Navegador:** neutraliza `:-webkit-autofill` e `:-internal-autofill-previewed` preservando cores do tema, além de `autoComplete="off"` e `data-lpignore="true"` em formulários corporativos.
 - **Feedback Global (`SnackbarContext`):** notificações flutuantes Glassmorphism no canto inferior direito (`2,5s`, ocultas na impressão `@media print`).
 - **Botão Fechar Modais (`.btn-close`):** circular vermelho translúcido (`#fb7185`) com rotação de 90° no hover + suporte à tecla `ESC`.
+- **Layout 100% Fluido & Responsivo (360px → 2560px+):** `.page-content` sem limite rígido de `1200px` (`width: 100%; max-width: 100%` com paddings e tipografia `clamp()`), `.custom-table` expandindo em toda a largura disponível em monitores largos (evitando cortes na coluna `Ações`) e Sidebar convertida automaticamente em Drawer Off-Canvas (`<= 960px`) com `.mobile-topbar` e backdrop.
 
 ---
 

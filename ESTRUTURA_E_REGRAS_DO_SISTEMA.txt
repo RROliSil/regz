@@ -351,6 +351,10 @@ J. Logs de Auditoria e Rastreabilidade de Usuários:
    - O módulo Multi-Banco no Portal Super Admin (`SuperAdmin.tsx` e `POST /api/empresas/test-db`) aceita Connection String / URI online com SSL/TLS automático para todos os 4 motores (PostgreSQL, MySQL/MariaDB, MongoDB Atlas e Microsoft SQL Server / Azure SQL), invalidando automaticamente o cache de pools (`tenantPoolsMap`) ao atualizar ou excluir uma empresa.
    - A página `Configuracoes.tsx` exibe dinamicamente o modo de conexão do banco central (Cloud 24/7 com SSL vs Local) obtido via `/api/db-status` sem expor credenciais.
    - O `docker-compose.yml` não armazena mais tokens hardcoded (Ngrok removido), deixando `postgres` sob o profile opcional `local-db`. Arquivos `railway.json` e `render.yaml` adicionados para deploy contínuo 24/7 direto do GitHub via `Dockerfile` unificado.
+25. Layout 100% Fluido & Responsivo (De Mobile 360px até Ultrawide 2560px+):
+   - Removido o teto fixo `max-width: 1200px` de `.page-content` e o padding horizontal duplicado de `App.tsx`, aplicando `width: 100%; max-width: 100%` com paddings e tipografia fluidos (`clamp()`) e `.main-viewport` baseado em `%` (`calc(100% - var(--sidebar-width))`).
+   - Tabelas corporativas (`.custom-table`) expandem para 100% da largura útil em monitores largos sem cortar a coluna `Ações`, e acionam rolagem horizontal ultrafina (4px) dentro de `.table-flex-wrapper` apenas quando a viewport for menor que a soma mínima das colunas.
+   - Em telas `<= 960px` (Tablets e Celulares), a Sidebar opera automaticamente como Drawer Off-Canvas deslizante com barra superior `.mobile-topbar`, backdrop escuro e fechamento automático ao navegar, liberando 100% da tela para o conteúdo sem quebras.
 
 ===============================================================================
 FIM DA DOCUMENTAÇÃO - MANTENHA ESTE ARQUIVO SEMPRE ATUALIZADO (REVISÃO: 25/11/2026)

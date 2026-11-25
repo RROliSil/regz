@@ -15,7 +15,7 @@ import { Relatorios } from './pages/Relatorios';
 import { Login } from './pages/Login';
 import { SuperAdmin } from './pages/SuperAdmin';
 import { PermissoesAba } from './types/auth';
-import { Loader2, Eye, AlertTriangle } from 'lucide-react';
+import { Loader2, Eye, AlertTriangle, Menu } from 'lucide-react';
 
 const RouteTitleTracker: React.FC = () => {
   const location = useLocation();
@@ -54,6 +54,11 @@ const ProtectedLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('regz_sidebar_collapsed') === 'true';
   });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const isSuperAdmin = !!(usuario?.is_super_admin || (usuario?.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario?.nome === 'Administrador Regz');
 
@@ -76,6 +81,7 @@ const ProtectedLayout: React.FC = () => {
 
   const abaAtual = getAbaByPath(location.pathname);
   const isSomenteLeitura = abaAtual ? (temPermissao(abaAtual, 'leitura') && !temPermissao(abaAtual, 'escrita')) : false;
+  const hasTopBanner = !!(usuario?.sem_licenca || usuario?.licenca_expirada || isSomenteLeitura);
 
   if (loading) {
     return (
@@ -101,34 +107,53 @@ const ProtectedLayout: React.FC = () => {
 
   return (
     <div className="app-layout">
-      {/* Menu Lateral Fixo com Suporte a Encolher / Expandir */}
-      <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
+      {/* Backdrop escuro para Drawer Mobile/Tablet */}
+      {mobileMenuOpen && (
+        <div
+          className="sidebar-mobile-backdrop"
+          onClick={() => setMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
-      {/* Conteúdo Principal Ajustado Dinamicamente ao Menu Lateral */}
+      {/* Menu Lateral Fixo (Desktop) / Drawer Deslizante (Mobile & Tablet <= 960px) */}
+      <Sidebar
+        collapsed={sidebarCollapsed}
+        onToggle={toggleSidebar}
+        mobileOpen={mobileMenuOpen}
+        onCloseMobile={() => setMobileMenuOpen(false)}
+      />
+
+      {/* Conteúdo Principal Ajustado Dinamicamente ao Menu Lateral e a qualquer largura de tela */}
       <main className={`main-viewport ${sidebarCollapsed ? 'collapsed' : ''}`} style={{ padding: 0 }}>
+        {/* Barra Superior Mobile/Tablet (exibida apenas <= 960px) */}
+        <div className="mobile-topbar no-print">
+          <button
+            type="button"
+            className="mobile-menu-btn"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Abrir menu de navegação"
+          >
+            <Menu size={22} />
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+            <img src="/logo.png" alt="Regz" style={{ width: '28px', height: '28px', borderRadius: '8px', objectFit: 'cover' }} />
+            <span style={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.01em' }}>Regz</span>
+          </div>
+        </div>
+
         {/* Banner Top Alert de Licença Ausente / Expirada (Modo Somente Leitura Forçado) */}
         {usuario?.sem_licenca ? (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: sidebarCollapsed ? '80px' : '260px',
-            right: 0,
-            zIndex: 99999,
-            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            background: 'linear-gradient(90deg, #854d0e 0%, #a16207 50%, #ca8a04 100%)',
-            borderBottom: '1px solid #eab308',
-            color: '#fef9c3',
-            padding: '10px 24px',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.7)',
-            backdropFilter: 'blur(12px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            className={`status-top-banner ${sidebarCollapsed ? 'collapsed' : ''}`}
+            style={{
+              background: 'linear-gradient(90deg, #854d0e 0%, #a16207 50%, #ca8a04 100%)',
+              borderBottom: '1px solid #eab308',
+              color: '#fef9c3',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.7)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
               <AlertTriangle size={18} color="#fef08a" />
               <span>
                 <strong>SEM LICENÇA VINCULADA:</strong> Sua conta de usuário não possui uma Chave de Licença ativa vinculada! O acesso foi alterado para <u>MODO SOMENTE LEITURA</u>. Contate um Administrador para vincular uma chave válida.
@@ -150,27 +175,16 @@ const ProtectedLayout: React.FC = () => {
             </span>
           </div>
         ) : usuario?.licenca_expirada ? (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: sidebarCollapsed ? '80px' : '260px',
-            right: 0,
-            zIndex: 99999,
-            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            background: 'linear-gradient(90deg, #7f1d1d 0%, #991b1b 50%, #b91c1c 100%)',
-            borderBottom: '1px solid #ef4444',
-            color: '#fee2e2',
-            padding: '10px 24px',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.7)',
-            backdropFilter: 'blur(12px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            className={`status-top-banner ${sidebarCollapsed ? 'collapsed' : ''}`}
+            style={{
+              background: 'linear-gradient(90deg, #7f1d1d 0%, #991b1b 50%, #b91c1c 100%)',
+              borderBottom: '1px solid #ef4444',
+              color: '#fee2e2',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.7)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
               <AlertTriangle size={18} color="#fca5a5" />
               <span>
                 <strong>LICENÇA EXPIRADA:</strong> Sua licença de uso do sistema expirou! O acesso foi alterado para <u>MODO SOMENTE LEITURA</u>. Contate um Administrador para renovar ou inserir uma nova chave de licença.
@@ -192,27 +206,16 @@ const ProtectedLayout: React.FC = () => {
             </span>
           </div>
         ) : isSomenteLeitura && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: sidebarCollapsed ? '80px' : '260px',
-            right: 0,
-            zIndex: 99999,
-            transition: 'left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            background: 'linear-gradient(90deg, #78350f 0%, #92400e 50%, #b45309 100%)',
-            borderBottom: '1px solid #f59e0b',
-            color: '#fef3c7',
-            padding: '10px 24px',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: '12px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.6)',
-            backdropFilter: 'blur(12px)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div
+            className={`status-top-banner ${sidebarCollapsed ? 'collapsed' : ''}`}
+            style={{
+              background: 'linear-gradient(90deg, #78350f 0%, #92400e 50%, #b45309 100%)',
+              borderBottom: '1px solid #f59e0b',
+              color: '#fef3c7',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.6)',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
               <Eye size={18} color="#fde68a" />
               <span>
                 <strong>Modo Somente Leitura:</strong> Seu perfil de acesso ({usuario.perfil?.nome || 'Consulta'}) possui permissão apenas de visualização nesta aba. Alterações e adições estão desativadas.
@@ -235,7 +238,7 @@ const ProtectedLayout: React.FC = () => {
           </div>
         )}
 
-        <div style={{ padding: isSomenteLeitura ? '68px 32px 24px 32px' : '24px 32px' }}>
+        <div className={`viewport-content-shell ${hasTopBanner ? 'has-banner' : ''}`}>
           <Routes>
             <Route path="/" element={<Navigate to="/colaboradores" replace />} />
             <Route path="/home" element={<RequireAuth aba="home"><Home /></RequireAuth>} />

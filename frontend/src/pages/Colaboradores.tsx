@@ -882,8 +882,8 @@ export const Colaboradores: React.FC = () => {
       </header>
 
       {/* Sub-Abas de Navegação e Botões de Ícones no canto direito final */}
-      <div className="sub-tabs-container" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: '12px' }}>
+      <div className="sub-tabs-container" style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <button
             className={`sub-tab ${activeSubTab === 'ativos' ? 'active' : ''}`}
             onClick={() => setActiveSubTab('ativos')}
@@ -902,7 +902,7 @@ export const Colaboradores: React.FC = () => {
         </div>
 
         {/* Botões de Ação no canto direito */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
           <button
             onClick={openNewModal}
             className="btn-icon-primary"
@@ -925,8 +925,8 @@ export const Colaboradores: React.FC = () => {
         </div>
       </div>
 
-      {/* Control Bar (Busca e Botão Colunas RIGOROSAMENTE FIXO à direita) */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '16px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+      {/* Control Bar (Busca e Botão Colunas adaptáveis a qualquer tela) */}
+      <div className="control-bar-fluid" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', marginBottom: '20px', gap: '12px 16px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
         <div className="search-box">
           <Search size={18} color="var(--text-muted)" />
           <input
@@ -937,8 +937,8 @@ export const Colaboradores: React.FC = () => {
           />
         </div>
 
-        {/* Grupo do Botão Colunas Travado à Direita sem Mover */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+        {/* Grupo do Botão Colunas à Direita */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0, flexWrap: 'wrap' }}>
           {/* Seletor Dropdown de Colunas Visíveis */}
           <div className="dropdown-container" style={{ position: 'relative', flexShrink: 0 }}>
             <button
@@ -998,10 +998,10 @@ export const Colaboradores: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabela de Colaboradores com Altura Total Fixa de 5 Linhas */}
+      {/* Tabela de Colaboradores com Largura Fluida 100% */}
       <div className="glass-panel table-responsive-container">
         <div className="table-flex-wrapper">
-          <table className="custom-table" style={{ minWidth: `${totalTableWidth}px` }}>
+          <table className="custom-table" style={{ width: '100%', minWidth: `${totalTableWidth}px` }}>
             <thead>
               <tr>
                 {visibleColumns.foto && (
@@ -1249,7 +1249,7 @@ export const Colaboradores: React.FC = () => {
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
             {/* Seletor Dropdown para Escolher Quantidade por Página (5, 15, 50, 100, todos) */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Exibir:</span>

@@ -130,7 +130,7 @@ export const Home: React.FC = () => {
 
       {/* Card 1: Total Colaboradores (com atalho para criar colaborador) */}
       <div style={{ marginBottom: '28px' }}>
-        <div className="glass-panel" style={{ padding: '20px', maxWidth: '360px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <div className="glass-panel" style={{ padding: '20px', width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div>
               <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Colaboradores</span>
@@ -186,8 +186,8 @@ export const Home: React.FC = () => {
           </button>
         </div>
 
-        <div className="table-flex-wrapper" style={{ overflowX: 'hidden' }}>
-          <table className="custom-table" style={{ tableLayout: 'fixed', width: '100%' }}>
+        <div className="table-flex-wrapper" style={{ overflowX: 'auto' }}>
+          <table className="custom-table" style={{ tableLayout: 'fixed', width: '100%', minWidth: '640px' }}>
             <thead>
               <tr>
                 <th style={{ width: '220px' }}>Colaborador</th>
@@ -258,7 +258,7 @@ export const Home: React.FC = () => {
       </div>
 
       {/* Grid Inferior: Distribuição de Cargos & Cidades/Estados (alignItems: 'start' para isolar a altura ao expandir) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '24px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '24px', alignItems: 'start' }}>
         
         {/* Card 3: Cargos na Equipe */}
         <div className="glass-panel" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>

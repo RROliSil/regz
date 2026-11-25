@@ -751,27 +751,29 @@ export const SuperAdmin: React.FC = () => {
   };
 
   return (
-    <div className="superadmin-container" data-theme="padrao" style={{ minHeight: '100vh', background: '#020617', color: '#f8fafc', padding: '24px 36px' }}>
+    <div className="superadmin-container" data-theme="padrao" style={{ minHeight: '100vh', background: '#020617', color: '#f8fafc', padding: 'clamp(16px, 2.2vw, 30px) clamp(16px, 2.6vw, 36px)' }}>
       
       {/* Header Executivo do Licenciador Regz */}
       <header className="superadmin-header" style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: '16px',
         background: '#0f172a',
         border: '1px solid rgba(255, 255, 255, 0.08)',
-        padding: '20px 28px',
+        padding: 'clamp(16px, 2vw, 22px) clamp(16px, 2.2vw, 28px)',
         borderRadius: '20px',
         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.4)',
         marginBottom: '28px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0 }}>
           <div style={{ width: '48px', height: '48px', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)', flexShrink: 0 }}>
             <img src="/logo.png" alt="Regz Master" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <h1 className="superadmin-title" style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#ffffff' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <h1 className="superadmin-title" style={{ margin: 0, fontSize: 'clamp(1.15rem, 1.8vw, 1.5rem)', fontWeight: 800, color: '#ffffff' }}>
                 REGZ LICENCIAMENTO MASTER
               </h1>
               <span className="superadmin-badge-portal" style={{ background: 'rgba(99, 102, 241, 0.2)', border: '1px solid rgba(99, 102, 241, 0.4)', color: '#818cf8', fontSize: '0.72rem', fontWeight: 800, padding: '3px 10px', borderRadius: '20px', textTransform: 'uppercase' }}>
@@ -779,12 +781,12 @@ export const SuperAdmin: React.FC = () => {
               </span>
             </div>
             <p className="superadmin-subtitle" style={{ margin: '4px 0 0 0', fontSize: '0.85rem', color: '#94a3b8' }}>
-              Central de Gestão de Licenças On-Premise & Parâmetros de Banco de Dados Local por Empresa
+              Central de Gestão de Licenças & Parâmetros de Banco de Dados Online/Dedicado por Empresa
             </p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap', marginLeft: 'auto' }}>
           <div style={{ textAlign: 'right', fontSize: '0.85rem' }}>
             <span style={{ display: 'block', fontWeight: 700, color: '#ffffff' }}>{usuario?.nome || 'Administrador Regz'}</span>
             <span style={{ fontSize: '0.78rem', color: '#818cf8' }}>{usuario?.email || 'admin@regz.app'}</span>
@@ -848,7 +850,7 @@ export const SuperAdmin: React.FC = () => {
         </div>
 
         {/* Action Header */}
-        <div className="superadmin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '18px 24px', borderRadius: '16px' }}>
+        <div className="superadmin-section-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '18px 24px', borderRadius: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Building2 size={22} color="#818cf8" />
             <div>

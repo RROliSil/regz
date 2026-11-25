@@ -7,14 +7,20 @@ import { useTheme } from '../context/ThemeContext';
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  mobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle, mobileOpen = false, onCloseMobile }) => {
   const { usuario, logout, temPermissao } = useAuth();
   const { theme, cycleTheme } = useTheme();
 
+  const handleNavClick = () => {
+    if (onCloseMobile) onCloseMobile();
+  };
+
   return (
-    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+    <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
       {/* Botão Flutuante de Encolher / Expandir Menu na Divisa Vertical Superior */}
       <button
         onClick={onToggle}
@@ -61,6 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         {temPermissao('home') && (
           <NavLink
             to="/home"
+            onClick={handleNavClick}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             title="Home"
           >
@@ -72,6 +79,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         {temPermissao('colaboradores') && (
           <NavLink
             to="/colaboradores"
+            onClick={handleNavClick}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             title="Colaboradores"
           >
@@ -83,6 +91,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         {temPermissao('campos') && (
           <NavLink
             to="/campos"
+            onClick={handleNavClick}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             title="Campos"
           >
@@ -95,6 +104,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         {temPermissao('administracao') && (
           <NavLink
             to="/administracao"
+            onClick={handleNavClick}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             title="Administração"
           >
@@ -107,6 +117,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         {temPermissao('relatorios') !== false && (
           <NavLink
             to="/relatorios"
+            onClick={handleNavClick}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             title="Relatórios"
           >
@@ -119,6 +130,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
         {usuario?.perfil?.is_admin && (
           <NavLink
             to="/configuracoes"
+            onClick={handleNavClick}
             className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
             title="Configurações"
           >
