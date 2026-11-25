@@ -1054,7 +1054,7 @@ export const Colaboradores: React.FC = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px' }}>
+                  <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 1} style={{ textAlign: 'center', padding: '40px' }}>
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', color: 'var(--text-muted)' }}>
                       <Loader2 className="spin" size={20} /> Carregando lista...
                     </div>
@@ -1062,7 +1062,7 @@ export const Colaboradores: React.FC = () => {
                 </tr>
               ) : paginatedColaboradores.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
+                  <td colSpan={Object.values(visibleColumns).filter(Boolean).length + 1} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-dim)' }}>
                     {searchTerm 
                       ? 'Nenhum resultado encontrado para a busca.' 
                       : activeSubTab === 'ativos'

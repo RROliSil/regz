@@ -5070,7 +5070,8 @@ svg.lucide, svg {
 
 /* Expansão fluida de buscas, tabelas e grids em monitores largos */
 .search-box {
-  width: min(100%, 460px);
+  width: 100%;
+  max-width: 460px;
   flex: 1 1 260px;
   min-width: 0;
 }
@@ -5259,6 +5260,10 @@ svg.lucide, svg {
 @media (max-width: 640px) {
   .page-content {
     padding: 16px 14px;
+  }
+
+  .search-box {
+    max-width: 100%;
   }
 
   .sub-tab {
