@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { Pool } from 'pg';
@@ -7,6 +7,7 @@ import { MongoClient } from 'mongodb';
 import sql from 'mssql';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import path from 'path';
 import fs from 'fs';
 
@@ -14,15 +15,172 @@ dotenv.config();
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '4000', 10);
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 const JWT_SECRET = process.env.JWT_SECRET || 'regz_jwt_super_secret_key_2026';
+
+if (IS_PRODUCTION && !process.env.JWT_SECRET) {
+  console.error('🚨 AVISO CRÍTICO DE SEGURANÇA: JWT_SECRET não definido no ambiente de produção! Configure a variável JWT_SECRET imediatamente.');
+}
+
+// Ocultar cabeçalho X-Powered-By (evitar fingerprinting do framework Express)
+app.disable('x-powered-by');
 
 // Confiar em proxies reversos HTTPS em nuvem (Railway, Render, Fly.io, Koyeb, Cloudflare, Nginx)
 app.set('trust proxy', 1);
 
+// Cabeçalhos de segurança HTTP (Hardening OWASP)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  const forwardedProto = ((req.headers['x-forwarded-proto'] as string) || '').split(',')[0].trim();
+  if (IS_PRODUCTION || req.secure || forwardedProto === 'https') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
+
+// CORS restrito às origens confiáveis (mesma origem, APP_URL, CORS_ORIGINS e localhost em desenvolvimento)
+const configuredCorsOrigins = new Set<string>(
+  [
+    ...(process.env.CORS_ORIGINS || '').split(','),
+    process.env.APP_URL || '',
+    ...(!IS_PRODUCTION
+      ? ['http://localhost:5173', 'http://localhost:4000', 'http://localhost:8280', 'http://127.0.0.1:5173', 'http://127.0.0.1:4000']
+      : [])
+  ]
+    .map((o) => {
+      try {
+        return o.trim() ? new URL(o.trim()).origin : '';
+      } catch {
+        return '';
+      }
+    })
+    .filter(Boolean)
+);
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const host = req.get('host');
+  const forwardedProto = ((req.headers['x-forwarded-proto'] as string) || '').split(',')[0].trim();
+  const proto = forwardedProto || req.protocol || 'https';
+  const sameOriginHttps = host ? `https://${host}` : '';
+  const sameOriginHttp = host ? `http://${host}` : '';
+  const sameOriginCurrent = host ? `${proto}://${host}` : '';
+
+  return cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (
+        origin === sameOriginCurrent ||
+        origin === sameOriginHttps ||
+        origin === sameOriginHttp ||
+        configuredCorsOrigins.has(origin)
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-empresa-id', 'ngrok-skip-browser-warning']
+  })(req, res, next);
+});
+
 // Configurar limites de payload para requisições Express
-app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// ==========================================
+// UTILITÁRIOS DE SEGURANÇA & CRIPTOGRAFIA
+// ==========================================
+const DB_CRED_ENC_PREFIX = 'enc:v1:';
+const DB_CRED_KEY = crypto.scryptSync(
+  process.env.DB_ENCRYPTION_KEY || JWT_SECRET,
+  'regz-db-cred-salt-v1',
+  32
+);
+
+const encryptSecret = (plain?: string | null): string | null => {
+  if (plain === undefined || plain === null) return null;
+  const trimmed = String(plain);
+  if (!trimmed) return null;
+  if (trimmed.startsWith(DB_CRED_ENC_PREFIX)) return trimmed;
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', DB_CRED_KEY, iv);
+  const encrypted = Buffer.concat([cipher.update(trimmed, 'utf8'), cipher.final()]);
+  const authTag = cipher.getAuthTag();
+  return `${DB_CRED_ENC_PREFIX}${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted.toString('hex')}`;
+};
+
+const decryptSecret = (stored?: string | null): string => {
+  if (!stored) return '';
+  if (!stored.startsWith(DB_CRED_ENC_PREFIX)) return stored;
+  try {
+    const parts = stored.slice(DB_CRED_ENC_PREFIX.length).split(':');
+    if (parts.length !== 3) return '';
+    const [ivHex, tagHex, dataHex] = parts;
+    const decipher = crypto.createDecipheriv('aes-256-gcm', DB_CRED_KEY, Buffer.from(ivHex, 'hex'));
+    decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
+    const decrypted = Buffer.concat([decipher.update(Buffer.from(dataHex, 'hex')), decipher.final()]);
+    return decrypted.toString('utf8');
+  } catch {
+    return '';
+  }
+};
+
+const maskConnectionUri = (storedUri?: string | null): string | null => {
+  const plain = decryptSecret(storedUri).trim();
+  if (!plain) return null;
+  try {
+    const parsed = new URL(plain);
+    if (parsed.password) {
+      parsed.password = '••••••';
+    }
+    return parsed.toString().replace(/%E2%80%A2/g, '•');
+  } catch {
+    return plain.replace(/:([^:@/]+)@/, ':••••••@');
+  }
+};
+
+const sanitizeEmpresaRow = (row: any) => {
+  if (!row) return row;
+  return {
+    ...row,
+    db_pass: '',
+    has_db_pass: Boolean(row.db_pass),
+    db_uri: row.db_uri ? maskConnectionUri(row.db_uri) : null,
+    has_db_uri: Boolean(row.db_uri)
+  };
+};
+
+const generateLicenseKey = (): string => {
+  const seg = () => crypto.randomBytes(2).toString('hex').toUpperCase();
+  return `REGZ-2026-${seg()}-${seg()}-${seg()}`;
+};
+
+const isValidDbIdentifier = (name: string): boolean => /^[a-zA-Z0-9_-]{1,63}$/.test(name);
+
+const isSafeMediaUrl = (url?: string | null): boolean => {
+  if (url === undefined || url === null || url === '') return true;
+  if (typeof url !== 'string' || url.length > 4 * 1024 * 1024) return false;
+  const trimmed = url.trim();
+  if (!trimmed) return true;
+  if (/^https?:\/\//i.test(trimmed)) return true;
+  if (/^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=\s]+$/i.test(trimmed)) return true;
+  return false;
+};
+
+const escapeHtmlAttr = (str: string): string =>
+  str
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+const getClientIp = (req: Request): string =>
+  ((req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
 
 // Helpers de detecção de ambiente Cloud vs Local e SSL/TLS automático
 const isLocalHost = (host?: string | null): boolean => {
@@ -355,7 +513,8 @@ const initDb = async (): Promise<boolean> => {
       ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_host VARCHAR(255);
       ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_port INT DEFAULT 5432;
       ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_user VARCHAR(100);
-      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_pass VARCHAR(255);
+      ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_pass TEXT;
+      ALTER TABLE empresas ALTER COLUMN db_pass TYPE TEXT;
       ALTER TABLE empresas ADD COLUMN IF NOT EXISTS db_name VARCHAR(100);
     `);
 
@@ -393,10 +552,10 @@ const initDb = async (): Promise<boolean> => {
     if (parseInt(countPerfis.rows[0].count, 10) === 0) {
       await pool.query(`
         INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes, empresa_id) VALUES
-        ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita"}'::jsonb, $1),
-        ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso"}'::jsonb, $1),
-        ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1),
-        ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1);
+        ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita","relatorios":"escrita"}'::jsonb, $1),
+        ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso","relatorios":"escrita"}'::jsonb, $1),
+        ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso","relatorios":"leitura"}'::jsonb, $1),
+        ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso","relatorios":"leitura"}'::jsonb, $1);
       `, [matrizId]);
       console.log('✅ Perfis de acesso padrão inicializados!');
     }
@@ -427,16 +586,17 @@ const initDb = async (): Promise<boolean> => {
     if (parseInt(countUsuarios.rows[0].count, 10) === 0) {
       const adminPerfil = await pool.query("SELECT id FROM perfis_acesso WHERE is_admin = true LIMIT 1");
       const perfilId = adminPerfil.rows[0]?.id || 1;
-      const senhaHash = await bcrypt.hash('admin123', 10);
+      const initialAdminPassword = (process.env.ADMIN_INITIAL_PASSWORD || '').trim() || 'admin123';
+      const senhaHash = await bcrypt.hash(initialAdminPassword, 10);
 
       await pool.query(
         `INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo, empresa_id, is_super_admin) VALUES ($1, $2, $3, $4, true, $5, true)`,
         ['Administrador Regz', 'admin@regz.app', senhaHash, perfilId, matrizId]
       );
-      console.log('✅ Usuário administrador inicial (admin@regz.app / admin123) criado com sucesso!');
+      console.log('✅ Usuário administrador inicial (admin@regz.app) criado com sucesso!');
     }
 
-    // Migration SQL para corrigir usuários com perfil_id ausente ou órfão e garantir Super Admin
+    // Migration SQL para corrigir usuários com perfil_id ausente ou órfão e garantir Super Admin apenas pelo e-mail oficial
     await pool.query(`
       UPDATE usuarios u
       SET perfil_id = COALESCE(
@@ -444,7 +604,7 @@ const initDb = async (): Promise<boolean> => {
         (SELECT p.id FROM perfis_acesso p WHERE p.is_admin = true LIMIT 1)
       )
       WHERE u.perfil_id IS NULL OR u.perfil_id NOT IN (SELECT id FROM perfis_acesso);
-      UPDATE usuarios SET is_super_admin = true WHERE LOWER(email) = 'admin@regz.app' OR nome = 'Administrador Regz';
+      UPDATE usuarios SET is_super_admin = true WHERE LOWER(email) = 'admin@regz.app';
     `);
     console.log('✅ Migração de vínculo de perfis de usuários executada!');
 
@@ -776,7 +936,7 @@ const ENDERECOS_EXEMPLO = [
   { cep: '12220-520', logradouro: 'Rua Alfredo Pereira Filho', bairro: 'Vila Industrial', cidade: 'São José dos Campos', estado: 'SP', lat: -23.1818, lon: -45.8655 }
 ];
 
-// Geocodificação de Alta Precisão via OpenStreetMap
+// Geocodificação de Alta Precisão via OpenStreetMap (com timeout de segurança)
 const fetchGeocodingHighPrecision = async (logradouro?: string, numeroStr?: string, cidade?: string, estado?: string, cep?: string) => {
   try {
     const headers = { 'User-Agent': 'RegzApp/1.0 (contact@regz.app)' };
@@ -784,7 +944,7 @@ const fetchGeocodingHighPrecision = async (logradouro?: string, numeroStr?: stri
     const fullQuery = [logradouro, numeroStr ? `nº ${numeroStr}` : '', cidade, estado, cep, 'Brasil'].filter(Boolean).join(', ');
     if (fullQuery) {
       const url1 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullQuery)}&limit=1`;
-      const res1 = await fetch(url1, { headers });
+      const res1 = await fetch(url1, { headers, signal: AbortSignal.timeout(6000) });
       if (res1.ok) {
         const data1 = await res1.json();
         if (Array.isArray(data1) && data1.length > 0) {
@@ -799,7 +959,7 @@ const fetchGeocodingHighPrecision = async (logradouro?: string, numeroStr?: stri
     const streetQuery = [logradouro, cidade, estado, cep, 'Brasil'].filter(Boolean).join(', ');
     if (streetQuery) {
       const url2 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(streetQuery)}&limit=1`;
-      const res2 = await fetch(url2, { headers });
+      const res2 = await fetch(url2, { headers, signal: AbortSignal.timeout(6000) });
       if (res2.ok) {
         const data2 = await res2.json();
         if (Array.isArray(data2) && data2.length > 0) {
@@ -814,7 +974,7 @@ const fetchGeocodingHighPrecision = async (logradouro?: string, numeroStr?: stri
     if (cep) {
       const cepQuery = `${cep}, Brasil`;
       const url3 = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cepQuery)}&limit=1`;
-      const res3 = await fetch(url3, { headers });
+      const res3 = await fetch(url3, { headers, signal: AbortSignal.timeout(6000) });
       if (res3.ok) {
         const data3 = await res3.json();
         if (Array.isArray(data3) && data3.length > 0) {
@@ -844,11 +1004,19 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
-// Database connectivity status endpoint (retorna metadados seguros sem expor credenciais)
+// Database connectivity status endpoint (metadados detalhados apenas para Admin/Super Admin autenticado)
 app.get('/api/db-status', async (req: Request, res: Response) => {
+  const authUser = await resolveAuthUser(req);
+  const canSeeMeta = Boolean(authUser && (authUser.is_admin || authUser.is_super_admin));
   const meta = getCentralDbMeta();
   try {
     const result = await pool.query('SELECT NOW() as current_time, version() as version');
+    if (!canSeeMeta) {
+      return res.json({
+        connected: true,
+        timestamp: result.rows[0].current_time
+      });
+    }
     res.json({
       connected: true,
       mode: meta.mode,
@@ -861,6 +1029,9 @@ app.get('/api/db-status', async (req: Request, res: Response) => {
       postgresVersion: result.rows[0].version
     });
   } catch (error: any) {
+    if (!canSeeMeta) {
+      return res.status(500).json({ connected: false });
+    }
     res.status(500).json({
       connected: false,
       mode: meta.mode,
@@ -873,75 +1044,204 @@ app.get('/api/db-status', async (req: Request, res: Response) => {
 });
 
 // ==========================================
-// ==========================================
 // ROTAS DE AUTENTICAÇÃO E LOGIN (JWT / BCRYPT)
 // ==========================================
 
 interface LoginAttempt {
   count: number;
   lockUntil: number | null;
+  lastAttempt: number;
 }
 
 const loginAttemptsMap = new Map<string, LoginAttempt>();
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKTIME_MS = 15 * 60 * 1000; // 15 Minutos
+const ATTEMPT_TTL_MS = 30 * 60 * 1000; // 30 Minutos para limpeza de tentativas isoladas
 
 const recordFailedAttempt = (key: string) => {
   const now = Date.now();
-  const existing = loginAttemptsMap.get(key) || { count: 0, lockUntil: null };
+  const existing = loginAttemptsMap.get(key) || { count: 0, lockUntil: null, lastAttempt: now };
   const newCount = existing.count + 1;
   const lockUntil = newCount >= MAX_LOGIN_ATTEMPTS ? now + LOCKTIME_MS : null;
-  loginAttemptsMap.set(key, { count: newCount, lockUntil });
+  loginAttemptsMap.set(key, { count: newCount, lockUntil, lastAttempt: now });
 };
 
-// Limpeza periódica de tentativas expiradas (a cada 10 min)
-setInterval(() => {
+// Limpeza periódica de tentativas expiradas e entradas ociosas (previne vazamento de memória)
+const loginCleanupInterval = setInterval(() => {
   const now = Date.now();
   for (const [key, val] of loginAttemptsMap.entries()) {
-    if (val.lockUntil && val.lockUntil < now) {
+    if ((val.lockUntil && val.lockUntil < now) || (!val.lockUntil && now - val.lastAttempt > ATTEMPT_TTL_MS)) {
       loginAttemptsMap.delete(key);
     }
   }
 }, 10 * 60 * 1000);
+loginCleanupInterval.unref?.();
 
-const getEmpresaIdFromReq = (req: Request): number | null => {
-  const headerEmpId = req.headers['x-empresa-id'];
-  if (headerEmpId && !isNaN(Number(headerEmpId))) {
-    return parseInt(headerEmpId as string, 10);
-  }
-  const queryEmpId = req.query.empresa_id;
-  if (queryEmpId && !isNaN(Number(queryEmpId))) {
-    return parseInt(queryEmpId as string, 10);
-  }
+interface AuthUser {
+  id: number;
+  nome: string;
+  email: string;
+  ativo: boolean;
+  empresa_id: number;
+  perfil_id: number | null;
+  perfil_nome: string;
+  perfil_descricao: string | null;
+  is_admin: boolean;
+  is_super_admin: boolean;
+  permissoes: Record<string, string>;
+  chave_licenca: string | null;
+  sem_licenca: boolean;
+  licenca_expirada: boolean;
+  dias_restantes_licenca: number;
+  status_licenca: string;
+}
+
+interface AuthenticatedRequest extends Request {
+  authUser?: AuthUser;
+}
+
+const resolveAuthUser = async (req: Request): Promise<AuthUser | null> => {
   const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    try {
-      const token = authHeader.split(' ')[1];
-      const decoded: any = jwt.verify(token, JWT_SECRET);
-      if (decoded && decoded.empresa_id) {
-        return parseInt(decoded.empresa_id, 10);
-      }
-    } catch (e) {}
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return null;
   }
-  return null;
+
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded: any = jwt.verify(token, JWT_SECRET);
+    if (!decoded || !decoded.id) return null;
+
+    const query = `
+      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca, u.empresa_id, u.is_super_admin,
+             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
+             l.chave as licenca_chave, l.status as licenca_status, l.data_expiracao as licenca_expiracao,
+             (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes_licenca
+      FROM usuarios u
+      LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
+      LEFT JOIN LATERAL (
+        SELECT cl.chave, cl.status, cl.data_expiracao
+        FROM chaves_licenca cl
+        WHERE cl.chave = u.chave_licenca OR cl.usuario_id = u.id
+        ORDER BY (cl.status = 'Ativa') DESC, cl.data_expiracao DESC
+        LIMIT 1
+      ) l ON true
+      WHERE u.id = $1
+    `;
+    const result = await pool.query(query, [decoded.id]);
+    if (result.rows.length === 0 || !result.rows[0].ativo) {
+      return null;
+    }
+
+    const row = result.rows[0];
+    // Segurança: confiar exclusivamente na flag is_super_admin persistida no banco (nunca no nome do usuário)
+    const isSuperAdmin = Boolean(row.is_super_admin);
+    const temChaveVinculada = Boolean(row.chave_licenca || row.licenca_chave);
+    const diasRestantesLic = isSuperAdmin ? 999 : (typeof row.dias_restantes_licenca === 'number' ? row.dias_restantes_licenca : 0);
+    const statusLicenca = isSuperAdmin ? 'Ativa (Isento - Super Admin)' : (row.licenca_status || (temChaveVinculada ? 'Ativa' : 'Sem Licença'));
+    const semLicenca = !isSuperAdmin && !temChaveVinculada;
+    const licencaExpirada = !isSuperAdmin && (semLicenca || diasRestantesLic <= 0 || row.licenca_status === 'Suspensa' || row.licenca_status === 'Expirada');
+
+    return {
+      id: row.id,
+      nome: row.nome,
+      email: row.email,
+      ativo: row.ativo,
+      empresa_id: row.empresa_id || 1,
+      perfil_id: row.perfil_id,
+      perfil_nome: row.perfil_nome || 'Usuário Sem Perfil',
+      perfil_descricao: row.perfil_descricao || null,
+      is_admin: Boolean(row.is_admin),
+      is_super_admin: isSuperAdmin,
+      permissoes: row.permissoes || {},
+      chave_licenca: row.chave_licenca || row.licenca_chave || null,
+      sem_licenca: semLicenca,
+      licenca_expirada: licencaExpirada,
+      dias_restantes_licenca: diasRestantesLic,
+      status_licenca: statusLicenca
+    };
+  } catch {
+    return null;
+  }
 };
 
-// Helper para obter dados do usuário autenticado a partir do token JWT
-const getAuthUserFromReq = async (req: Request): Promise<{ id: number; nome: string; email: string; empresa_id: number } | null> => {
-  const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    try {
-      const token = authHeader.split(' ')[1];
-      const decoded: any = jwt.verify(token, JWT_SECRET);
-      if (decoded && decoded.id) {
-        const u = await pool.query('SELECT id, nome, email, empresa_id FROM usuarios WHERE id = $1', [decoded.id]);
-        if (u.rows.length > 0) {
-          return u.rows[0];
-        }
-      }
-    } catch (e) {}
+// Obtém o empresa_id autorizado: usuários comuns sempre ficam presos ao próprio tenant do JWT; somente Super Admin pode selecionar outro tenant
+const getEffectiveEmpresaId = (req: AuthenticatedRequest): number => {
+  if (req.authUser?.is_super_admin) {
+    const headerEmpId = req.headers['x-empresa-id'];
+    if (headerEmpId && !isNaN(Number(headerEmpId)) && parseInt(String(headerEmpId), 10) > 0) {
+      return parseInt(String(headerEmpId), 10);
+    }
+    const queryEmpId = req.query.empresa_id;
+    if (queryEmpId && !isNaN(Number(queryEmpId)) && parseInt(String(queryEmpId), 10) > 0) {
+      return parseInt(String(queryEmpId), 10);
+    }
   }
-  return null;
+  return req.authUser?.empresa_id || 1;
+};
+
+const userHasModuleAccess = (user: AuthUser, aba: string, nivel: 'leitura' | 'escrita'): boolean => {
+  if (user.is_super_admin) return true;
+  if (nivel === 'escrita' && user.licenca_expirada) return false;
+  if (user.is_admin) return true;
+  const nivelAba = user.permissoes?.[aba] || (aba === 'relatorios' ? 'leitura' : 'sem_acesso');
+  if (nivelAba === 'sem_acesso') return false;
+  if (nivel === 'leitura') return nivelAba === 'leitura' || nivelAba === 'escrita';
+  return nivelAba === 'escrita';
+};
+
+const requireAuth = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const authUser = await resolveAuthUser(req);
+  if (!authUser) {
+    return res.status(401).json({ error: 'Sessão inválida, expirada ou token de autenticação não fornecido' });
+  }
+  req.authUser = authUser;
+  next();
+};
+
+const requireSuperAdmin = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  const authUser = await resolveAuthUser(req);
+  if (!authUser) {
+    return res.status(401).json({ error: 'Sessão inválida, expirada ou token de autenticação não fornecido' });
+  }
+  if (!authUser.is_super_admin) {
+    return res.status(403).json({ error: 'Acesso restrito exclusivamente ao Portal Super Admin Master.' });
+  }
+  req.authUser = authUser;
+  next();
+};
+
+const requireModuleAccess = (aba: string, nivel: 'leitura' | 'escrita' = 'escrita') => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const authUser = await resolveAuthUser(req);
+    if (!authUser) {
+      return res.status(401).json({ error: 'Sessão inválida, expirada ou token de autenticação não fornecido' });
+    }
+    req.authUser = authUser;
+    if (nivel === 'escrita' && !authUser.is_super_admin && authUser.licenca_expirada) {
+      return res.status(403).json({ error: 'Modo Somente Leitura: sua licença de uso está ausente, suspensa ou expirada.' });
+    }
+    if (!userHasModuleAccess(authUser, aba, nivel)) {
+      return res.status(403).json({ error: `Acesso negado: seu perfil não possui permissão de ${nivel} no módulo ${aba}.` });
+    }
+    next();
+  };
+};
+
+const requireAnyModuleAccess = (abas: string[], nivel: 'leitura' | 'escrita' = 'leitura') => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    const authUser = await resolveAuthUser(req);
+    if (!authUser) {
+      return res.status(401).json({ error: 'Sessão inválida, expirada ou token de autenticação não fornecido' });
+    }
+    req.authUser = authUser;
+    if (nivel === 'escrita' && !authUser.is_super_admin && authUser.licenca_expirada) {
+      return res.status(403).json({ error: 'Modo Somente Leitura: sua licença de uso está ausente, suspensa ou expirada.' });
+    }
+    if (!abas.some((aba) => userHasModuleAccess(authUser, aba, nivel))) {
+      return res.status(403).json({ error: 'Acesso negado: permissões insuficientes para consultar este recurso.' });
+    }
+    next();
+  };
 };
 
 // Helper global para registrar logs de auditoria de ações de usuários
@@ -1018,10 +1318,10 @@ const initTenantDb = async (tenantPool: Pool, empresaId: number) => {
   if (parseInt(countP.rows[0].count, 10) === 0) {
     await tenantPool.query(`
       INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes, empresa_id) VALUES
-      ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita"}'::jsonb, $1),
-      ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso"}'::jsonb, $1),
-      ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1),
-      ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1);
+      ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita","relatorios":"escrita"}'::jsonb, $1),
+      ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso","relatorios":"escrita"}'::jsonb, $1),
+      ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso","relatorios":"leitura"}'::jsonb, $1),
+      ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso","relatorios":"leitura"}'::jsonb, $1);
     `, [empresaId]);
   }
 
@@ -1117,7 +1417,8 @@ const getPoolForEmpresa = async (empresaId: number | null): Promise<Pool> => {
 
     const emp = res.rows[0];
     const tipo = String(emp.db_tipo || 'postgres').toLowerCase().trim();
-    const rawUri = (emp.db_uri || '').trim();
+    const rawUri = decryptSecret(emp.db_uri).trim();
+    const rawPass = decryptSecret(emp.db_pass);
     const host = (emp.db_host || '').trim();
     const dbName = (emp.db_name || '').trim();
 
@@ -1148,7 +1449,7 @@ const getPoolForEmpresa = async (empresaId: number | null): Promise<Pool> => {
             host,
             port: emp.db_port ? parseInt(String(emp.db_port), 10) : 5432,
             user: (emp.db_user || 'postgres').trim(),
-            password: emp.db_pass || undefined,
+            password: rawPass || undefined,
             database: dbName,
             ssl: tenantSsl,
             max: 10,
@@ -1181,7 +1482,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'E-mail e senha são obrigatórios' });
   }
 
-  const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
+  const clientIp = getClientIp(req);
   const attemptKey = `${clientIp}_${String(email).trim().toLowerCase()}`;
   const now = Date.now();
   const currentAttempt = loginAttemptsMap.get(attemptKey);
@@ -1203,10 +1504,16 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
              (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
-      LEFT JOIN chaves_licenca l ON (l.chave = u.chave_licenca OR l.usuario_id = u.id)
+      LEFT JOIN LATERAL (
+        SELECT cl.chave, cl.status, cl.data_expiracao
+        FROM chaves_licenca cl
+        WHERE cl.chave = u.chave_licenca OR cl.usuario_id = u.id
+        ORDER BY (cl.status = 'Ativa') DESC, cl.data_expiracao DESC
+        LIMIT 1
+      ) l ON true
       WHERE LOWER(u.email) = LOWER($1)
     `;
-    const result = await pool.query(query, [email.trim()]);
+    const result = await pool.query(query, [String(email).trim()]);
 
     if (result.rows.length === 0) {
       recordFailedAttempt(attemptKey);
@@ -1219,7 +1526,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Esta conta de usuário está inativa. Contate o Administrador.' });
     }
 
-    const senhaValida = await bcrypt.compare(senha, usuario.senha_hash);
+    const senhaValida = await bcrypt.compare(String(senha), usuario.senha_hash);
     if (!senhaValida) {
       recordFailedAttempt(attemptKey);
       return res.status(401).json({ error: 'E-mail ou senha incorretos' });
@@ -1233,11 +1540,11 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
       nome: usuario.perfil_nome || 'Usuário Sem Perfil',
       descricao: usuario.perfil_descricao,
       is_admin: !!usuario.is_admin,
-      permissoes: usuario.permissoes || { home: 'escrita', colaboradores: 'escrita', campos: 'escrita', administracao: 'escrita' }
+      permissoes: usuario.permissoes || { home: 'escrita', colaboradores: 'escrita', campos: 'escrita', administracao: 'escrita', relatorios: 'escrita' }
     };
 
-    // EXCEÇÃO EXCLUSIVA PARA O USUÁRIO SUPER ADMIN REGZ (is_super_admin ou admin@regz.app)
-    const isSuperAdmin = !!(usuario.is_super_admin || (usuario.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario.nome === 'Administrador Regz');
+    // Segurança: confiar exclusivamente na flag is_super_admin do banco (nunca no nome do usuário)
+    const isSuperAdmin = Boolean(usuario.is_super_admin);
     const temChaveVinculada = !!(usuario.chave_licenca || usuario.licenca_chave);
     const diasRestantesLic = isSuperAdmin ? 999 : (typeof usuario.dias_restantes_licenca === 'number' ? usuario.dias_restantes_licenca : 0);
     const licencaStatus = isSuperAdmin ? 'Ativa (Isento - Super Admin)' : (usuario.licenca_status || (temChaveVinculada ? 'Ativa' : 'Sem Licença'));
@@ -1287,121 +1594,95 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 
 // Checar sessão do Usuário Logado
 app.get('/api/auth/me', async (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token não fornecido' });
+  await syncDatabaseLicenses();
+  const authUser = await resolveAuthUser(req);
+  if (!authUser) {
+    return res.status(401).json({ error: 'Token inválido, expirado ou usuário inativo' });
   }
 
-  const token = authHeader.split(' ')[1];
-  try {
-    await syncDatabaseLicenses();
-    const decoded: any = jwt.verify(token, JWT_SECRET);
-    const query = `
-      SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.chave_licenca, u.empresa_id, u.is_super_admin,
-             p.nome as perfil_nome, p.descricao as perfil_descricao, p.is_admin, p.permissoes,
-             l.chave as licenca_chave, l.status as licenca_status, l.data_expiracao as licenca_expiracao,
-             (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes_licenca
-      FROM usuarios u
-      LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
-      LEFT JOIN chaves_licenca l ON (l.chave = u.chave_licenca OR l.usuario_id = u.id)
-      WHERE u.id = $1
-    `;
-    const result = await pool.query(query, [decoded.id]);
-
-    if (result.rows.length === 0 || !result.rows[0].ativo) {
-      return res.status(401).json({ error: 'Sessão inválida ou usuário inativo' });
+  res.json({
+    usuario: {
+      id: authUser.id,
+      nome: authUser.nome,
+      email: authUser.email,
+      ativo: authUser.ativo,
+      empresa_id: authUser.empresa_id,
+      is_super_admin: authUser.is_super_admin,
+      chave_licenca: authUser.chave_licenca,
+      perfil: {
+        id: authUser.perfil_id,
+        nome: authUser.perfil_nome,
+        descricao: authUser.perfil_descricao,
+        is_admin: authUser.is_admin,
+        permissoes: authUser.permissoes
+      },
+      sem_licenca: authUser.sem_licenca,
+      licenca_expirada: authUser.licenca_expirada,
+      dias_restantes_licenca: authUser.dias_restantes_licenca,
+      status_licenca: authUser.status_licenca
     }
-
-    const usuario = result.rows[0];
-    const perfil = {
-      id: usuario.perfil_id,
-      nome: usuario.perfil_nome || 'Usuário Sem Perfil',
-      descricao: usuario.perfil_descricao,
-      is_admin: !!usuario.is_admin,
-      permissoes: usuario.permissoes || { home: 'escrita', colaboradores: 'escrita', campos: 'escrita', administracao: 'escrita' }
-    };
-
-    // EXCEÇÃO EXCLUSIVA PARA O USUÁRIO SUPER ADMIN REGZ (is_super_admin ou admin@regz.app)
-    const isSuperAdmin = !!(usuario.is_super_admin || (usuario.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario.nome === 'Administrador Regz');
-    const temChaveVinculada = !!(usuario.chave_licenca || usuario.licenca_chave);
-    const diasRestantesLic = isSuperAdmin ? 999 : (typeof usuario.dias_restantes_licenca === 'number' ? usuario.dias_restantes_licenca : 0);
-    const licencaStatus = isSuperAdmin ? 'Ativa (Isento - Super Admin)' : (usuario.licenca_status || (temChaveVinculada ? 'Ativa' : 'Sem Licença'));
-    const semLicenca = !isSuperAdmin && !temChaveVinculada;
-    const licencaExpirada = !isSuperAdmin && (semLicenca || diasRestantesLic <= 0 || usuario.licenca_status === 'Suspensa' || usuario.licenca_status === 'Expirada');
-
-    res.json({
-      usuario: {
-        id: usuario.id,
-        nome: usuario.nome,
-        email: usuario.email,
-        ativo: usuario.ativo,
-        empresa_id: usuario.empresa_id || 1,
-        is_super_admin: isSuperAdmin,
-        chave_licenca: usuario.chave_licenca || usuario.licenca_chave || null,
-        perfil,
-        sem_licenca: semLicenca,
-        licenca_expirada: licencaExpirada,
-        dias_restantes_licenca: diasRestantesLic,
-        status_licenca: licencaStatus
-      }
-    });
-  } catch (error: any) {
-    res.status(401).json({ error: 'Token inválido ou expirado' });
-  }
+  });
 });
 
-// Middleware para verificação estrita de permissão de escrita
-const checkPermission = (aba: string) => {
-  return async (req: Request, res: Response, next: any) => {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Token de autenticação não fornecido' });
+// Alteração segura da própria senha pelo usuário autenticado
+app.put('/api/auth/alterar-senha', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  const { senha_atual, nova_senha } = req.body;
+  const authUser = req.authUser!;
+
+  if (!senha_atual || !nova_senha) {
+    return res.status(400).json({ error: 'Informe a senha atual e a nova senha.' });
+  }
+  if (String(nova_senha).trim().length < 6) {
+    return res.status(400).json({ error: 'A nova senha deve ter no mínimo 6 caracteres.' });
+  }
+
+  try {
+    const userRes = await pool.query('SELECT senha_hash FROM usuarios WHERE id = $1', [authUser.id]);
+    if (userRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado.' });
     }
-    const token = authHeader.split(' ')[1];
-    try {
-      const decoded: any = jwt.verify(token, JWT_SECRET);
-      const query = `
-        SELECT u.id, u.ativo, p.is_admin, p.permissoes
-        FROM usuarios u
-        LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
-        WHERE u.id = $1
-      `;
-      const result = await pool.query(query, [decoded.id]);
-      if (result.rows.length === 0 || !result.rows[0].ativo) {
-        return res.status(401).json({ error: 'Sessão inválida ou usuário inativo' });
-      }
-      const user = result.rows[0];
-      if (user.is_admin) {
-        return next();
-      }
-      const permissoes = user.permissoes || {};
-      if (permissoes[aba] !== 'escrita') {
-        return res.status(403).json({ error: `Acesso negado: Seu perfil possui apenas permissão de leitura no módulo ${aba}.` });
-      }
-      next();
-    } catch (err) {
-      return res.status(401).json({ error: 'Token de autenticação inválido' });
+    const senhaValida = await bcrypt.compare(String(senha_atual), userRes.rows[0].senha_hash);
+    if (!senhaValida) {
+      return res.status(401).json({ error: 'A senha atual informada está incorreta.' });
     }
-  };
-};
+
+    const novoHash = await bcrypt.hash(String(nova_senha), 10);
+    await pool.query(
+      'UPDATE usuarios SET senha_hash = $1, senha_atualizada_em = CURRENT_TIMESTAMP WHERE id = $2',
+      [novoHash, authUser.id]
+    );
+
+    await registrarAuditoria({
+      empresa_id: authUser.empresa_id,
+      usuario_id: authUser.id,
+      usuario_nome: authUser.nome,
+      usuario_email: authUser.email,
+      acao: 'ALTERAR_SENHA',
+      entidade: 'auth',
+      registro_id: authUser.id,
+      detalhes: { mensagem: 'Usuário alterou a própria senha com sucesso' },
+      ip: getClientIp(req)
+    });
+
+    res.json({ success: true, message: 'Senha alterada com sucesso!' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Erro ao alterar senha.' });
+  }
+});
 
 // ==========================================
 // ROTAS DE GESTÃO DE PERFIS DE ACESSO (RBAC)
 // ==========================================
 
 // Listar todos os perfis de acesso (filtrados por empresa_id e banco próprio se houver)
-app.get('/api/perfis-acesso', async (req: Request, res: Response) => {
-  const empId = getEmpresaIdFromReq(req);
+app.get('/api/perfis-acesso', requireModuleAccess('administracao', 'leitura'), async (req: AuthenticatedRequest, res: Response) => {
+  const empId = getEffectiveEmpresaId(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    let query = 'SELECT * FROM perfis_acesso';
-    const params: any[] = [];
-    if (empId) {
-      query += ' WHERE empresa_id = $1';
-      params.push(empId);
-    }
-    query += ' ORDER BY id ASC';
-    const result = await targetPool.query(query, params);
+    const result = await targetPool.query(
+      'SELECT * FROM perfis_acesso WHERE empresa_id = $1 ORDER BY id ASC',
+      [empId]
+    );
     res.json(result.rows);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar perfis de acesso' });
@@ -1409,23 +1690,23 @@ app.get('/api/perfis-acesso', async (req: Request, res: Response) => {
 });
 
 // Cadastrar novo perfil de acesso
-app.post('/api/perfis-acesso', checkPermission('administracao'), async (req: Request, res: Response) => {
+app.post('/api/perfis-acesso', requireModuleAccess('administracao', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { nome, descricao, is_admin, permissoes } = req.body;
-  const empId = getEmpresaIdFromReq(req);
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
 
-  if (!empId) {
-    return res.status(400).json({ error: 'Empresa não identificada na requisição. Certifique-se de estar autenticado.' });
-  }
-
-  if (!nome || !nome.trim()) {
+  if (!nome || !String(nome).trim()) {
     return res.status(400).json({ error: 'O nome do perfil é obrigatório' });
+  }
+  if (is_admin && !authUser.is_admin && !authUser.is_super_admin) {
+    return res.status(403).json({ error: 'Apenas Administradores podem criar perfis com privilégio de Administrador.' });
   }
 
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    const nomeTrimmed = nome.trim();
+    const nomeTrimmed = String(nome).trim();
     const existing = await targetPool.query(
-      'SELECT id FROM perfis_acesso WHERE LOWER(nome) = LOWER($1) AND (empresa_id = $2 OR empresa_id IS NULL)',
+      'SELECT id FROM perfis_acesso WHERE LOWER(nome) = LOWER($1) AND empresa_id = $2',
       [nomeTrimmed, empId]
     );
     if (existing.rows.length > 0) {
@@ -1444,20 +1725,24 @@ app.post('/api/perfis-acesso', checkPermission('administracao'), async (req: Req
 });
 
 // Atualizar perfil de acesso
-app.put('/api/perfis-acesso/:id', checkPermission('administracao'), async (req: Request, res: Response) => {
+app.put('/api/perfis-acesso/:id', requireModuleAccess('administracao', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { nome, descricao, is_admin, permissoes } = req.body;
-  const empId = getEmpresaIdFromReq(req);
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
 
-  if (!nome || !nome.trim()) {
+  if (!nome || !String(nome).trim()) {
     return res.status(400).json({ error: 'O nome do perfil é obrigatório' });
+  }
+  if (is_admin && !authUser.is_admin && !authUser.is_super_admin) {
+    return res.status(403).json({ error: 'Apenas Administradores podem conceder privilégio de Administrador.' });
   }
 
   try {
     const targetPool = await getPoolForEmpresa(empId);
     const result = await targetPool.query(
-      'UPDATE perfis_acesso SET nome = $1, descricao = $2, is_admin = $3, permissoes = $4 WHERE id = $5 RETURNING *',
-      [nome.trim(), descricao || null, !!is_admin, JSON.stringify(permissoes || {}), id]
+      'UPDATE perfis_acesso SET nome = $1, descricao = $2, is_admin = $3, permissoes = $4 WHERE id = $5 AND empresa_id = $6 RETURNING *',
+      [String(nome).trim(), descricao || null, !!is_admin, JSON.stringify(permissoes || {}), id, empId]
     );
 
     if (result.rows.length === 0) {
@@ -1471,17 +1756,20 @@ app.put('/api/perfis-acesso/:id', checkPermission('administracao'), async (req: 
 });
 
 // Excluir perfil de acesso
-app.delete('/api/perfis-acesso/:id', checkPermission('administracao'), async (req: Request, res: Response) => {
+app.delete('/api/perfis-acesso/:id', requireModuleAccess('administracao', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const empId = getEmpresaIdFromReq(req);
+  const empId = getEffectiveEmpresaId(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    const checkAdmin = await targetPool.query('SELECT is_admin FROM perfis_acesso WHERE id = $1', [id]);
-    if (checkAdmin.rows.length > 0 && checkAdmin.rows[0].is_admin) {
+    const checkAdmin = await targetPool.query('SELECT is_admin FROM perfis_acesso WHERE id = $1 AND empresa_id = $2', [id, empId]);
+    if (checkAdmin.rows.length === 0) {
+      return res.status(404).json({ error: 'Perfil não encontrado' });
+    }
+    if (checkAdmin.rows[0].is_admin) {
       return res.status(400).json({ error: 'O perfil de Administrador padrão não pode ser excluído' });
     }
 
-    const result = await targetPool.query('DELETE FROM perfis_acesso WHERE id = $1 RETURNING id', [id]);
+    const result = await targetPool.query('DELETE FROM perfis_acesso WHERE id = $1 AND empresa_id = $2 RETURNING id', [id, empId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Perfil não encontrado' });
     }
@@ -1495,10 +1783,11 @@ app.delete('/api/perfis-acesso/:id', checkPermission('administracao'), async (re
 // ROTAS DE GESTÃO DE USUÁRIOS (ADMIN PAINEL)
 // ==========================================
 
-// Listar todos os usuários com dados do perfil, expiração de senha e validade da licença (filtrado por empresa)
-app.get('/api/usuarios', async (req: Request, res: Response) => {
-  const empId = getEmpresaIdFromReq(req);
-  const isSuperAdminQuery = req.headers['x-is-super-admin'] === 'true';
+// Listar usuários da empresa autenticada (ou de todas apenas para Super Admin real)
+app.get('/api/usuarios', requireAnyModuleAccess(['administracao', 'relatorios'], 'leitura'), async (req: AuthenticatedRequest, res: Response) => {
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
+  const canSeeAdminDetails = authUser.is_super_admin || userHasModuleAccess(authUser, 'administracao', 'leitura');
 
   try {
     await syncDatabaseLicenses();
@@ -1510,11 +1799,17 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
              (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
-      LEFT JOIN chaves_licenca l ON (l.chave = u.chave_licenca OR l.usuario_id = u.id)
+      LEFT JOIN LATERAL (
+        SELECT cl.chave, cl.tipo_licenca, cl.status, cl.data_expiracao
+        FROM chaves_licenca cl
+        WHERE cl.chave = u.chave_licenca OR cl.usuario_id = u.id
+        ORDER BY (cl.status = 'Ativa') DESC, cl.data_expiracao DESC
+        LIMIT 1
+      ) l ON true
     `;
     const params: any[] = [];
-    if (empId && !isSuperAdminQuery) {
-      query += ` WHERE u.empresa_id = $1`;
+    if (!authUser.is_super_admin) {
+      query += ` WHERE u.empresa_id = $1 AND COALESCE(u.is_super_admin, false) = false`;
       params.push(empId);
     }
     query += ` ORDER BY u.id ASC`;
@@ -1522,7 +1817,7 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
     const result = await pool.query(query, params);
     const usuariosFormatados = result.rows.map(u => {
       const diasRestantesSenha = typeof u.dias_para_expirar === 'number' ? u.dias_para_expirar : 30;
-      const isSuperAdmin = !!(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz');
+      const isSuperAdmin = Boolean(u.is_super_admin);
       const diasRestantesLicenca = typeof u.dias_restantes_licenca === 'number' ? u.dias_restantes_licenca : null;
 
       return {
@@ -1533,19 +1828,23 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
         perfil_id: u.perfil_id,
         is_super_admin: isSuperAdmin,
         criado_em: u.criado_em,
-        senha_atualizada_em: u.senha_atualizada_em || u.criado_em,
-        dias_para_expirar: diasRestantesSenha,
-        dias_restantes_licenca: diasRestantesLicenca,
-        senha_expirada: diasRestantesSenha <= 0,
-        chave_licenca: u.chave_licenca || u.licenca_chave || null,
-        tipo_licenca: isSuperAdmin ? 'Super Admin (Isento)' : (u.tipo_licenca || null),
-        status_licenca: isSuperAdmin ? 'Ativa (Isento)' : (u.status_licenca || 'Ativa'),
+        ...(canSeeAdminDetails
+          ? {
+              senha_atualizada_em: u.senha_atualizada_em || u.criado_em,
+              dias_para_expirar: diasRestantesSenha,
+              dias_restantes_licenca: diasRestantesLicenca,
+              senha_expirada: diasRestantesSenha <= 0,
+              chave_licenca: u.chave_licenca || u.licenca_chave || null,
+              tipo_licenca: isSuperAdmin ? 'Super Admin (Isento)' : (u.tipo_licenca || null),
+              status_licenca: isSuperAdmin ? 'Ativa (Isento)' : (u.status_licenca || 'Ativa'),
+            }
+          : {}),
         perfil: u.perfil_id ? {
           id: u.perfil_id,
           nome: u.perfil_nome,
           descricao: u.perfil_descricao,
           is_admin: !!u.is_admin,
-          permissoes: u.permissoes
+          permissoes: canSeeAdminDetails ? u.permissoes : undefined
         } : null
       };
     });
@@ -1555,37 +1854,44 @@ app.get('/api/usuarios', async (req: Request, res: Response) => {
   }
 });
 
-// Cadastrar novo usuário (Apenas via Painel Super Admin)
-app.post('/api/usuarios', async (req: Request, res: Response) => {
+// Cadastrar novo usuário (Exclusivo Portal Super Admin Master)
+app.post('/api/usuarios', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const { nome, email, senha, perfil_id, ativo, chave_licenca, empresa_id } = req.body;
 
   if (!nome || !email || !senha) {
     return res.status(400).json({ error: 'Nome, E-mail e Senha são obrigatórios' });
   }
 
-  if (senha.length < 6) {
+  if (String(senha).length < 6) {
     return res.status(400).json({ error: 'A senha deve ter no mínimo 6 caracteres' });
   }
 
   try {
-    const emailTrimmed = email.trim().toLowerCase();
+    const emailTrimmed = String(email).trim().toLowerCase();
     const existing = await pool.query('SELECT id FROM usuarios WHERE LOWER(email) = $1', [emailTrimmed]);
     if (existing.rows.length > 0) {
       return res.status(400).json({ error: 'Este e-mail já está cadastrado' });
     }
 
-    const senhaHash = await bcrypt.hash(senha, 10);
-    let finalChave = chave_licenca && chave_licenca.trim() ? chave_licenca.trim() : null;
-    const targetEmpresaId = empresa_id ? parseInt(empresa_id, 10) : null;
+    const targetEmpresaId = empresa_id ? parseInt(String(empresa_id), 10) : 1;
+    if (perfil_id) {
+      const targetPool = await getPoolForEmpresa(targetEmpresaId);
+      const perfilCheck = await targetPool.query('SELECT id FROM perfis_acesso WHERE id = $1 AND empresa_id = $2', [perfil_id, targetEmpresaId]);
+      if (perfilCheck.rows.length === 0) {
+        return res.status(400).json({ error: 'Perfil de acesso inválido para a empresa selecionada' });
+      }
+    }
+
+    const senhaHash = await bcrypt.hash(String(senha), 10);
+    let finalChave = chave_licenca && String(chave_licenca).trim() ? String(chave_licenca).trim() : null;
 
     if (!finalChave) {
-      const randomHex = () => Math.random().toString(36).substring(2, 6).toUpperCase();
-      finalChave = `REGZ-2026-${randomHex()}-${randomHex()}-${randomHex()}`;
+      finalChave = generateLicenseKey();
     }
 
     const result = await pool.query(
       'INSERT INTO usuarios (nome, email, senha_hash, perfil_id, ativo, chave_licenca, empresa_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-      [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false, finalChave, targetEmpresaId]
+      [String(nome).trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false, finalChave, targetEmpresaId]
     );
 
     const newId = result.rows[0].id;
@@ -1635,37 +1941,72 @@ app.post('/api/usuarios', async (req: Request, res: Response) => {
   }
 });
 
-// Atualizar usuário
-app.put('/api/usuarios/:id', async (req: Request, res: Response) => {
+// Atualizar usuário (com isolamento estrito por empresa e proteção ao Super Admin)
+app.put('/api/usuarios/:id', requireModuleAccess('administracao', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { nome, email, senha, perfil_id, ativo, chave_licenca } = req.body;
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
 
   if (!nome || !email) {
     return res.status(400).json({ error: 'Nome e E-mail são obrigatórios' });
   }
 
+  if (senha && String(senha).trim() && String(senha).trim().length < 6) {
+    return res.status(400).json({ error: 'A nova senha deve ter no mínimo 6 caracteres' });
+  }
+
   try {
-    const emailTrimmed = email.trim().toLowerCase();
+    const targetRes = await pool.query('SELECT id, empresa_id, is_super_admin, chave_licenca FROM usuarios WHERE id = $1', [id]);
+    if (targetRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    const targetUser = targetRes.rows[0];
+
+    if (!authUser.is_super_admin && (targetUser.empresa_id !== empId || targetUser.is_super_admin)) {
+      return res.status(403).json({ error: 'Acesso negado: você só pode editar usuários da sua própria empresa.' });
+    }
+    if ((targetUser.is_super_admin || targetUser.id === authUser.id) && ativo === false) {
+      return res.status(400).json({ error: 'Não é permitido desativar o Super Admin ou a própria conta logada.' });
+    }
+
+    if (perfil_id) {
+      const targetPool = await getPoolForEmpresa(targetUser.empresa_id || empId);
+      const perfilRes = await targetPool.query('SELECT id, is_admin FROM perfis_acesso WHERE id = $1 AND empresa_id = $2', [perfil_id, targetUser.empresa_id || empId]);
+      if (perfilRes.rows.length === 0) {
+        return res.status(400).json({ error: 'Perfil de acesso inválido para esta empresa.' });
+      }
+      if (perfilRes.rows[0].is_admin && !authUser.is_admin && !authUser.is_super_admin) {
+        return res.status(403).json({ error: 'Apenas Administradores podem atribuir o perfil de Administrador.' });
+      }
+    }
+
+    const emailTrimmed = String(email).trim().toLowerCase();
     const existing = await pool.query('SELECT id FROM usuarios WHERE LOWER(email) = $1 AND id != $2', [emailTrimmed, id]);
     if (existing.rows.length > 0) {
       return res.status(400).json({ error: 'Este e-mail pertence a outro usuário' });
     }
 
-    if (senha && senha.trim()) {
-      const senhaHash = await bcrypt.hash(senha, 10);
+    // Somente Super Admin pode alterar/remanejar chave_licenca diretamente
+    const nextChaveLicenca = authUser.is_super_admin
+      ? (chave_licenca && String(chave_licenca).trim() ? String(chave_licenca).trim() : null)
+      : targetUser.chave_licenca;
+
+    if (senha && String(senha).trim()) {
+      const senhaHash = await bcrypt.hash(String(senha), 10);
       await pool.query(
-        'UPDATE usuarios SET nome = $1, email = $2, senha_hash = $3, perfil_id = $4, ativo = $5, chave_licenca = $6 WHERE id = $7',
-        [nome.trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false, chave_licenca || null, id]
+        'UPDATE usuarios SET nome = $1, email = $2, senha_hash = $3, senha_atualizada_em = CURRENT_TIMESTAMP, perfil_id = $4, ativo = $5, chave_licenca = $6 WHERE id = $7',
+        [String(nome).trim(), emailTrimmed, senhaHash, perfil_id || null, ativo !== false, nextChaveLicenca, id]
       );
     } else {
       await pool.query(
         'UPDATE usuarios SET nome = $1, email = $2, perfil_id = $3, ativo = $4, chave_licenca = $5 WHERE id = $6',
-        [nome.trim(), emailTrimmed, perfil_id || null, ativo !== false, chave_licenca || null, id]
+        [String(nome).trim(), emailTrimmed, perfil_id || null, ativo !== false, nextChaveLicenca, id]
       );
     }
 
-    if (chave_licenca && chave_licenca.trim()) {
-      await pool.query('UPDATE chaves_licenca SET usuario_id = $1, status = \'Ativa\' WHERE chave = $2', [id, chave_licenca.trim()]);
+    if (authUser.is_super_admin && nextChaveLicenca) {
+      await pool.query('UPDATE chaves_licenca SET usuario_id = $1, status = \'Ativa\' WHERE chave = $2', [id, nextChaveLicenca]);
     }
     await syncDatabaseLicenses();
 
@@ -1700,18 +2041,17 @@ app.put('/api/usuarios/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Atribuir/Vincular chave de licença a um usuário
-app.put('/api/usuarios/:id/atribuir-licenca', async (req: Request, res: Response) => {
+// Atribuir/Vincular chave de licença a um usuário (Exclusivo Super Admin)
+app.put('/api/usuarios/:id/atribuir-licenca', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { chave_licenca } = req.body;
 
-  if (!chave_licenca || !chave_licenca.trim()) {
+  if (!chave_licenca || !String(chave_licenca).trim()) {
     return res.status(400).json({ error: 'Chave de licença é obrigatória' });
   }
 
   try {
-    const chaveStr = chave_licenca.trim();
-    // Verificar se a chave existe
+    const chaveStr = String(chave_licenca).trim();
     const licRes = await pool.query('SELECT id, status FROM chaves_licenca WHERE chave = $1', [chaveStr]);
     if (licRes.rows.length === 0) {
       return res.status(404).json({ error: 'Chave de licença não encontrada no sistema' });
@@ -1727,19 +2067,29 @@ app.put('/api/usuarios/:id/atribuir-licenca', async (req: Request, res: Response
 });
 
 // Alternar status do usuário (Ativo / Inativo)
-app.put('/api/usuarios/:id/status', async (req: Request, res: Response) => {
+app.put('/api/usuarios/:id/status', requireModuleAccess('administracao', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { ativo } = req.body;
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
 
   try {
+    const targetRes = await pool.query('SELECT id, empresa_id, is_super_admin FROM usuarios WHERE id = $1', [id]);
+    if (targetRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    const target = targetRes.rows[0];
+    if (!authUser.is_super_admin && (target.empresa_id !== empId || target.is_super_admin)) {
+      return res.status(403).json({ error: 'Acesso negado para alterar o status deste usuário.' });
+    }
+    if ((target.is_super_admin || target.id === authUser.id) && !ativo) {
+      return res.status(400).json({ error: 'Não é permitido inativar o Super Admin ou a própria conta logada.' });
+    }
+
     const result = await pool.query(
       'UPDATE usuarios SET ativo = $1 WHERE id = $2 RETURNING id, nome, email, ativo',
       [!!ativo, id]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuário não encontrado' });
-    }
 
     res.json(result.rows[0]);
   } catch (error: any) {
@@ -1748,9 +2098,19 @@ app.put('/api/usuarios/:id/status', async (req: Request, res: Response) => {
 });
 
 // Renovar validade da senha por mais 30 dias
-app.post('/api/usuarios/:id/renovar-senha', async (req: Request, res: Response) => {
+app.post('/api/usuarios/:id/renovar-senha', requireModuleAccess('administracao', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
+  const { id } = req.params;
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
   try {
-    const { id } = req.params;
+    const targetRes = await pool.query('SELECT id, empresa_id, is_super_admin FROM usuarios WHERE id = $1', [id]);
+    if (targetRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Usuário não encontrado' });
+    }
+    const target = targetRes.rows[0];
+    if (!authUser.is_super_admin && (target.empresa_id !== empId || target.is_super_admin)) {
+      return res.status(403).json({ error: 'Acesso negado para renovar a senha deste usuário.' });
+    }
     await pool.query('UPDATE usuarios SET senha_atualizada_em = CURRENT_TIMESTAMP WHERE id = $1', [id]);
     res.json({ message: 'Validade da senha renovada por mais 30 dias com sucesso!' });
   } catch (error: any) {
@@ -1759,11 +2119,11 @@ app.post('/api/usuarios/:id/renovar-senha', async (req: Request, res: Response) 
 });
 
 // ==========================================
-// ROTAS DE GESTÃO DE CHAVES DE LICENÇA
+// ROTAS DE GESTÃO DE CHAVES DE LICENÇA (EXCLUSIVO SUPER ADMIN)
 // ==========================================
 
 // Listar todas as chaves de licença
-app.get('/api/licencas', async (req: Request, res: Response) => {
+app.get('/api/licencas', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   try {
     await syncDatabaseLicenses();
     const query = `
@@ -1795,13 +2155,12 @@ app.get('/api/licencas', async (req: Request, res: Response) => {
   }
 });
 
-// Gerar nova chave de licença
-app.post('/api/licencas', async (req: Request, res: Response) => {
+// Gerar nova chave de licença (CSPRNG)
+app.post('/api/licencas', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const { usuario_id, empresa_id, tipo_licenca, validade_dias, dias_validade } = req.body;
 
   try {
-    const randomHex = () => Math.random().toString(36).substring(2, 6).toUpperCase();
-    const chaveGerada = `REGZ-2026-${randomHex()}-${randomHex()}-${randomHex()}`;
+    const chaveGerada = generateLicenseKey();
     const diasValidade = dias_validade ? parseInt(dias_validade, 10) : (validade_dias ? parseInt(validade_dias, 10) : 30);
     const targetEmpresaId = empresa_id ? parseInt(empresa_id, 10) : null;
 
@@ -1829,7 +2188,7 @@ app.post('/api/licencas', async (req: Request, res: Response) => {
 });
 
 // Renovar prazo ou alterar tipo da licença
-app.put('/api/licencas/:id/renovar', async (req: Request, res: Response) => {
+app.put('/api/licencas/:id/renovar', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { dias, tipo_licenca, redefinir } = req.body;
   const diasAdicionais = dias ? parseInt(dias, 10) : 365;
@@ -1896,7 +2255,7 @@ app.put('/api/licencas/:id/renovar', async (req: Request, res: Response) => {
 });
 
 // Desvincular usuário de uma licença (Voltar chave para Empresa / Avulso)
-app.post('/api/licencas/:id/desvincular', async (req: Request, res: Response) => {
+app.post('/api/licencas/:id/desvincular', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   try {
     const lic = await pool.query('SELECT chave, usuario_id FROM chaves_licenca WHERE id = $1', [id]);
@@ -1918,7 +2277,7 @@ app.post('/api/licencas/:id/desvincular', async (req: Request, res: Response) =>
 });
 
 // Alterar status da licença (Ativa, Suspensa, Expirada)
-app.put('/api/licencas/:id/status', async (req: Request, res: Response) => {
+app.put('/api/licencas/:id/status', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { status } = req.body;
 
@@ -1938,7 +2297,7 @@ app.put('/api/licencas/:id/status', async (req: Request, res: Response) => {
 });
 
 // Excluir chave de licença
-app.delete('/api/licencas/:id', async (req: Request, res: Response) => {
+app.delete('/api/licencas/:id', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   try {
     const licRes = await pool.query('SELECT chave FROM chaves_licenca WHERE id = $1', [id]);
@@ -1960,11 +2319,11 @@ app.delete('/api/licencas/:id', async (req: Request, res: Response) => {
 });
 
 // ==========================================
-// ROTAS DE GESTÃO DE EMPRESAS (SUPER ADMIN)
+// ROTAS DE GESTÃO DE EMPRESAS (EXCLUSIVO SUPER ADMIN)
 // ==========================================
 
-// Listar todas as empresas com estatísticas
-app.get('/api/empresas', async (req: Request, res: Response) => {
+// Listar todas as empresas com estatísticas (credenciais de banco mascaradas)
+app.get('/api/empresas', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const query = `
       SELECT e.*,
@@ -1978,14 +2337,14 @@ app.get('/api/empresas', async (req: Request, res: Response) => {
       ORDER BY e.id DESC
     `;
     const result = await pool.query(query);
-    res.json(result.rows);
+    res.json(result.rows.map(sanitizeEmpresaRow));
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar empresas' });
   }
 });
 
-// Criar nova empresa
-app.post('/api/empresas', async (req: Request, res: Response) => {
+// Criar nova empresa (credenciais criptografadas em AES-256-GCM)
+app.post('/api/empresas', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const {
     razao_social, nome_fantasia, cnpj,
     cep, logradouro, numero, complemento, bairro, cidade, estado,
@@ -1996,8 +2355,14 @@ app.post('/api/empresas', async (req: Request, res: Response) => {
   if (!razao_social || !nome_fantasia || !cnpj) {
     return res.status(400).json({ error: 'Razão social, nome fantasia e CNPJ são obrigatórios' });
   }
+  if (!isSafeMediaUrl(logo_url)) {
+    return res.status(400).json({ error: 'Formato de logo inválido. Use PNG, JPEG, WebP, GIF ou URL HTTPS.' });
+  }
 
   try {
+    const encryptedUri = db_uri && String(db_uri).trim() ? encryptSecret(String(db_uri).trim()) : null;
+    const encryptedPass = db_pass && String(db_pass).trim() ? encryptSecret(String(db_pass)) : null;
+
     const query = `
       INSERT INTO empresas (
         razao_social, nome_fantasia, cnpj,
@@ -2017,33 +2382,33 @@ app.post('/api/empresas', async (req: Request, res: Response) => {
       cor_destaque || '#34d399',
       status || 'Ativa',
       db_tipo || 'postgres',
-      db_uri || null,
+      encryptedUri,
       db_host || 'localhost',
       db_port ? parseInt(String(db_port), 10) : (db_tipo === 'mysql' ? 3306 : db_tipo === 'mongo' ? 27017 : db_tipo === 'mssql' ? 1433 : 5432),
       db_user || 'postgres',
-      db_pass || null,
+      encryptedPass,
       db_name || 'regz_db'
     ]);
     const newEmpresa = result.rows[0];
     const newEmpId = newEmpresa.id;
 
-    // Inicializar perfis RBAC padrão para a nova empresa
+    // Inicializar perfis RBAC padrão para a nova empresa (incluindo módulo relatórios)
     await pool.query(`
       INSERT INTO perfis_acesso (nome, descricao, is_admin, permissoes, empresa_id) VALUES
-      ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita"}'::jsonb, $1),
-      ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso"}'::jsonb, $1),
-      ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1),
-      ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso"}'::jsonb, $1);
+      ('Administrador', 'Acesso total e ilimitado a todas as abas e configurações do sistema', true, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"escrita","relatorios":"escrita"}'::jsonb, $1),
+      ('Gestor de RH', 'Acesso completo a colaboradores e campos personalizáveis', false, '{"home":"escrita","colaboradores":"escrita","campos":"escrita","administracao":"sem_acesso","relatorios":"escrita"}'::jsonb, $1),
+      ('Operador (Leitura e Escrita)', 'Pode visualizar e editar colaboradores, mas sem acesso a campos e administração', false, '{"home":"escrita","colaboradores":"escrita","campos":"sem_acesso","administracao":"sem_acesso","relatorios":"leitura"}'::jsonb, $1),
+      ('Consulta (Somente Leitura)', 'Pode apenas visualizar os relatórios e lista de colaboradores', false, '{"home":"leitura","colaboradores":"leitura","campos":"sem_acesso","administracao":"sem_acesso","relatorios":"leitura"}'::jsonb, $1);
     `, [newEmpId]);
 
-    res.status(201).json(newEmpresa);
+    res.status(201).json(sanitizeEmpresaRow(newEmpresa));
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao criar empresa' });
   }
 });
 
-// Editar empresa
-app.put('/api/empresas/:id', async (req: Request, res: Response) => {
+// Editar empresa (preserva credenciais criptografadas existentes caso o campo venha vazio ou mascarado)
+app.put('/api/empresas/:id', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const {
     razao_social, nome_fantasia, cnpj,
@@ -2052,7 +2417,29 @@ app.put('/api/empresas/:id', async (req: Request, res: Response) => {
     db_tipo, db_uri, db_host, db_port, db_user, db_pass, db_name
   } = req.body;
 
+  if (!isSafeMediaUrl(logo_url)) {
+    return res.status(400).json({ error: 'Formato de logo inválido. Use PNG, JPEG, WebP, GIF ou URL HTTPS.' });
+  }
+
   try {
+    const existingRes = await pool.query('SELECT db_uri, db_pass FROM empresas WHERE id = $1', [id]);
+    if (existingRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Empresa não encontrada' });
+    }
+    const existingEmp = existingRes.rows[0];
+
+    const incomingUri = db_uri !== undefined && db_uri !== null ? String(db_uri).trim() : '';
+    const finalEncryptedUri = !incomingUri
+      ? null
+      : incomingUri.includes('••••••')
+        ? existingEmp.db_uri
+        : encryptSecret(incomingUri);
+
+    const incomingPass = db_pass !== undefined && db_pass !== null ? String(db_pass) : '';
+    const finalEncryptedPass = !incomingPass || incomingPass.includes('••••••')
+      ? existingEmp.db_pass
+      : encryptSecret(incomingPass);
+
     const query = `
       UPDATE empresas
       SET razao_social = $1, nome_fantasia = $2, cnpj = $3,
@@ -2071,11 +2458,11 @@ app.put('/api/empresas/:id', async (req: Request, res: Response) => {
       cor_destaque || '#34d399',
       status || 'Ativa',
       db_tipo || 'postgres',
-      db_uri || null,
+      finalEncryptedUri,
       db_host || 'localhost',
       db_port ? parseInt(String(db_port), 10) : (db_tipo === 'mysql' ? 3306 : db_tipo === 'mongo' ? 27017 : db_tipo === 'mssql' ? 1433 : 5432),
       db_user || 'postgres',
-      db_pass || null,
+      finalEncryptedPass,
       db_name || 'regz_db',
       id
     ]);
@@ -2085,14 +2472,14 @@ app.put('/api/empresas/:id', async (req: Request, res: Response) => {
     }
     // Invalidar pool em cache para aplicar imediatamente novas configurações de banco online
     await closeTenantPool(parseInt(id, 10));
-    res.json(result.rows[0]);
+    res.json(sanitizeEmpresaRow(result.rows[0]));
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao atualizar empresa' });
   }
 });
 
 // Excluir empresa
-app.delete('/api/empresas/:id', async (req: Request, res: Response) => {
+app.delete('/api/empresas/:id', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM empresas WHERE id = $1 RETURNING id', [id]);
@@ -2106,13 +2493,17 @@ app.delete('/api/empresas/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Testar Conexão & Inicializar Estrutura de Banco DB Próprio (Cloud SSL/URI ou Local: PostgreSQL, MySQL, MongoDB, MSSQL)
-app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
+// Testar Conexão & Inicializar Estrutura de Banco DB Próprio (Exclusivo Super Admin + Validação de Identificador)
+app.post('/api/empresas/test-db', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const { db_tipo = 'postgres', db_uri, db_host, db_port, db_user, db_pass, db_name } = req.body;
 
   const rawUri = (db_uri || '').trim();
   const targetDbName = db_name ? String(db_name).trim() : 'regz_db';
   const tipo = String(db_tipo || 'postgres').toLowerCase().trim();
+
+  if (targetDbName && !isValidDbIdentifier(targetDbName)) {
+    return res.status(400).json({ error: 'Nome de banco inválido. Use apenas letras, números, hífen (-) ou underscore (_), até 63 caracteres.' });
+  }
 
   // ==========================================
   // 1. CONEXÃO & TESTE: MONGODB (ATLAS CLOUD OU LOCAL)
@@ -2219,9 +2610,12 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
         connectTimeout: 8000
       });
 
-      const [dbs]: any = await adminConn.query(`SHOW DATABASES LIKE '${mDb.replace(/'/g, "''")}'`);
+      const [dbs]: any = await adminConn.query('SHOW DATABASES LIKE ?', [mDb]);
       if (!Array.isArray(dbs) || dbs.length === 0) {
-        await adminConn.query(`CREATE DATABASE IF NOT EXISTS \`${mDb.replace(/`/g, '``')}\``);
+        if (!isValidDbIdentifier(mDb)) {
+          throw new Error('Nome do banco MySQL inválido');
+        }
+        await adminConn.query(`CREATE DATABASE IF NOT EXISTS \`${mDb}\``);
         dbCreatedNow = true;
       }
       await adminConn.end();
@@ -2339,11 +2733,16 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
           ...mssqlConfig,
           database: 'master'
         };
+        if (!isValidDbIdentifier(sDb)) {
+          throw new Error('Nome do banco SQL Server inválido');
+        }
         masterPool = await new sql.ConnectionPool(masterConfig).connect();
-        await masterPool.request().query(`
-          IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = N'${sDb.replace(/'/g, "''")}')
-          CREATE DATABASE [${sDb.replace(/]/g, ']]')}];
-        `);
+        await masterPool.request()
+          .input('dbName', sql.NVarChar, sDb)
+          .query(`
+            IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = @dbName)
+            CREATE DATABASE [${sDb}];
+          `);
         await masterPool.close();
 
         return res.json({
@@ -2594,8 +2993,7 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
         ? `Novo banco PostgreSQL "${targetDbName}" criado com sucesso no host ${successfulHost}:${port} (Usuário: ${successfulUser})!`
         : `Conexão estabelecida com sucesso! Banco PostgreSQL "${targetDbName}" no host ${successfulHost}:${port} está online e pronto.`,
       resolvedHost: successfulHost,
-      resolvedUser: successfulUser,
-      resolvedPass: successfulPass
+      resolvedUser: successfulUser
     });
   }
 
@@ -2604,11 +3002,10 @@ app.post('/api/empresas/test-db', async (req: Request, res: Response) => {
   });
 });
 
-// Listar licenças de uma empresa
-app.get('/api/empresas/:id/licencas', async (req: Request, res: Response) => {
+// Listar licenças de uma empresa (Exclusivo Super Admin)
+app.get('/api/empresas/:id/licencas', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   try {
-    // Auto-vínculo de licenças sem empresa_id cujos usuários pertençam a esta empresa
     await pool.query(`
       UPDATE chaves_licenca l
       SET empresa_id = u.empresa_id
@@ -2632,9 +3029,12 @@ app.get('/api/empresas/:id/licencas', async (req: Request, res: Response) => {
   }
 });
 
-// Listar usuários de uma empresa específica
-app.get('/api/empresas/:id/usuarios', async (req: Request, res: Response) => {
-  const { id } = req.params;
+// Listar usuários de uma empresa específica (Exclusivo Super Admin)
+app.get('/api/empresas/:id/usuarios', requireSuperAdmin, async (req: AuthenticatedRequest, res: Response) => {
+  const empIdNum = parseInt(req.params.id, 10);
+  if (isNaN(empIdNum)) {
+    return res.status(400).json({ error: 'ID de empresa inválido' });
+  }
   try {
     const query = `
       SELECT u.id, u.nome, u.email, u.ativo, u.perfil_id, u.criado_em, u.chave_licenca, u.is_super_admin,
@@ -2643,11 +3043,17 @@ app.get('/api/empresas/:id/usuarios', async (req: Request, res: Response) => {
              (l.data_expiracao::date - CURRENT_DATE)::int as dias_restantes_licenca
       FROM usuarios u
       LEFT JOIN perfis_acesso p ON u.perfil_id = p.id
-      LEFT JOIN chaves_licenca l ON (l.chave = u.chave_licenca OR l.usuario_id = u.id)
-      WHERE u.empresa_id = $1 OR ($1 = '1' AND u.empresa_id IS NULL)
+      LEFT JOIN LATERAL (
+        SELECT cl.chave, cl.tipo_licenca, cl.status, cl.data_expiracao
+        FROM chaves_licenca cl
+        WHERE cl.chave = u.chave_licenca OR cl.usuario_id = u.id
+        ORDER BY (cl.status = 'Ativa') DESC, cl.data_expiracao DESC
+        LIMIT 1
+      ) l ON true
+      WHERE u.empresa_id = $1 OR ($1::int = 1 AND u.empresa_id IS NULL)
       ORDER BY u.id ASC
     `;
-    const result = await pool.query(query, [id]);
+    const result = await pool.query(query, [empIdNum]);
     const usuariosFormatados = result.rows.map(u => ({
       id: u.id,
       nome: u.nome,
@@ -2656,6 +3062,7 @@ app.get('/api/empresas/:id/usuarios', async (req: Request, res: Response) => {
       perfil_id: u.perfil_id,
       perfil_nome: u.perfil_nome,
       is_admin: !!u.is_admin,
+      is_super_admin: Boolean(u.is_super_admin),
       chave_licenca: u.chave_licenca || u.licenca_chave || null,
       tipo_licenca: u.tipo_licenca || 'Enterprise',
       status_licenca: u.status_licenca || 'Ativa',
@@ -2667,14 +3074,29 @@ app.get('/api/empresas/:id/usuarios', async (req: Request, res: Response) => {
   }
 });
 
-// Excluir usuário
-app.delete('/api/usuarios/:id', async (req: Request, res: Response) => {
+// Excluir usuário (protegido contra autoexclusão, exclusão de Super Admin e cross-tenant)
+app.delete('/api/usuarios/:id', requireModuleAccess('administracao', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
+
   try {
-    const result = await pool.query('DELETE FROM usuarios WHERE id = $1 RETURNING id', [id]);
-    if (result.rows.length === 0) {
+    const targetRes = await pool.query('SELECT id, empresa_id, is_super_admin FROM usuarios WHERE id = $1', [id]);
+    if (targetRes.rows.length === 0) {
       return res.status(404).json({ error: 'Usuário não encontrado' });
     }
+    const target = targetRes.rows[0];
+    if (target.is_super_admin) {
+      return res.status(403).json({ error: 'A conta Super Admin Master não pode ser excluída.' });
+    }
+    if (target.id === authUser.id) {
+      return res.status(400).json({ error: 'Você não pode excluir a própria conta autenticada.' });
+    }
+    if (!authUser.is_super_admin && target.empresa_id !== empId) {
+      return res.status(403).json({ error: 'Acesso negado: você só pode excluir usuários da sua própria empresa.' });
+    }
+
+    await pool.query('DELETE FROM usuarios WHERE id = $1', [id]);
     res.json({ success: true, message: 'Usuário removido com sucesso' });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao remover usuário' });
@@ -2684,7 +3106,7 @@ app.delete('/api/usuarios/:id', async (req: Request, res: Response) => {
 // ==========================================
 // ROTA DA API CBO BRASIL (CONSULTA INTERNA DE CARGOS)
 // ==========================================
-app.get('/api/cbo/search', (req: Request, res: Response) => {
+app.get('/api/cbo/search', requireAuth, (req: AuthenticatedRequest, res: Response) => {
   const query = (req.query.q as string || '').toLowerCase().trim();
   
   if (!query) {
@@ -2701,9 +3123,9 @@ app.get('/api/cbo/search', (req: Request, res: Response) => {
 });
 
 // Listar todos os cargos do catálogo
-app.get('/api/cargos', async (req: Request, res: Response) => {
+app.get('/api/cargos', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   const q = (req.query.q as string || '').toLowerCase().trim();
-  const empId = getEmpresaIdFromReq(req);
+  const empId = getEffectiveEmpresaId(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
     let queryStr = 'SELECT id, nome, codigo_cbo, sinonimos FROM cargos';
@@ -2726,19 +3148,15 @@ app.get('/api/cargos', async (req: Request, res: Response) => {
 // ROTAS CRUD DE CAMPOS CUSTOMIZADOS
 // ==========================================
 
-// Listar todos os campos customizados definidos (filtrados por empresa_id e banco próprio se houver)
-app.get('/api/campos-customizados', async (req: Request, res: Response) => {
-  const empId = getEmpresaIdFromReq(req);
+// Listar todos os campos customizados definidos (filtrados por empresa_id do JWT)
+app.get('/api/campos-customizados', requireAnyModuleAccess(['campos', 'colaboradores', 'relatorios'], 'leitura'), async (req: AuthenticatedRequest, res: Response) => {
+  const empId = getEffectiveEmpresaId(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    let query = 'SELECT id, nome, tipo, opcoes, obrigatorio, min_caracteres, max_caracteres, empresa_id, COALESCE(ativo, true) as ativo, criado_em FROM campos_customizados';
-    const params: any[] = [];
-    if (empId) {
-      query += ' WHERE empresa_id = $1 OR empresa_id IS NULL';
-      params.push(empId);
-    }
-    query += ' ORDER BY id ASC';
-    const result = await targetPool.query(query, params);
+    const result = await targetPool.query(
+      'SELECT id, nome, tipo, opcoes, obrigatorio, min_caracteres, max_caracteres, empresa_id, COALESCE(ativo, true) as ativo, criado_em FROM campos_customizados WHERE empresa_id = $1 ORDER BY id ASC',
+      [empId]
+    );
     res.json(result.rows);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar campos customizados' });
@@ -2746,23 +3164,20 @@ app.get('/api/campos-customizados', async (req: Request, res: Response) => {
 });
 
 // Cadastrar novo campo customizado
-app.post('/api/campos-customizados', checkPermission('campos'), async (req: Request, res: Response) => {
+app.post('/api/campos-customizados', requireModuleAccess('campos', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { nome, tipo, opcoes, obrigatorio, min_caracteres, max_caracteres } = req.body;
-  const empId = getEmpresaIdFromReq(req);
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
 
-  if (!empId) {
-    return res.status(400).json({ error: 'Empresa não identificada na requisição. Certifique-se de estar autenticado.' });
-  }
-
-  if (!nome || !nome.trim()) {
+  if (!nome || !String(nome).trim()) {
     return res.status(400).json({ error: 'O nome do campo é obrigatório' });
   }
 
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    const nomeTrimmed = nome.trim();
+    const nomeTrimmed = String(nome).trim();
     const existing = await targetPool.query(
-      'SELECT id FROM campos_customizados WHERE LOWER(nome) = LOWER($1) AND (empresa_id = $2 OR empresa_id IS NULL)',
+      'SELECT id FROM campos_customizados WHERE LOWER(nome) = LOWER($1) AND empresa_id = $2',
       [nomeTrimmed, empId]
     );
     if (existing.rows.length > 0) {
@@ -2779,19 +3194,16 @@ app.post('/api/campos-customizados', checkPermission('campos'), async (req: Requ
 
     const novoCampo = result.rows[0];
 
-    // Auditoria
-    const authUser = await getAuthUserFromReq(req);
-    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
     await registrarAuditoria({
       empresa_id: empId,
-      usuario_id: authUser?.id,
-      usuario_nome: authUser?.nome || 'Usuário',
-      usuario_email: authUser?.email || '-',
+      usuario_id: authUser.id,
+      usuario_nome: authUser.nome,
+      usuario_email: authUser.email,
       acao: 'CRIAR_CAMPO',
       entidade: 'campos_customizados',
       registro_id: novoCampo.id,
       detalhes: { nome: novoCampo.nome, tipo: novoCampo.tipo, obrigatorio: novoCampo.obrigatorio },
-      ip: clientIp
+      ip: getClientIp(req)
     });
 
     res.status(201).json(novoCampo);
@@ -2800,15 +3212,16 @@ app.post('/api/campos-customizados', checkPermission('campos'), async (req: Requ
   }
 });
 
-// Inativar um campo customizado (Soft Delete)
-app.put('/api/campos-customizados/:id/inativar', checkPermission('campos'), async (req: Request, res: Response) => {
+// Inativar um campo customizado (Soft Delete com escopo de empresa)
+app.put('/api/campos-customizados/:id/inativar', requireModuleAccess('campos', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const empId = getEmpresaIdFromReq(req);
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
     const result = await targetPool.query(
-      'UPDATE campos_customizados SET ativo = false WHERE id = $1 RETURNING *',
-      [id]
+      'UPDATE campos_customizados SET ativo = false WHERE id = $1 AND empresa_id = $2 RETURNING *',
+      [id, empId]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Campo customizado não encontrado' });
@@ -2816,19 +3229,16 @@ app.put('/api/campos-customizados/:id/inativar', checkPermission('campos'), asyn
 
     const campoInativado = result.rows[0];
 
-    // Auditoria
-    const authUser = await getAuthUserFromReq(req);
-    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
     await registrarAuditoria({
       empresa_id: empId,
-      usuario_id: authUser?.id,
-      usuario_nome: authUser?.nome || 'Usuário',
-      usuario_email: authUser?.email || '-',
+      usuario_id: authUser.id,
+      usuario_nome: authUser.nome,
+      usuario_email: authUser.email,
       acao: 'INATIVAR_CAMPO',
       entidade: 'campos_customizados',
       registro_id: id,
       detalhes: { nome: campoInativado.nome, tipo: campoInativado.tipo },
-      ip: clientIp
+      ip: getClientIp(req)
     });
 
     res.json({ success: true, message: 'Campo inativado com sucesso', campo: campoInativado });
@@ -2837,15 +3247,16 @@ app.put('/api/campos-customizados/:id/inativar', checkPermission('campos'), asyn
   }
 });
 
-// Reativar um campo customizado
-app.put('/api/campos-customizados/:id/reativar', checkPermission('campos'), async (req: Request, res: Response) => {
+// Reativar um campo customizado (com escopo de empresa)
+app.put('/api/campos-customizados/:id/reativar', requireModuleAccess('campos', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const empId = getEmpresaIdFromReq(req);
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
     const result = await targetPool.query(
-      'UPDATE campos_customizados SET ativo = true WHERE id = $1 RETURNING *',
-      [id]
+      'UPDATE campos_customizados SET ativo = true WHERE id = $1 AND empresa_id = $2 RETURNING *',
+      [id, empId]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Campo customizado não encontrado' });
@@ -2853,19 +3264,16 @@ app.put('/api/campos-customizados/:id/reativar', checkPermission('campos'), asyn
 
     const campoReativado = result.rows[0];
 
-    // Auditoria
-    const authUser = await getAuthUserFromReq(req);
-    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
     await registrarAuditoria({
       empresa_id: empId,
-      usuario_id: authUser?.id,
-      usuario_nome: authUser?.nome || 'Usuário',
-      usuario_email: authUser?.email || '-',
+      usuario_id: authUser.id,
+      usuario_nome: authUser.nome,
+      usuario_email: authUser.email,
       acao: 'REATIVAR_CAMPO',
       entidade: 'campos_customizados',
       registro_id: id,
       detalhes: { nome: campoReativado.nome, tipo: campoReativado.tipo },
-      ip: clientIp
+      ip: getClientIp(req)
     });
 
     res.json({ success: true, message: 'Campo reativado com sucesso', campo: campoReativado });
@@ -2874,31 +3282,29 @@ app.put('/api/campos-customizados/:id/reativar', checkPermission('campos'), asyn
   }
 });
 
-// Excluir um campo customizado permanentemente
-app.delete('/api/campos-customizados/:id', checkPermission('campos'), async (req: Request, res: Response) => {
+// Excluir um campo customizado permanentemente (com escopo de empresa)
+app.delete('/api/campos-customizados/:id', requireModuleAccess('campos', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const empId = getEmpresaIdFromReq(req);
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    const prevField = await targetPool.query('SELECT nome FROM campos_customizados WHERE id = $1', [id]);
-    const result = await targetPool.query('DELETE FROM campos_customizados WHERE id = $1 RETURNING id', [id]);
+    const prevField = await targetPool.query('SELECT nome FROM campos_customizados WHERE id = $1 AND empresa_id = $2', [id, empId]);
+    const result = await targetPool.query('DELETE FROM campos_customizados WHERE id = $1 AND empresa_id = $2 RETURNING id', [id, empId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Campo customizado não encontrado' });
     }
 
-    // Auditoria
-    const authUser = await getAuthUserFromReq(req);
-    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
     await registrarAuditoria({
       empresa_id: empId,
-      usuario_id: authUser?.id,
-      usuario_nome: authUser?.nome || 'Usuário',
-      usuario_email: authUser?.email || '-',
+      usuario_id: authUser.id,
+      usuario_nome: authUser.nome,
+      usuario_email: authUser.email,
       acao: 'EXCLUIR_CAMPO',
       entidade: 'campos_customizados',
       registro_id: id,
       detalhes: { nome: prevField.rows[0]?.nome },
-      ip: clientIp
+      ip: getClientIp(req)
     });
 
     res.json({ success: true, message: 'Campo removido com sucesso' });
@@ -2907,12 +3313,17 @@ app.delete('/api/campos-customizados/:id', checkPermission('campos'), async (req
   }
 });
 
-// Buscar valores dos campos customizados de um colaborador específico
-app.get('/api/colaboradores/:id/valores-customizados', async (req: Request, res: Response) => {
+// Buscar valores dos campos customizados de um colaborador específico (com verificação de tenant)
+app.get('/api/colaboradores/:id/valores-customizados', requireAnyModuleAccess(['home', 'colaboradores', 'relatorios'], 'leitura'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const empId = getEmpresaIdFromReq(req);
+  const empId = getEffectiveEmpresaId(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
+    const colabCheck = await targetPool.query('SELECT id FROM colaboradores WHERE id = $1 AND empresa_id = $2', [id, empId]);
+    if (colabCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Colaborador não encontrado' });
+    }
+
     const result = await targetPool.query(
       `SELECT v.campo_id, c.nome as campo_nome, v.valor 
        FROM colaboradores_valores_customizados v
@@ -2932,11 +3343,11 @@ app.get('/api/colaboradores/:id/valores-customizados', async (req: Request, res:
   }
 });
 
-// Salvar/Atualizar valores dos campos customizados de um colaborador
-app.put('/api/colaboradores/:id/valores-customizados', async (req: Request, res: Response) => {
+// Salvar/Atualizar valores dos campos customizados de um colaborador (com autenticação e verificação de tenant)
+app.put('/api/colaboradores/:id/valores-customizados', requireModuleAccess('colaboradores', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { valores } = req.body;
-  const empId = getEmpresaIdFromReq(req);
+  const empId = getEffectiveEmpresaId(req);
 
   if (!valores || typeof valores !== 'object') {
     return res.status(400).json({ error: 'Valores customizados devem ser fornecidos como um objeto' });
@@ -2944,8 +3355,14 @@ app.put('/api/colaboradores/:id/valores-customizados', async (req: Request, res:
 
   try {
     const targetPool = await getPoolForEmpresa(empId);
+    const colabCheck = await targetPool.query('SELECT id FROM colaboradores WHERE id = $1 AND empresa_id = $2', [id, empId]);
+    if (colabCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Colaborador não encontrado' });
+    }
+
     for (const [campoIdStr, val] of Object.entries(valores)) {
       const campoId = parseInt(campoIdStr, 10);
+      if (isNaN(campoId)) continue;
       const valStr = String(val ?? '').trim();
 
       if (valStr) {
@@ -2970,9 +3387,9 @@ app.put('/api/colaboradores/:id/valores-customizados', async (req: Request, res:
 });
 
 // ==========================================
-// ROTA DE GEOCODIFICAÇÃO DE PRECISÃO
+// ROTA DE GEOCODIFICAÇÃO DE PRECISÃO (AUTENTICADA)
 // ==========================================
-app.get('/api/geocode', async (req: Request, res: Response) => {
+app.get('/api/geocode', requireAnyModuleAccess(['colaboradores', 'home'], 'leitura'), async (req: AuthenticatedRequest, res: Response) => {
   const { logradouro, numero, cidade, estado, cep } = req.query;
   const coords = await fetchGeocodingHighPrecision(
     logradouro as string,
@@ -2985,11 +3402,11 @@ app.get('/api/geocode', async (req: Request, res: Response) => {
 });
 
 // ==========================================
-// ROTA GERADOR DE PESSOA (4DEVS / FALLBACK)
+// ROTA GERADOR DE PESSOA (4DEVS / FALLBACK COM TIMEOUT)
 // ==========================================
-app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
+app.get('/api/gerar-pessoa', requireModuleAccess('colaboradores', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   let pessoaGerada: any = null;
-  const empId = getEmpresaIdFromReq(req);
+  const empId = getEffectiveEmpresaId(req);
 
   let cargoSorteado = 'Analista de desenvolvimento de sistemas';
   try {
@@ -3016,7 +3433,8 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: params.toString()
+      body: params.toString(),
+      signal: AbortSignal.timeout(6000)
     });
 
     if (response.ok) {
@@ -3082,13 +3500,13 @@ app.get('/api/gerar-pessoa', async (req: Request, res: Response) => {
 });
 
 // ==========================================
-// ROTAS CRUD DE COLABORADORES
+// ROTAS CRUD DE COLABORADORES (AUTENTICADAS & ISOLADAS POR TENANT)
 // ==========================================
 
-// Listar colaboradores (filtrados por empresa_id e banco próprio se houver)
-app.get('/api/colaboradores', async (req: Request, res: Response) => {
+// Listar colaboradores (filtrados por empresa_id do JWT e banco próprio se houver)
+app.get('/api/colaboradores', requireAnyModuleAccess(['home', 'colaboradores', 'relatorios'], 'leitura'), async (req: AuthenticatedRequest, res: Response) => {
   const { status } = req.query;
-  const empId = getEmpresaIdFromReq(req);
+  const empId = getEffectiveEmpresaId(req);
 
   try {
     const targetPool = await getPoolForEmpresa(empId);
@@ -3115,23 +3533,14 @@ app.get('/api/colaboradores', async (req: Request, res: Response) => {
         ) as valores_customizados
       FROM colaboradores c
       LEFT JOIN cargos cg ON LOWER(cg.nome) = LOWER(c.cargo)
+      WHERE c.empresa_id = $1
     `;
-    const values: any[] = [];
+    const values: any[] = [empId];
 
-    if (empId) {
-      query += ' WHERE (c.empresa_id = $1 OR c.empresa_id IS NULL)';
-      values.push(empId);
-      if (status === 'ativos') {
-        query += ' AND c.ativo = true';
-      } else if (status === 'inativos') {
-        query += ' AND c.ativo = false';
-      }
-    } else {
-      if (status === 'ativos') {
-        query += ' WHERE c.ativo = true';
-      } else if (status === 'inativos') {
-        query += ' WHERE c.ativo = false';
-      }
+    if (status === 'ativos') {
+      query += ' AND c.ativo = true';
+    } else if (status === 'inativos') {
+      query += ' AND c.ativo = false';
     }
 
     query += ' ORDER BY c.id DESC';
@@ -3142,10 +3551,10 @@ app.get('/api/colaboradores', async (req: Request, res: Response) => {
   }
 });
 
-// Buscar colaborador por ID
-app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
+// Buscar colaborador por ID (com escopo de empresa)
+app.get('/api/colaboradores/:id', requireAnyModuleAccess(['home', 'colaboradores', 'relatorios'], 'leitura'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const empId = getEmpresaIdFromReq(req);
+  const empId = getEffectiveEmpresaId(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
     const query = `
@@ -3171,9 +3580,9 @@ app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
         ) as valores_customizados
       FROM colaboradores c
       LEFT JOIN cargos cg ON LOWER(cg.nome) = LOWER(c.cargo)
-      WHERE c.id = $1
+      WHERE c.id = $1 AND c.empresa_id = $2
     `;
-    const result = await targetPool.query(query, [id]);
+    const result = await targetPool.query(query, [id, empId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
@@ -3184,21 +3593,21 @@ app.get('/api/colaboradores/:id', async (req: Request, res: Response) => {
 });
 
 // Cadastrar novo colaborador
-app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Request, res: Response) => {
+app.post('/api/colaboradores', requireModuleAccess('colaboradores', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, valores_customizados } = req.body;
-  const empId = getEmpresaIdFromReq(req);
-
-  if (!empId) {
-    return res.status(400).json({ error: 'Empresa não identificada na requisição. Certifique-se de estar autenticado.' });
-  }
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
 
   if (!nome || !cpf) {
     return res.status(400).json({ error: 'Campos Nome e CPF são obrigatórios' });
   }
+  if (!isSafeMediaUrl(foto_url)) {
+    return res.status(400).json({ error: 'Formato de foto inválido. Use PNG, JPEG, WebP, GIF ou URL HTTPS.' });
+  }
 
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    const existingCpf = await targetPool.query('SELECT id FROM colaboradores WHERE cpf = $1', [cpf]);
+    const existingCpf = await targetPool.query('SELECT id FROM colaboradores WHERE cpf = $1 AND empresa_id = $2', [cpf, empId]);
     if (existingCpf.rows.length > 0) {
       return res.status(400).json({ error: 'Este CPF já está cadastrado' });
     }
@@ -3242,6 +3651,7 @@ app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Req
     if (valores_customizados && typeof valores_customizados === 'object') {
       for (const [campoIdStr, val] of Object.entries(valores_customizados)) {
         const campoId = parseInt(campoIdStr, 10);
+        if (isNaN(campoId)) continue;
         const valStr = String(val ?? '').trim();
         if (valStr) {
           await targetPool.query(
@@ -3252,19 +3662,16 @@ app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Req
       }
     }
 
-    // Auditoria
-    const authUser = await getAuthUserFromReq(req);
-    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
     await registrarAuditoria({
       empresa_id: empId,
-      usuario_id: authUser?.id,
-      usuario_nome: authUser?.nome || 'Usuário',
-      usuario_email: authUser?.email || '-',
+      usuario_id: authUser.id,
+      usuario_nome: authUser.nome,
+      usuario_email: authUser.email,
       acao: 'CRIAR',
       entidade: 'colaboradores',
       registro_id: novoColaborador.id,
       detalhes: { nome: novoColaborador.nome, cpf: novoColaborador.cpf, cargo: novoColaborador.cargo, cidade: novoColaborador.cidade },
-      ip: clientIp
+      ip: getClientIp(req)
     });
 
     res.status(201).json(novoColaborador);
@@ -3273,19 +3680,23 @@ app.post('/api/colaboradores', checkPermission('colaboradores'), async (req: Req
   }
 });
 
-// Atualizar colaborador
-app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: Request, res: Response) => {
+// Atualizar colaborador (com escopo de empresa)
+app.put('/api/colaboradores/:id', requireModuleAccess('colaboradores', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
   const { nome, cpf, cargo, cep, logradouro, numero, complemento, bairro, cidade, estado, latitude, longitude, foto_url, valores_customizados } = req.body;
-  const empId = getEmpresaIdFromReq(req);
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
 
   if (!nome || !cpf) {
     return res.status(400).json({ error: 'Campos Nome e CPF são obrigatórios' });
   }
+  if (!isSafeMediaUrl(foto_url)) {
+    return res.status(400).json({ error: 'Formato de foto inválido. Use PNG, JPEG, WebP, GIF ou URL HTTPS.' });
+  }
 
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    const existingCpf = await targetPool.query('SELECT id FROM colaboradores WHERE cpf = $1 AND id != $2', [cpf, id]);
+    const existingCpf = await targetPool.query('SELECT id FROM colaboradores WHERE cpf = $1 AND id != $2 AND empresa_id = $3', [cpf, id, empId]);
     if (existingCpf.rows.length > 0) {
       return res.status(400).json({ error: 'Este CPF pertence a outro colaborador' });
     }
@@ -3319,9 +3730,9 @@ app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: 
     const result = await targetPool.query(
       `UPDATE colaboradores 
        SET nome = $1, cpf = $2, cargo = $3, cep = $4, logradouro = $5, numero = $6, complemento = $7, bairro = $8, cidade = $9, estado = $10, latitude = $11, longitude = $12, foto_url = $13 
-       WHERE id = $14 
+       WHERE id = $14 AND empresa_id = $15
        RETURNING *`,
-      [nome, cpf, cargoOficial || null, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null, id]
+      [nome, cpf, cargoOficial || null, cep || null, logradouro || null, numero || null, complemento || null, bairro || null, cidade || null, estado || null, finalLat || null, finalLon || null, foto_url || null, id, empId]
     );
 
     if (result.rows.length === 0) {
@@ -3331,6 +3742,7 @@ app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: 
     if (valores_customizados && typeof valores_customizados === 'object') {
       for (const [campoIdStr, val] of Object.entries(valores_customizados)) {
         const campoId = parseInt(campoIdStr, 10);
+        if (isNaN(campoId)) continue;
         const valStr = String(val ?? '').trim();
 
         if (valStr) {
@@ -3351,19 +3763,16 @@ app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: 
 
     const colabAtualizado = result.rows[0];
 
-    // Auditoria
-    const authUser = await getAuthUserFromReq(req);
-    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
     await registrarAuditoria({
       empresa_id: empId,
-      usuario_id: authUser?.id,
-      usuario_nome: authUser?.nome || 'Usuário',
-      usuario_email: authUser?.email || '-',
+      usuario_id: authUser.id,
+      usuario_nome: authUser.nome,
+      usuario_email: authUser.email,
       acao: 'EDITAR',
       entidade: 'colaboradores',
       registro_id: colabAtualizado.id,
       detalhes: { nome: colabAtualizado.nome, cpf: colabAtualizado.cpf, cargo: colabAtualizado.cargo },
-      ip: clientIp
+      ip: getClientIp(req)
     });
 
     res.json(colabAtualizado);
@@ -3372,32 +3781,30 @@ app.put('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: 
   }
 });
 
-// Inativar colaborador (Soft Delete)
-app.put('/api/colaboradores/:id/inativar', checkPermission('colaboradores'), async (req: Request, res: Response) => {
+// Inativar colaborador (Soft Delete com escopo de empresa)
+app.put('/api/colaboradores/:id/inativar', requireModuleAccess('colaboradores', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const empId = getEmpresaIdFromReq(req);
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    const result = await targetPool.query('UPDATE colaboradores SET ativo = false WHERE id = $1 RETURNING *', [id]);
+    const result = await targetPool.query('UPDATE colaboradores SET ativo = false WHERE id = $1 AND empresa_id = $2 RETURNING *', [id, empId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
 
     const colabInativado = result.rows[0];
 
-    // Auditoria
-    const authUser = await getAuthUserFromReq(req);
-    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
     await registrarAuditoria({
       empresa_id: empId,
-      usuario_id: authUser?.id,
-      usuario_nome: authUser?.nome || 'Usuário',
-      usuario_email: authUser?.email || '-',
+      usuario_id: authUser.id,
+      usuario_nome: authUser.nome,
+      usuario_email: authUser.email,
       acao: 'INATIVAR',
       entidade: 'colaboradores',
       registro_id: colabInativado.id,
       detalhes: { nome: colabInativado.nome, cpf: colabInativado.cpf },
-      ip: clientIp
+      ip: getClientIp(req)
     });
 
     res.json({ success: true, message: 'Colaborador inativado com sucesso', colaborador: colabInativado });
@@ -3406,32 +3813,30 @@ app.put('/api/colaboradores/:id/inativar', checkPermission('colaboradores'), asy
   }
 });
 
-// Reativar colaborador
-app.put('/api/colaboradores/:id/reativar', checkPermission('colaboradores'), async (req: Request, res: Response) => {
+// Reativar colaborador (com escopo de empresa)
+app.put('/api/colaboradores/:id/reativar', requireModuleAccess('colaboradores', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const empId = getEmpresaIdFromReq(req);
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    const result = await targetPool.query('UPDATE colaboradores SET ativo = true WHERE id = $1 RETURNING *', [id]);
+    const result = await targetPool.query('UPDATE colaboradores SET ativo = true WHERE id = $1 AND empresa_id = $2 RETURNING *', [id, empId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
 
     const colabReativado = result.rows[0];
 
-    // Auditoria
-    const authUser = await getAuthUserFromReq(req);
-    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
     await registrarAuditoria({
       empresa_id: empId,
-      usuario_id: authUser?.id,
-      usuario_nome: authUser?.nome || 'Usuário',
-      usuario_email: authUser?.email || '-',
+      usuario_id: authUser.id,
+      usuario_nome: authUser.nome,
+      usuario_email: authUser.email,
       acao: 'REATIVAR',
       entidade: 'colaboradores',
       registro_id: colabReativado.id,
       detalhes: { nome: colabReativado.nome, cpf: colabReativado.cpf },
-      ip: clientIp
+      ip: getClientIp(req)
     });
 
     res.json({ success: true, message: 'Colaborador reativado com sucesso', colaborador: colabReativado });
@@ -3440,31 +3845,29 @@ app.put('/api/colaboradores/:id/reativar', checkPermission('colaboradores'), asy
   }
 });
 
-// Excluir permanentemente
-app.delete('/api/colaboradores/:id', checkPermission('colaboradores'), async (req: Request, res: Response) => {
+// Excluir permanentemente (com escopo de empresa)
+app.delete('/api/colaboradores/:id', requireModuleAccess('colaboradores', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const empId = getEmpresaIdFromReq(req);
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
   try {
     const targetPool = await getPoolForEmpresa(empId);
-    const prevData = await targetPool.query('SELECT nome, cpf FROM colaboradores WHERE id = $1', [id]);
-    const result = await targetPool.query('DELETE FROM colaboradores WHERE id = $1 RETURNING id', [id]);
+    const prevData = await targetPool.query('SELECT nome, cpf FROM colaboradores WHERE id = $1 AND empresa_id = $2', [id, empId]);
+    const result = await targetPool.query('DELETE FROM colaboradores WHERE id = $1 AND empresa_id = $2 RETURNING id', [id, empId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Colaborador não encontrado' });
     }
 
-    // Auditoria
-    const authUser = await getAuthUserFromReq(req);
-    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
     await registrarAuditoria({
       empresa_id: empId,
-      usuario_id: authUser?.id,
-      usuario_nome: authUser?.nome || 'Usuário',
-      usuario_email: authUser?.email || '-',
+      usuario_id: authUser.id,
+      usuario_nome: authUser.nome,
+      usuario_email: authUser.email,
       acao: 'EXCLUIR',
       entidade: 'colaboradores',
       registro_id: id,
       detalhes: { nome: prevData.rows[0]?.nome, cpf: prevData.rows[0]?.cpf },
-      ip: clientIp
+      ip: getClientIp(req)
     });
 
     res.json({ success: true, message: 'Colaborador removido permanentemente' });
@@ -3478,19 +3881,19 @@ app.delete('/api/colaboradores/:id', checkPermission('colaboradores'), async (re
 // ==========================================
 
 // Listar relatórios salvos da empresa e modelos padrão
-app.get('/api/relatorios-salvos', async (req: Request, res: Response) => {
-  const empId = getEmpresaIdFromReq(req) || 1;
-  const authUser = await getAuthUserFromReq(req);
+app.get('/api/relatorios-salvos', requireModuleAccess('relatorios', 'leitura'), async (req: AuthenticatedRequest, res: Response) => {
+  const empId = getEffectiveEmpresaId(req);
+  const authUser = req.authUser!;
 
   try {
     const query = `
       SELECT * FROM relatorios_salvos
       WHERE is_padrao = true 
          OR empresa_id = $1 
-         OR (usuario_id = $2 AND $2 IS NOT NULL)
+         OR usuario_id = $2
       ORDER BY is_padrao DESC, id ASC
     `;
-    const result = await pool.query(query, [empId, authUser?.id || null]);
+    const result = await pool.query(query, [empId, authUser.id]);
     res.json(result.rows);
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Erro ao buscar modelos de relatórios' });
@@ -3498,12 +3901,12 @@ app.get('/api/relatorios-salvos', async (req: Request, res: Response) => {
 });
 
 // Salvar um novo modelo de relatório
-app.post('/api/relatorios-salvos', async (req: Request, res: Response) => {
+app.post('/api/relatorios-salvos', requireModuleAccess('relatorios', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { nome, descricao, icone, modo, colunas, filtros } = req.body;
-  const empId = getEmpresaIdFromReq(req) || 1;
-  const authUser = await getAuthUserFromReq(req);
+  const empId = getEffectiveEmpresaId(req);
+  const authUser = req.authUser!;
 
-  if (!nome || !nome.trim()) {
+  if (!nome || !String(nome).trim()) {
     return res.status(400).json({ error: 'O nome do modelo de relatório é obrigatório' });
   }
 
@@ -3515,27 +3918,25 @@ app.post('/api/relatorios-salvos', async (req: Request, res: Response) => {
     `;
     const result = await pool.query(query, [
       empId,
-      authUser?.id || null,
-      nome.trim(),
-      descricao ? descricao.trim() : null,
+      authUser.id,
+      String(nome).trim(),
+      descricao ? String(descricao).trim() : null,
       icone || 'bookmark',
       modo || 'construtor',
       JSON.stringify(colunas || []),
       JSON.stringify(filtros || {})
     ]);
 
-    // Auditoria
-    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
     await registrarAuditoria({
       empresa_id: empId,
-      usuario_id: authUser?.id,
-      usuario_nome: authUser?.nome || 'Usuário',
-      usuario_email: authUser?.email || '-',
+      usuario_id: authUser.id,
+      usuario_nome: authUser.nome,
+      usuario_email: authUser.email,
       acao: 'CRIAR_RELATORIO_SALVO',
       entidade: 'relatorios_salvos',
       registro_id: result.rows[0].id,
       detalhes: { nome: result.rows[0].nome, total_colunas: Array.isArray(colunas) ? colunas.length : 0 },
-      ip: clientIp
+      ip: getClientIp(req)
     });
 
     res.status(201).json(result.rows[0]);
@@ -3544,35 +3945,37 @@ app.post('/api/relatorios-salvos', async (req: Request, res: Response) => {
   }
 });
 
-// Excluir um modelo de relatório salvo
-app.delete('/api/relatorios-salvos/:id', async (req: Request, res: Response) => {
+// Excluir um modelo de relatório salvo (com verificação de tenant e role real)
+app.delete('/api/relatorios-salvos/:id', requireModuleAccess('relatorios', 'escrita'), async (req: AuthenticatedRequest, res: Response) => {
   const { id } = req.params;
-  const empId = getEmpresaIdFromReq(req) || 1;
-  const authUser = await getAuthUserFromReq(req);
+  const empId = getEffectiveEmpresaId(req);
+  const authUser = req.authUser!;
 
   try {
-    const checkQuery = await pool.query('SELECT is_padrao, nome FROM relatorios_salvos WHERE id = $1', [id]);
+    const checkQuery = await pool.query('SELECT is_padrao, nome, empresa_id FROM relatorios_salvos WHERE id = $1', [id]);
     if (checkQuery.rows.length === 0) {
       return res.status(404).json({ error: 'Modelo de relatório não encontrado' });
     }
-    if (checkQuery.rows[0].is_padrao && !authUser?.email?.includes('admin')) {
+    const modelo = checkQuery.rows[0];
+    if (!authUser.is_super_admin && !modelo.is_padrao && modelo.empresa_id !== empId) {
+      return res.status(403).json({ error: 'Acesso negado: este modelo pertence a outra empresa.' });
+    }
+    if (modelo.is_padrao && !authUser.is_admin && !authUser.is_super_admin) {
       return res.status(400).json({ error: 'Modelos padrão de fábrica não podem ser excluídos' });
     }
 
     await pool.query('DELETE FROM relatorios_salvos WHERE id = $1', [id]);
 
-    // Auditoria
-    const clientIp = (req.headers['x-forwarded-for'] as string || req.socket.remoteAddress || '127.0.0.1').split(',')[0].trim();
     await registrarAuditoria({
       empresa_id: empId,
-      usuario_id: authUser?.id,
-      usuario_nome: authUser?.nome || 'Usuário',
-      usuario_email: authUser?.email || '-',
+      usuario_id: authUser.id,
+      usuario_nome: authUser.nome,
+      usuario_email: authUser.email,
       acao: 'EXCLUIR_RELATORIO_SALVO',
       entidade: 'relatorios_salvos',
       registro_id: id,
-      detalhes: { nome: checkQuery.rows[0].nome },
-      ip: clientIp
+      detalhes: { nome: modelo.nome },
+      ip: getClientIp(req)
     });
 
     res.json({ success: true, message: 'Modelo de relatório excluído com sucesso' });
@@ -3585,11 +3988,14 @@ app.delete('/api/relatorios-salvos/:id', async (req: Request, res: Response) => 
 // ROTAS DE LOGS DE AUDITORIA DE USUÁRIOS
 // ==========================================
 
-// Listar logs de auditoria com paginação e filtros
-app.get('/api/auditoria', async (req: Request, res: Response) => {
-  const empId = getEmpresaIdFromReq(req);
-  const isSuperAdminQuery = req.headers['x-is-super-admin'] === 'true';
+// Listar logs de auditoria com paginação limitada e escopo estrito pelo JWT
+app.get('/api/auditoria', requireModuleAccess('administracao', 'leitura'), async (req: AuthenticatedRequest, res: Response) => {
+  const authUser = req.authUser!;
+  const empId = getEffectiveEmpresaId(req);
   const { q, acao, entidade, data_inicio, data_fim, limit = '100', offset = '0' } = req.query;
+
+  const safeLimit = Math.min(500, Math.max(1, parseInt(String(limit), 10) || 100));
+  const safeOffset = Math.max(0, parseInt(String(offset), 10) || 0);
 
   try {
     let query = `
@@ -3599,7 +4005,7 @@ app.get('/api/auditoria', async (req: Request, res: Response) => {
     const whereClauses: string[] = [];
     const params: any[] = [];
 
-    if (empId && !isSuperAdminQuery) {
+    if (!authUser.is_super_admin) {
       params.push(empId);
       whereClauses.push(`empresa_id = $${params.length}`);
     }
@@ -3640,8 +4046,8 @@ app.get('/api/auditoria', async (req: Request, res: Response) => {
     }
 
     query += ` ORDER BY criado_em DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    params.push(parseInt(String(limit), 10) || 100);
-    params.push(parseInt(String(offset), 10) || 0);
+    params.push(safeLimit);
+    params.push(safeOffset);
 
     const result = await pool.query(query, params);
     res.json(result.rows);
@@ -3656,7 +4062,7 @@ if (fs.existsSync(publicPath)) {
   console.log(`📦 Servindo arquivos estáticos do frontend a partir de: ${publicPath}`);
   app.use(express.static(publicPath));
 
-  app.get('*', (req: Request, res: Response, next) => {
+  app.get('*', (req: Request, res: Response) => {
     if (req.path.startsWith('/api')) {
       return res.status(404).json({ error: 'Rota de API não encontrada' });
     }
@@ -3670,10 +4076,11 @@ if (fs.existsSync(publicPath)) {
         const proto = protoHeader || req.protocol || 'https';
         const host = req.get('host') || `localhost:${PORT}`;
         const fullBaseUrl = configuredBase || `${proto}://${host}`;
-        const logoAbsoluteUrl = `${fullBaseUrl}/logo.png`;
-        const canonicalUrl = `${fullBaseUrl}${req.originalUrl || ''}`;
+        const logoAbsoluteUrl = escapeHtmlAttr(`${fullBaseUrl}/logo.png`);
+        const safePath = (req.path || '/').replace(/[<>"'`]/g, '');
+        const canonicalUrl = escapeHtmlAttr(`${fullBaseUrl}${safePath}`);
 
-        // Injetar URLs absolutas dinamicamente nas tags Open Graph, Schema.org e Twitter Cards
+        // Injetar URLs absolutas devidamente escapadas nas tags Open Graph, Schema.org e Twitter Cards
         html = html
           .replace(/content="\/logo\.png"/g, `content="${logoAbsoluteUrl}"`)
           .replace(/<meta property="og:url" content="[^"]*"/g, `<meta property="og:url" content="${canonicalUrl}"`);
@@ -3700,6 +4107,7 @@ if (fs.existsSync(publicPath)) {
         dbStatus: '/api/db-status',
         authLogin: '/api/auth/login',
         authMe: '/api/auth/me',
+        authAlterarSenha: '/api/auth/alterar-senha',
         usuarios: '/api/usuarios',
         perfisAcesso: '/api/perfis-acesso',
         colaboradores: '/api/colaboradores',
@@ -3711,7 +4119,7 @@ if (fs.existsSync(publicPath)) {
   });
 }
 
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   const dbMeta = getCentralDbMeta();
   console.log(`========================================`);
   console.log(`⚡️ Servidor Regz rodando na porta ${PORT} (0.0.0.0)`);
@@ -3719,3 +4127,21 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🗄️ Banco Central: ${dbMeta.mode.toUpperCase()} (${dbMeta.host}/${dbMeta.database}) | SSL: ${dbMeta.ssl ? 'ON' : 'OFF'}`);
   console.log(`========================================`);
 });
+
+// Encerramento gracioso (Graceful Shutdown) para redeploys limpos na Render / Docker
+const gracefulShutdown = async (signal: string) => {
+  console.log(`\n🛑 Sinal ${signal} recebido. Encerrando servidor e conexões com banco de dados...`);
+  clearInterval(loginCleanupInterval);
+  server.close(async () => {
+    for (const empId of Array.from(tenantPoolsMap.keys())) {
+      await closeTenantPool(empId);
+    }
+    await pool.end().catch(() => {});
+    console.log('✅ Servidor e pools encerrados com segurança.');
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10000).unref?.();
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

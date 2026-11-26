@@ -111,16 +111,6 @@ export const Colaboradores: React.FC = () => {
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
   };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isQrModalOpen) {
-        closeQrModal();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isQrModalOpen]);
-
   // Modal Principal de Cadastro / Edição
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -227,17 +217,19 @@ export const Colaboradores: React.FC = () => {
     };
   }, []);
 
-  // Fechar modal de QR Code / Crachá ao pressionar ESC
+  // Fechar apenas o modal/lightbox superior ativo ao pressionar ESC
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isQrModalOpen) {
-        setIsQrModalOpen(false);
-        setSelectedColabQrCode(null);
+      if (e.key === 'Escape') {
+        if (expandedPhotoUrl) setExpandedPhotoUrl(null);
+        else if (quickPhotoModalOpen) setQuickPhotoModalOpen(false);
+        else if (isQrModalOpen) closeQrModal();
+        else if (modalOpen) closeMainModal();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isQrModalOpen]);
+  }, [expandedPhotoUrl, quickPhotoModalOpen, isQrModalOpen, modalOpen, returnToHome]);
 
   // Carregar preferências salvas do LocalStorage específicas do usuário logado
   useEffect(() => {
@@ -370,17 +362,6 @@ export const Colaboradores: React.FC = () => {
     fetchCamposCustomizados();
   }, []);
 
-  // Fechar modal ao pressionar a tecla ESC
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && modalOpen) {
-        closeMainModal();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modalOpen, returnToHome]);
-
   // Abrir o endereço do colaborador no Google Maps com ALTA PRECISÃO
   const openGoogleMaps = (c: Colaborador) => {
     const fullAddress = [c.logradouro, c.numero ? `nº ${c.numero}` : '', c.bairro, c.cidade, c.estado, c.cep]
@@ -449,10 +430,11 @@ export const Colaboradores: React.FC = () => {
             body: JSON.stringify(p)
           });
           if (postRes.ok) {
+            showSnackbar(`Colaborador "${p.nome}" auto-cadastrado com sucesso!`, 'success');
             fetchColaboradores();
           } else {
-            const errData = await postRes.json();
-            alert(errData.error || 'Erro ao auto-cadastrar');
+            const errData = await postRes.json().catch(() => ({}));
+            showSnackbar(errData.error || 'Erro ao auto-cadastrar', 'error');
           }
         } else {
           resetForm();
@@ -585,9 +567,12 @@ export const Colaboradores: React.FC = () => {
             showSnackbar('Foto do colaborador atualizada com sucesso!', 'success');
             setQuickPhotoModalOpen(false);
             fetchColaboradores();
+          } else {
+            const errData = await res.json().catch(() => ({}));
+            showSnackbar(errData.error || 'Erro ao atualizar foto', 'error');
           }
         } catch (err) {
-          alert('Erro ao atualizar foto');
+          showSnackbar('Erro ao atualizar foto', 'error');
         }
       });
     }
@@ -606,9 +591,12 @@ export const Colaboradores: React.FC = () => {
           showSnackbar('Foto do colaborador removida com sucesso!', 'success');
           setQuickPhotoModalOpen(false);
           fetchColaboradores();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          showSnackbar(errData.error || 'Erro ao remover foto', 'error');
         }
       } catch (err) {
-        alert('Erro ao remover foto');
+        showSnackbar('Erro ao remover foto', 'error');
       }
     }
   };
@@ -802,10 +790,11 @@ export const Colaboradores: React.FC = () => {
           showSnackbar(`Colaborador "${nome}" inativado com sucesso!`, 'success');
           fetchColaboradores();
         } else {
-          alert('Erro ao inativar colaborador');
+          const errData = await res.json().catch(() => ({}));
+          showSnackbar(errData.error || 'Erro ao inativar colaborador', 'error');
         }
       } catch (err) {
-        alert('Erro ao comunicar com o servidor');
+        showSnackbar('Erro ao comunicar com o servidor', 'error');
       }
     }
   };
@@ -819,10 +808,11 @@ export const Colaboradores: React.FC = () => {
           showSnackbar(`Colaborador "${nome}" reativado com sucesso!`, 'success');
           fetchColaboradores();
         } else {
-          alert('Erro ao reativar colaborador');
+          const errData = await res.json().catch(() => ({}));
+          showSnackbar(errData.error || 'Erro ao reativar colaborador', 'error');
         }
       } catch (err) {
-        alert('Erro ao comunicar com o servidor');
+        showSnackbar('Erro ao comunicar com o servidor', 'error');
       }
     }
   };
@@ -1260,6 +1250,9 @@ export const Colaboradores: React.FC = () => {
                   setPageSize(val);
                   setCurrentPage(1);
                   localStorage.setItem('regz_page_size', String(val));
+                  if (usuario?.id) {
+                    localStorage.setItem(`regz_colab_page_size_${usuario.id}`, String(val));
+                  }
                 }}
                 className="custom-select-small"
               >

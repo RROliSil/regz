@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   RotateCcw, 
@@ -19,6 +19,28 @@ export const AccessibilityModal: React.FC = () => {
 
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [demoInputValue, setDemoInputValue] = useState('Mariana Rios Silva');
+
+  useEffect(() => {
+    if (!isModalOpen) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        setIsPlayingAudio(false);
+      }
+      return;
+    }
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, [isModalOpen, setIsModalOpen]);
 
   if (!isModalOpen) return null;
 
@@ -146,13 +168,13 @@ export const AccessibilityModal: React.FC = () => {
           </div>
         </div>
 
-        {/* Corpo Dividido em 2 Colunas: Configurações & Pré-visualização */}
+        {/* Corpo Dividido em 2 Colunas Responsivas: Configurações & Pré-visualização */}
         <div 
           style={{ 
             flex: 1, 
             minHeight: 0,
             display: 'grid', 
-            gridTemplateColumns: 'minmax(380px, 1.15fr) minmax(380px, 1fr)', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', 
             gap: '20px', 
             padding: '20px 24px',
             overflowY: 'auto',

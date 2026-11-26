@@ -1,10 +1,8 @@
-// Service Worker para Regz - Gestão de Pessoas (Cache de Assets e PWA)
-const CACHE_NAME = 'regz-assets-v1';
+// Service Worker para Regz - Gestão de Pessoas (Network-First HTML + SWR Assets Versionados)
+const CACHE_NAME = 'regz-assets-v2';
 
-// Recursos essenciais para cache inicial
+// Recursos estáticos essenciais para pré-cache
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
   '/manifest.json',
   '/favicon.ico',
   '/favicon.png',
@@ -14,7 +12,7 @@ const STATIC_ASSETS = [
   '/videos/poster_start.png'
 ];
 
-// Instalação do Service Worker e pré-cache de arquivos estáticos
+// Instalação do Service Worker e ativação imediata
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -25,7 +23,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Ativação e limpeza de versões antigas de cache
+// Ativação e limpeza automática de caches antigos (ex: regz-assets-v1)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -40,17 +38,33 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Interceptação de requisições: Stale-While-Revalidate para assets estáticos e Network-Only para /api/
+// Interceptação: Network-Only para /api/, Network-First para navegações HTML e SWR para assets estáticos
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Requisições externas (como viacep.com.br) ou rotas /api/ passam direto pela rede
+  // Requisições externas, rotas /api/ ou métodos não-GET passam direto pela rede
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api') || request.method !== 'GET') {
     return;
   }
 
-  // Requisições para arquivos de fonte, scripts, CSS e imagens (Stale-While-Revalidate)
+  // Navegações HTML (SPA) e index.html: Network-First para garantir deploys imediatos sem cache stale
+  if (request.mode === 'navigate' || url.pathname === '/' || url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
+  // Assets estáticos (JS/CSS com hash do Vite, imagens, fontes): Stale-While-Revalidate
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
       const fetchPromise = fetch(request).then((networkResponse) => {
@@ -61,12 +75,7 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        // Se a rede falhar e não houver cache para navegação HTML, retorna a home
-        if (request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-      });
+      }).catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
     })

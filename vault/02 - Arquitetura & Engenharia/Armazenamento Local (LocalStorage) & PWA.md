@@ -31,8 +31,8 @@ Mapeamento das preferências persistidas no navegador do usuário e dos recursos
 
 ## 📱 PWA & Open Graph Dinâmico
 - **Manifest (`frontend/public/manifest.json`):** `name: "Regz - Gestão de Pessoas"`, `display: "standalone"`, `theme_color: "#6366f1"`, `background_color: "#020617"`, ícones `32x32`, `192x192` e `512x512` (`maskable`).
-- **Service Worker (`frontend/public/sw.js`):** registrado automaticamente em `frontend/src/main.tsx` para cache de assets estáticos.
-- **Open Graph & Twitter Cards Dinâmicos:** o Express (`app.get('*')`) lê `index.html` e injeta dinamicamente URLs absolutas (`APP_URL` ou `proto://host`) em `og:image` (`/logo.png`) e `og:url`, garantindo miniatura perfeita no WhatsApp, LinkedIn, Slack e Discord.
+- **Service Worker (`frontend/public/sw.js` — `regz-assets-v2`):** registrado automaticamente em `frontend/src/main.tsx`, usando **Network-First** para navegações HTML (`/`, `/index.html`) para entrega instantânea de novos deploys e **Stale-While-Revalidate** para assets estáticos versionados.
+- **Open Graph & Twitter Cards Dinâmicos:** o Express (`app.get('*')`) lê `index.html` e injeta dinamicamente URLs absolutas devidamente escapadas contra XSS (`escapeHtmlAttr`) em `og:image` (`/logo.png`) e `og:url`, garantindo miniatura perfeita no WhatsApp, LinkedIn, Slack e Discord.
 
 ---
 

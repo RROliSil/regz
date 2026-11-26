@@ -111,7 +111,7 @@ export const Administracao: React.FC = () => {
   const { usuario, temPermissao } = useAuth();
   const { showSnackbar } = useSnackbar();
   const podeEditar = temPermissao('administracao', 'escrita');
-  const isSuperAdmin = !!(usuario?.is_super_admin || (usuario?.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario?.nome === 'Administrador Regz');
+  const isSuperAdmin = Boolean(usuario?.is_super_admin);
   const isUserAdminTag = !!usuario?.perfil?.is_admin;
 
   const [subTab, setSubTab] = useState<'usuarios' | 'perfis' | 'licencas' | 'empresas' | 'auditoria'>('usuarios');
@@ -214,19 +214,6 @@ export const Administracao: React.FC = () => {
   const [empresaLicencasList, setEmpresaLicencasList] = useState<Licenca[]>([]);
   const [loadingEmpresaLicencas, setLoadingEmpresaLicencas] = useState(false);
 
-  // Listener para fechar modais exclusivamente ao pressionar a tecla ESC
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (modalUserOpen) setModalUserOpen(false);
-        if (modalPerfilOpen) setModalPerfilOpen(false);
-        if (modalLicencaOpen) setModalLicencaOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modalUserOpen, modalPerfilOpen, modalLicencaOpen]);
-
   // Estados para Largura Arrastável de Colunas na Tabela de Usuários (com LocalStorage por Usuário)
   const [userColumnWidths, setUserColumnWidths] = useState<UserColumnWidths>({
     nome: 200,
@@ -299,6 +286,14 @@ export const Administracao: React.FC = () => {
           /* fallback para padrao */
         }
       }
+      const savedEmp = localStorage.getItem(`regz_empresa_column_widths_${usuario.id}`);
+      if (savedEmp) {
+        try {
+          setEmpresaColumnWidths(JSON.parse(savedEmp));
+        } catch (e) {
+          /* fallback para padrao */
+        }
+      }
     }
   }, [usuario?.id]);
 
@@ -312,6 +307,23 @@ export const Administracao: React.FC = () => {
   const [selectedLicencaRenovar, setSelectedLicencaRenovar] = useState<Licenca | null>(null);
   const [renovarOpcao, setRenovarOpcao] = useState<'renovar_30' | 'upgrade_120' | 'upgrade_365' | 'downgrade_trial' | 'add_120' | 'add_365'>('renovar_30');
   const [submittingRenovar, setSubmittingRenovar] = useState(false);
+
+  // Listener para fechar o modal superior ativo ao pressionar a tecla ESC
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (logModalDetalhe) setLogModalDetalhe(null);
+        else if (modalRenovarOpen) setModalRenovarOpen(false);
+        else if (modalEmpresaLicencasOpen) setModalEmpresaLicencasOpen(false);
+        else if (modalEmpresaOpen) setModalEmpresaOpen(false);
+        else if (modalLicencaOpen) setModalLicencaOpen(false);
+        else if (modalPerfilOpen) setModalPerfilOpen(false);
+        else if (modalUserOpen) setModalUserOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [modalUserOpen, modalPerfilOpen, modalLicencaOpen, modalEmpresaOpen, modalRenovarOpen, modalEmpresaLicencasOpen, logModalDetalhe]);
 
   // Form de Usuário
   const [userNome, setUserNome] = useState('');
@@ -527,20 +539,27 @@ export const Administracao: React.FC = () => {
       showSnackbar('Nenhum log de auditoria para exportar.', 'info');
       return;
     }
+    // Neutraliza fórmulas (=, +, -, @, Tab, CR) contra CSV Formula Injection
+    const sanitizeCsvCell = (raw: any) => {
+      const str = String(raw ?? '');
+      const safe = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+      return `"${safe.replace(/"/g, '""')}"`;
+    };
+
     const headers = ['ID', 'Data/Hora', 'Usuário', 'E-mail', 'Ação', 'Entidade', 'Registro ID', 'IP', 'Detalhes'];
     const rows = logsAuditoria.map(l => [
-      l.id,
-      new Date(l.criado_em).toLocaleString('pt-BR'),
-      `"${(l.usuario_nome || '').replace(/"/g, '""')}"`,
-      `"${(l.usuario_email || '').replace(/"/g, '""')}"`,
-      l.acao,
-      l.entidade,
-      l.registro_id || '-',
-      l.ip || '-',
-      `"${(typeof l.detalhes === 'object' ? JSON.stringify(l.detalhes) : String(l.detalhes || '')).replace(/"/g, '""')}"`
+      sanitizeCsvCell(l.id),
+      sanitizeCsvCell(new Date(l.criado_em).toLocaleString('pt-BR')),
+      sanitizeCsvCell(l.usuario_nome || ''),
+      sanitizeCsvCell(l.usuario_email || ''),
+      sanitizeCsvCell(l.acao),
+      sanitizeCsvCell(l.entidade),
+      sanitizeCsvCell(l.registro_id || '-'),
+      sanitizeCsvCell(l.ip || '-'),
+      sanitizeCsvCell(typeof l.detalhes === 'object' ? JSON.stringify(l.detalhes) : String(l.detalhes || ''))
     ]);
 
-    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
+    const csvContent = '\uFEFF' + [headers.map(sanitizeCsvCell).join(';'), ...rows.map(r => r.join(';'))].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -549,6 +568,7 @@ export const Administracao: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
     showSnackbar('Logs de auditoria exportados com sucesso!', 'success');
   };
 
@@ -581,10 +601,15 @@ export const Administracao: React.FC = () => {
   useEffect(() => {
     fetchUsuarios();
     fetchPerfis();
-    fetchLicencas();
-    fetchEmpresas();
     fetchAuditoria();
-  }, []);
+    if (isSuperAdmin) {
+      fetchLicencas();
+      fetchEmpresas();
+    } else {
+      setLoadingLicencas(false);
+      setLoadingEmpresas(false);
+    }
+  }, [isSuperAdmin]);
 
   useEffect(() => {
     if (subTab === 'auditoria') {
@@ -630,7 +655,7 @@ export const Administracao: React.FC = () => {
 
   const handleOpenModalRenovar = (lic: Licenca) => {
     if (!isUserAdminTag) {
-      alert('Apenas perfis com a TAG de Administrador podem renovar chaves de licença.');
+      showSnackbar('Apenas perfis com a TAG de Administrador podem renovar chaves de licença.', 'error');
       return;
     }
     setSelectedLicencaRenovar(lic);
@@ -800,9 +825,12 @@ export const Administracao: React.FC = () => {
       if (res.ok) {
         showSnackbar(`Status do usuário alterado para ${!statusAtual ? 'Ativo' : 'Inativo'}!`, 'success');
         fetchUsuarios();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        showSnackbar(errData.error || 'Erro ao alterar status', 'error');
       }
     } catch (err) {
-      alert('Erro ao alterar status');
+      showSnackbar('Erro ao alterar status do usuário', 'error');
     }
   };
 
@@ -901,10 +929,10 @@ export const Administracao: React.FC = () => {
           showSnackbar(`Perfil "${nome}" excluído com sucesso!`, 'success');
           fetchPerfis();
         } else {
-          alert(data.error || 'Erro ao excluir perfil');
+          showSnackbar(data.error || 'Erro ao excluir perfil', 'error');
         }
       } catch (err) {
-        alert('Erro ao excluir perfil');
+        showSnackbar('Erro ao excluir perfil', 'error');
       }
     }
   };
@@ -992,8 +1020,13 @@ export const Administracao: React.FC = () => {
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        showSnackbar('Formato de imagem inválido. Envie PNG, JPEG, WebP ou GIF.', 'error');
+        return;
+      }
       if (file.size > 2 * 1024 * 1024) {
-        alert('A imagem da logo deve ter no máximo 2MB.');
+        showSnackbar('A imagem da logo deve ter no máximo 2MB.', 'error');
         return;
       }
       const reader = new FileReader();
@@ -1044,8 +1077,8 @@ export const Administracao: React.FC = () => {
         fetchEmpresas();
         setTimeout(() => setLicencaSuccess(null), 4000);
       } else {
-        const errData = await res.json();
-        alert(errData.error || 'Erro ao salvar empresa');
+        const errData = await res.json().catch(() => ({}));
+        showSnackbar(errData.error || 'Erro ao salvar empresa', 'error');
       }
     } catch (err) {
       console.error('Erro ao salvar empresa:', err);
@@ -1107,7 +1140,7 @@ export const Administracao: React.FC = () => {
           className={subTab === 'usuarios' ? 'btn-primary' : 'btn-secondary admin-subtab-btn'}
           style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
         >
-          <Users size={18} /> Usuários do Sistema ({usuarios.filter(u => !(u.is_super_admin || (u.email && u.email.toLowerCase() === 'admin@regz.app') || u.nome === 'Administrador Regz')).length})
+          <Users size={18} /> Usuários do Sistema ({usuarios.filter(u => !u.is_super_admin).length})
         </button>
         <button
           onClick={() => setSubTab('perfis')}

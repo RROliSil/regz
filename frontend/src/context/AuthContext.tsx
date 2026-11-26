@@ -71,6 +71,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUsuario(null);
   };
 
+  // Encerrar sessão automaticamente caso a API retorne 401 (token expirado ou usuário inativado)
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      localStorage.removeItem('regz_token');
+      setToken(null);
+      setUsuario(null);
+    };
+    window.addEventListener('regz:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('regz:unauthorized', handleUnauthorized);
+  }, []);
+
   const temPermissao = (aba: keyof PermissoesAba, nivelExigido: 'leitura' | 'escrita' = 'leitura'): boolean => {
     if (!usuario || !usuario.perfil) return false;
 

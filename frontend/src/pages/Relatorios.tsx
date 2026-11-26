@@ -486,10 +486,6 @@ export const Relatorios: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    carregarDados();
-  }, [token]);
-
   // Atualizar dados com animação
   const handleAtualizarClique = () => {
     setIsSpinning(true);
@@ -822,7 +818,14 @@ export const Relatorios: React.FC = () => {
       });
     }
 
-    const content = [headersCSV.join(';'), ...rowsCSV.map(row => row.map(cell => `"${(cell || '').replace(/"/g, '""')}"`).join(';'))].join('\n');
+    // Neutraliza fórmulas (=, +, -, @, Tab, CR) para prevenir CSV/Excel Formula Injection
+    const sanitizeCsvCell = (raw: string) => {
+      const str = String(raw ?? '');
+      const safe = /^[=+\-@\t\r]/.test(str) ? `'${str}` : str;
+      return `"${safe.replace(/"/g, '""')}"`;
+    };
+
+    const content = [headersCSV.map(sanitizeCsvCell).join(';'), ...rowsCSV.map(row => row.map(cell => sanitizeCsvCell(cell || '')).join(';'))].join('\n');
     const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -831,6 +834,7 @@ export const Relatorios: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
 
     showSnackbar('Relatório exportado para Excel (CSV) com sucesso!', 'success');
   };
@@ -926,22 +930,39 @@ export const Relatorios: React.FC = () => {
       if (geoCols.estado) cols.push('Estado (UF)');
       if (geoCols.cidade) cols.push('Cidade / Município');
       if (geoCols.ativos) cols.push('Colaboradores Ativos');
+      if (geoCols.inativos) cols.push('Inativos');
+      if (geoCols.total) cols.push('Total');
+      if (geoCols.percentual) cols.push('% Headcount');
       head = [cols];
       body = dadosGeo.map(g => {
         const row: string[] = [];
         if (geoCols.estado) row.push(g.estado || '-');
         if (geoCols.cidade) row.push(g.cidade || '-');
         if (geoCols.ativos) row.push(String(g.ativos));
+        if (geoCols.inativos) row.push(String(g.inativos));
+        if (geoCols.total) row.push(String(g.total));
+        if (geoCols.percentual) row.push(g.percentual);
         return row;
       });
     } else if (modo === 'rbac') {
-      head = [['Nome do Usuário', 'E-mail Corporativo', 'Perfil de Acesso', 'Status']];
-      body = usuarios.map(u => [
-        u.nome,
-        u.email,
-        u.perfil?.nome || 'Sem Perfil',
-        u.ativo ? 'ATIVO' : 'INATIVO'
-      ]);
+      const cols: string[] = [];
+      if (rbacCols.id) cols.push('ID');
+      if (rbacCols.nome) cols.push('Nome do Usuário');
+      if (rbacCols.email) cols.push('E-mail Corporativo');
+      if (rbacCols.perfil) cols.push('Perfil de Acesso');
+      if (rbacCols.tipo) cols.push('Tipo');
+      if (rbacCols.status) cols.push('Status');
+      head = [cols];
+      body = usuarios.map(u => {
+        const row: string[] = [];
+        if (rbacCols.id) row.push(`#${u.id}`);
+        if (rbacCols.nome) row.push(u.nome);
+        if (rbacCols.email) row.push(u.email);
+        if (rbacCols.perfil) row.push(u.perfil?.nome || 'Sem Perfil');
+        if (rbacCols.tipo) row.push(u.perfil?.is_admin ? 'Administrador' : 'Padrão');
+        if (rbacCols.status) row.push(u.ativo ? 'ATIVO' : 'INATIVO');
+        return row;
+      });
     }
 
     autoTable(doc, {
@@ -980,21 +1001,23 @@ export const Relatorios: React.FC = () => {
           }
         }
       },
-      didDrawPage: function(data) {
-        // Rodapé com numeração de páginas
-        const totalPages = (doc as any).internal.getNumberOfPages();
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(148, 163, 184);
-        doc.text(
-          `Regz Gestão de Pessoas • Página ${data.pageNumber} de ${totalPages}`,
-          pageWidth / 2,
-          pageHeight - 6,
-          { align: 'center' }
-        );
-      },
       margin: { left: 14, right: 14, top: 31, bottom: 12 },
     });
+
+    // Escrever rodapé de numeração real ("Página X de Y") após todas as páginas terem sido geradas
+    const totalPages = (doc as any).internal.getNumberOfPages();
+    for (let pageIdx = 1; pageIdx <= totalPages; pageIdx++) {
+      doc.setPage(pageIdx);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(148, 163, 184);
+      doc.text(
+        `Regz Gestão de Pessoas • Página ${pageIdx} de ${totalPages}`,
+        pageWidth / 2,
+        pageHeight - 6,
+        { align: 'center' }
+      );
+    }
 
     const fileName = `relatorio_regz_${modo}_${new Date().toISOString().slice(0, 10)}.pdf`;
     const blob = doc.output('blob');

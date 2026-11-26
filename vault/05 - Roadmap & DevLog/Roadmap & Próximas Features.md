@@ -10,10 +10,11 @@ Evoluções priorizadas para fortalecer segurança em produção, estabilidade 2
 ---
 
 ## 🔥 Prioridade Alta (Segurança & Estabilidade 24/7)
-- [ ] **Middleware `requireSuperAdmin` no Backend:** proteger estritamente todas as rotas de gestão global (`/api/empresas`, `/api/empresas/:id`, `/api/empresas/test-db`, `/api/licencas`, `/api/auditoria`) exigindo token JWT válido com `is_super_admin === true`.
-- [ ] **Criptografia AES-256-GCM para Credenciais Multi-Banco:** criptografar `empresas.db_pass` e `empresas.db_uri` em repouso usando variável `DB_ENCRYPTION_KEY`.
-- [ ] **Modal "Alterar Minha Senha" na Interface Web:** endpoint autenticado `PUT /api/auth/alterar-senha` (validando senha atual via `bcrypt.compare`) acessível pelo Super Admin e usuários comuns + suporte a `ADMIN_INITIAL_PASSWORD` no bootstrap.
-- [ ] **Keep-Alive & Monitoramento Externo:** configurar UptimeRobot / Cron-job.org chamando `https://regz-app.onrender.com/api/db-status` a cada 10–14 min para reduzir hibernação da Render Free e impedir pausa de 7 dias no Supabase Free.
+- [x] **Middleware `requireSuperAdmin` & Cobertura 100% da API:** todas as rotas globais (`/api/empresas*`, `/api/licencas*`, `/api/empresas/test-db`) e operacionais protegidas com JWT, RBAC, validação de licença no servidor e isolamento estrito por `empresa_id`.
+- [x] **Criptografia AES-256-GCM para Credenciais Multi-Banco:** `empresas.db_pass` e `empresas.db_uri` criptografadas em repouso e mascaradas nas respostas da API.
+- [x] **Endpoint `PUT /api/auth/alterar-senha` & `ADMIN_INITIAL_PASSWORD`:** rota autenticada pronta no backend com validação `bcrypt.compare` e bootstrap sem logs de senha.
+- [ ] **Modal "Alterar Minha Senha" na Interface Web (`Sidebar.tsx`):** expor atalho visual no card do usuário para acionar `PUT /api/auth/alterar-senha`.
+- [ ] **Keep-Alive & Monitoramento Externo:** configurar UptimeRobot / Cron-job.org chamando `https://regz-app.onrender.com/api/health` a cada 10–14 min para reduzir hibernação da Render Free e manter conexão ativa com o Supabase Free.
 
 ---
 

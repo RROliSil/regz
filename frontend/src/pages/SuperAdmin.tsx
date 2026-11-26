@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import { useSnackbar } from '../context/SnackbarContext';
 import { Empresa } from './Administracao';
 import { Licenca } from '../types/auth';
@@ -12,7 +11,6 @@ import {
 
 export const SuperAdmin: React.FC = () => {
   const { usuario, logout } = useAuth();
-  const { setTheme } = useTheme();
   const { showSnackbar } = useSnackbar();
 
   // Estados de Empresas
@@ -92,21 +90,22 @@ export const SuperAdmin: React.FC = () => {
   const [globalSuccess, setGlobalSuccess] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // Listener para fechar modais com a tecla ESC
+  // Listener para fechar apenas o modal superior ativo com a tecla ESC
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        if (modalEmpresaOpen) setModalEmpresaOpen(false);
-        if (modalLicencaOpen) setModalLicencaOpen(false);
-        if (modalRenovarOpen) setModalRenovarOpen(false);
-        if (selectedEmpresaLicencas) setSelectedEmpresaLicencas(null);
-        if (selectedEmpresaUsuarios) setSelectedEmpresaUsuarios(null);
         if (empresaToDelete) setEmpresaToDelete(null);
+        else if (modalCreateUserOpen) setModalCreateUserOpen(false);
+        else if (modalRenovarOpen) setModalRenovarOpen(false);
+        else if (modalLicencaOpen) setModalLicencaOpen(false);
+        else if (modalEmpresaOpen) setModalEmpresaOpen(false);
+        else if (selectedEmpresaLicencas) setSelectedEmpresaLicencas(null);
+        else if (selectedEmpresaUsuarios) setSelectedEmpresaUsuarios(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [modalEmpresaOpen, modalLicencaOpen, modalRenovarOpen, selectedEmpresaLicencas, selectedEmpresaUsuarios, empresaToDelete]);
+  }, [modalEmpresaOpen, modalLicencaOpen, modalRenovarOpen, modalCreateUserOpen, selectedEmpresaLicencas, selectedEmpresaUsuarios, empresaToDelete]);
 
   // Carregar Empresas
   const fetchEmpresas = async () => {
@@ -125,7 +124,7 @@ export const SuperAdmin: React.FC = () => {
   };
 
   useEffect(() => {
-    setTheme('padrao');
+    // Aplica visual padrão do Portal Master sem sobrescrever regz_theme salvo pelo usuário no localStorage
     document.documentElement.setAttribute('data-theme', 'padrao');
     fetchEmpresas();
   }, []);
@@ -292,8 +291,13 @@ export const SuperAdmin: React.FC = () => {
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+      if (!allowedTypes.includes(file.type)) {
+        showSnackbar('Formato de imagem inválido. Envie PNG, JPEG, WebP ou GIF.', 'error');
+        return;
+      }
       if (file.size > 2 * 1024 * 1024) {
-        alert('A imagem da logo deve ter no máximo 2MB.');
+        showSnackbar('A imagem da logo deve ter no máximo 2MB.', 'error');
         return;
       }
       const reader = new FileReader();
@@ -335,7 +339,7 @@ export const SuperAdmin: React.FC = () => {
 
   const handleTestDbConnection = async () => {
     if (!dbUri.trim() && !dbName && dbTipo !== 'mongo') {
-      alert('Preencha a URI Online (Connection String) ou o Nome do Banco de Dados para testar a conexão.');
+      showSnackbar('Preencha a URI Online (Connection String) ou o Nome do Banco de Dados para testar a conexão.', 'warning');
       return;
     }
 
@@ -416,8 +420,8 @@ export const SuperAdmin: React.FC = () => {
         fetchEmpresas();
         setTimeout(() => setGlobalSuccess(null), 4000);
       } else {
-        const errData = await res.json();
-        alert(errData.error || 'Erro ao salvar empresa');
+        const errData = await res.json().catch(() => ({}));
+        showSnackbar(errData.error || 'Erro ao salvar empresa', 'error');
       }
     } catch (err) {
       console.error('Erro ao salvar empresa:', err);
@@ -445,8 +449,8 @@ export const SuperAdmin: React.FC = () => {
         fetchEmpresas();
         setTimeout(() => setGlobalSuccess(null), 4000);
       } else {
-        const errData = await res.json();
-        alert(errData.error || 'Erro ao excluir empresa');
+        const errData = await res.json().catch(() => ({}));
+        showSnackbar(errData.error || 'Erro ao excluir empresa', 'error');
       }
     } catch (err) {
       console.error('Erro ao excluir empresa:', err);
@@ -483,8 +487,8 @@ export const SuperAdmin: React.FC = () => {
         }
         setTimeout(() => setGlobalSuccess(null), 5000);
       } else {
-        const errData = await res.json();
-        alert(errData.error || 'Erro ao gerar chave de licença');
+        const errData = await res.json().catch(() => ({}));
+        showSnackbar(errData.error || 'Erro ao gerar chave de licença', 'error');
       }
     } catch (err) {
       console.error('Erro ao gerar chave de licença:', err);
@@ -516,8 +520,8 @@ export const SuperAdmin: React.FC = () => {
         }
         setTimeout(() => setGlobalSuccess(null), 5000);
       } else {
-        const errData = await res.json();
-        alert(errData.error || 'Erro ao gerar chave de licença');
+        const errData = await res.json().catch(() => ({}));
+        showSnackbar(errData.error || 'Erro ao gerar chave de licença', 'error');
       }
     } catch (err) {
       console.error('Erro ao gerar chave rápida:', err);
@@ -591,8 +595,8 @@ export const SuperAdmin: React.FC = () => {
         }
         setTimeout(() => setGlobalSuccess(null), 4000);
       } else {
-        const errData = await res.json();
-        alert(errData.error || 'Erro ao renovar licença');
+        const errData = await res.json().catch(() => ({}));
+        showSnackbar(errData.error || 'Erro ao renovar licença', 'error');
       }
     } catch (err) {
       console.error('Erro ao renovar licença:', err);
@@ -642,12 +646,12 @@ export const SuperAdmin: React.FC = () => {
     if (!selectedEmpresaUsuarios) return;
 
     if (!newUserNome || !newUserEmail || !newUserSenha) {
-      alert('Preencha Nome, E-mail e Senha para o novo usuário.');
+      showSnackbar('Preencha Nome, E-mail e Senha para o novo usuário.', 'warning');
       return;
     }
 
     if (!newUserChaveLicenca) {
-      alert('Selecione uma Chave de Licença Master já emitida para atrelar ao usuário.');
+      showSnackbar('Selecione uma Chave de Licença Master já emitida para atrelar ao usuário.', 'warning');
       return;
     }
 
@@ -675,8 +679,8 @@ export const SuperAdmin: React.FC = () => {
         fetchEmpresas();
         setTimeout(() => setGlobalSuccess(null), 4000);
       } else {
-        const errData = await res.json();
-        alert(errData.error || 'Erro ao cadastrar usuário');
+        const errData = await res.json().catch(() => ({}));
+        showSnackbar(errData.error || 'Erro ao cadastrar usuário', 'error');
       }
     } catch (err) {
       console.error('Erro ao cadastrar usuário:', err);
@@ -701,8 +705,8 @@ export const SuperAdmin: React.FC = () => {
         fetchEmpresas();
         setTimeout(() => setGlobalSuccess(null), 3500);
       } else {
-        const errData = await res.json();
-        alert(errData.error || 'Erro ao desvincular licença');
+        const errData = await res.json().catch(() => ({}));
+        showSnackbar(errData.error || 'Erro ao desvincular licença', 'error');
       }
     } catch (err) {
       console.error('Erro ao desvincular licença:', err);
@@ -742,8 +746,8 @@ export const SuperAdmin: React.FC = () => {
         }
         setTimeout(() => setGlobalSuccess(null), 4000);
       } else {
-        const errData = await res.json();
-        alert(errData.error || 'Erro ao excluir chave');
+        const errData = await res.json().catch(() => ({}));
+        showSnackbar(errData.error || 'Erro ao excluir chave', 'error');
       }
     } catch (err) {
       console.error('Erro ao excluir chave:', err);
@@ -843,7 +847,7 @@ export const SuperAdmin: React.FC = () => {
             <div>
               <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>BANCOS DE DADOS REGISTRADOS</span>
               <h3 style={{ margin: '4px 0 0 0', fontSize: '1.7rem', fontWeight: 800, color: '#ffffff' }}>
-                {empresas.filter(e => (e as any).db_host).length}
+                {empresas.filter(e => Boolean((e as any).db_uri || (e as any).has_db_uri || (e as any).db_host || e.id <= 2)).length}
               </h3>
             </div>
           </div>
@@ -907,10 +911,10 @@ export const SuperAdmin: React.FC = () => {
                 {/* Detalhes do Card */}
                 <div className="empresa-card-body">
                   <div className="empresa-card-row">
-                    <span className="empresa-card-label">
+                    <span className="empresa-card-label" style={{ whiteSpace: 'nowrap' }}>
                       <Database size={14} color="#38bdf8" /> Banco DB:
                     </span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                       <span style={{
                         fontSize: '0.72rem',
                         fontWeight: 700,
@@ -934,13 +938,13 @@ export const SuperAdmin: React.FC = () => {
                               return `☁️ URI Cloud/${emp.db_name || 'regz_db'}`;
                             }
                           }
-                          const host = emp.db_host || 'Banco Central';
-                          const isDefaultLocal = host === 'localhost' && (!emp.db_name || emp.db_name === 'regz_db');
-                          if (isDefaultLocal && emp.id <= 2) {
+                          const host = (emp.db_host || '').trim();
+                          const isDefaultCentral = !host || (host === 'localhost' && (!emp.db_name || emp.db_name === 'regz_db'));
+                          if (isDefaultCentral && emp.id <= 2) {
                             return '☁️ Banco Central Online';
                           }
                           const port = emp.db_port || (emp.db_tipo === 'mysql' ? 3306 : emp.db_tipo === 'mongo' ? 27017 : emp.db_tipo === 'mssql' ? 1433 : 5432);
-                          return `${host}:${port}/${emp.db_name || 'regz_db'}`;
+                          return `${host || 'Banco Central'}:${port}/${emp.db_name || 'regz_db'}`;
                         })()}
                       </span>
                     </div>
@@ -1621,7 +1625,7 @@ export const SuperAdmin: React.FC = () => {
                       type="password"
                       value={dbPass}
                       onChange={(e) => setDbPass(e.target.value)}
-                      placeholder="••••••••"
+                      placeholder={editingEmpresaId ? 'Deixe vazio para manter a senha criptografada' : '••••••••'}
                       autoComplete="new-password"
                       data-lpignore="true"
                     />

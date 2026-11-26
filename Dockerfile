@@ -26,11 +26,11 @@ ENV PORT=4000
 COPY backend/package*.json ./
 RUN npm ci --omit=dev
 
-# Copiar build do backend
-COPY --from=backend-builder /app/backend/dist ./dist
+# Copiar build do backend e frontend com ownership para usuário não-root 'node'
+COPY --from=backend-builder --chown=node:node /app/backend/dist ./dist
+COPY --from=frontend-builder --chown=node:node /app/frontend/dist ./public
 
-# Copiar build do frontend para a pasta public servida pelo Express
-COPY --from=frontend-builder /app/frontend/dist ./public
+USER node
 
 EXPOSE 4000
 

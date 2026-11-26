@@ -15,7 +15,7 @@ import { Relatorios } from './pages/Relatorios';
 import { Login } from './pages/Login';
 import { SuperAdmin } from './pages/SuperAdmin';
 import { PermissoesAba } from './types/auth';
-import { Loader2, Eye, AlertTriangle, Menu } from 'lucide-react';
+import { Loader2, Eye, AlertTriangle, Menu, ShieldAlert, LogOut } from 'lucide-react';
 
 const RouteTitleTracker: React.FC = () => {
   const location = useLocation();
@@ -49,7 +49,7 @@ const RouteTitleTracker: React.FC = () => {
 };
 
 const ProtectedLayout: React.FC = () => {
-  const { usuario, loading, temPermissao } = useAuth();
+  const { usuario, loading, temPermissao, logout } = useAuth();
   const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem('regz_sidebar_collapsed') === 'true';
@@ -60,7 +60,26 @@ const ProtectedLayout: React.FC = () => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
 
-  const isSuperAdmin = !!(usuario?.is_super_admin || (usuario?.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario?.nome === 'Administrador Regz');
+  // Segurança: confiar exclusivamente na flag is_super_admin validada pelo backend
+  const isSuperAdmin = Boolean(usuario?.is_super_admin);
+
+  useEffect(() => {
+    if (isSuperAdmin) {
+      document.documentElement.setAttribute('data-theme', 'padrao');
+    }
+  }, [isSuperAdmin]);
+
+  const getFirstAllowedPath = (): string | null => {
+    if (temPermissao('colaboradores', 'leitura')) return '/colaboradores';
+    if (temPermissao('home', 'leitura')) return '/home';
+    if (temPermissao('campos', 'leitura')) return '/campos';
+    if (temPermissao('relatorios', 'leitura')) return '/relatorios';
+    if (temPermissao('administracao', 'leitura')) return '/administracao';
+    if (usuario?.perfil?.is_admin) return '/configuracoes';
+    return null;
+  };
+
+  const firstAllowedPath = getFirstAllowedPath();
 
   const toggleSidebar = () => {
     setSidebarCollapsed(prev => {
@@ -98,11 +117,27 @@ const ProtectedLayout: React.FC = () => {
   }
 
   if (isSuperAdmin) {
-    document.documentElement.setAttribute('data-theme', 'padrao');
     if (location.pathname !== '/superadmrgz') {
       return <Navigate to="/superadmrgz" replace />;
     }
     return <SuperAdmin />;
+  }
+
+  if (!firstAllowedPath) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-gradient)', padding: '24px' }}>
+        <div className="glass-panel" style={{ maxWidth: '460px', width: '100%', padding: '32px', textAlign: 'center', borderRadius: '20px' }}>
+          <ShieldAlert size={44} color="#f59e0b" style={{ margin: '0 auto 16px auto' }} />
+          <h2 style={{ margin: '0 0 10px 0', fontSize: '1.35rem', fontWeight: 800 }}>Sem Permissões Atribuídas</h2>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.92rem', marginBottom: '24px', lineHeight: 1.5 }}>
+            Seu perfil de acesso atual ({usuario.perfil?.nome || 'Sem Perfil'}) não possui permissão de visualização em nenhum módulo do sistema. Contate o Administrador.
+          </p>
+          <button onClick={logout} className="btn-primary" style={{ margin: '0 auto', display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+            <LogOut size={16} /> Sair do Sistema
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -240,14 +275,14 @@ const ProtectedLayout: React.FC = () => {
 
         <div className={`viewport-content-shell ${hasTopBanner ? 'has-banner' : ''}`}>
           <Routes>
-            <Route path="/" element={<Navigate to="/colaboradores" replace />} />
-            <Route path="/home" element={<RequireAuth aba="home"><Home /></RequireAuth>} />
-            <Route path="/colaboradores" element={<RequireAuth aba="colaboradores"><Colaboradores /></RequireAuth>} />
-            <Route path="/campos" element={<RequireAuth aba="campos"><Campos /></RequireAuth>} />
-            <Route path="/administracao" element={<RequireAuth aba="administracao"><Administracao /></RequireAuth>} />
-            <Route path="/relatorios" element={<RequireAuth aba="relatorios"><Relatorios /></RequireAuth>} />
-            <Route path="/configuracoes" element={<RequireAdmin><Configuracoes /></RequireAdmin>} />
-            <Route path="*" element={<Navigate to="/colaboradores" replace />} />
+            <Route path="/" element={<Navigate to={firstAllowedPath} replace />} />
+            <Route path="/home" element={<RequireAuth aba="home" fallbackPath={firstAllowedPath}><Home /></RequireAuth>} />
+            <Route path="/colaboradores" element={<RequireAuth aba="colaboradores" fallbackPath={firstAllowedPath}><Colaboradores /></RequireAuth>} />
+            <Route path="/campos" element={<RequireAuth aba="campos" fallbackPath={firstAllowedPath}><Campos /></RequireAuth>} />
+            <Route path="/administracao" element={<RequireAuth aba="administracao" fallbackPath={firstAllowedPath}><Administracao /></RequireAuth>} />
+            <Route path="/relatorios" element={<RequireAuth aba="relatorios" fallbackPath={firstAllowedPath}><Relatorios /></RequireAuth>} />
+            <Route path="/configuracoes" element={<RequireAdmin fallbackPath={firstAllowedPath}><Configuracoes /></RequireAdmin>} />
+            <Route path="*" element={<Navigate to={firstAllowedPath} replace />} />
           </Routes>
         </div>
       </main>
@@ -255,21 +290,21 @@ const ProtectedLayout: React.FC = () => {
   );
 };
 
-const RequireAdmin: React.FC<{ children: JSX.Element }> = ({ children }) => {
+const RequireAdmin: React.FC<{ fallbackPath: string; children: JSX.Element }> = ({ fallbackPath, children }) => {
   const { usuario } = useAuth();
   
   if (!usuario?.perfil?.is_admin) {
-    return <Navigate to="/colaboradores" replace />;
+    return <Navigate to={fallbackPath} replace />;
   }
 
   return children;
 };
 
-const RequireAuth: React.FC<{ aba: keyof PermissoesAba; children: JSX.Element }> = ({ aba, children }) => {
+const RequireAuth: React.FC<{ aba: keyof PermissoesAba; fallbackPath: string; children: JSX.Element }> = ({ aba, fallbackPath, children }) => {
   const { temPermissao } = useAuth();
   
   if (!temPermissao(aba, 'leitura')) {
-    return <Navigate to="/colaboradores" replace />;
+    return <Navigate to={fallbackPath} replace />;
   }
 
   return children;
@@ -287,8 +322,7 @@ const LoginRoute: React.FC = () => {
   }
 
   if (usuario) {
-    const isSuperAdmin = !!(usuario.is_super_admin || (usuario.email && usuario.email.toLowerCase() === 'admin@regz.app') || usuario.nome === 'Administrador Regz');
-    return <Navigate to={isSuperAdmin ? "/superadmrgz" : "/colaboradores"} replace />;
+    return <Navigate to={usuario.is_super_admin ? "/superadmrgz" : "/"} replace />;
   }
 
   return <Login />;
